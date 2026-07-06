@@ -2,7 +2,7 @@ import { api } from '#/api/request.js';
 
 // 获取LLM供应商
 export async function getLlmProviderList() {
-  return api.get('/api/v1/modelProvider/list');
+  return api.get('/api/v1/modelProvider/list?sortKey=created&sortType=desc');
 }
 
 // 保存LLM
