@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/aiflowy1?useInformationSchema=true&characterEncoding=utf-8
+    url: jdbc:mysql://127.0.0.1:3306/aiflowy?useInformationSchema=true&characterEncoding=utf-8
     username: aiflowy
     password: 123456
 springdoc:
