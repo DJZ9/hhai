@@ -3,7 +3,8 @@
 import type { AiLlm, BotInfo } from '@aiflowy/types';
 
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+// import { useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'
 
 import { IconifyIcon } from '@aiflowy/icons';
 import { $t } from '@aiflowy/locales';
@@ -20,6 +21,7 @@ import {
   ElInput,
   ElInputNumber,
   ElLink,
+  ElOption,
   ElMessage,
   ElRow,
   ElSelect,
@@ -53,6 +55,7 @@ const props = defineProps<{
 }>();
 const botStore = useBotStore();
 const route = useRoute();
+const router = useRouter();
 const botId = ref<string>((route.params.id as string) || '');
 const options = ref<AiLlm[]>([]);
 const selectedId = ref<string>('');
@@ -153,6 +156,13 @@ const getBotDetail = async () => {
         botInfo.value = res.data;
         if (res.data.options) {
           dialogueSettings.value = res.data.options;
+          // 加载其他技能配置
+          if (res.data.options.otherSkills) {
+            otherSkills.value = {
+              ...otherSkills.value,
+              ...res.data.options.otherSkills,
+            };
+          }
         }
         if (res.data.options?.presetQuestions) {
           botStore.setPresetQuestions(
@@ -180,6 +190,7 @@ onMounted(async () => {
   getLlmListData();
   getAiBotWikiList();
   getUserCenterDomain();
+  getSystemSearchEngineConfig();
 });
 
 const handleLlmChange = async (value: string) => {
@@ -222,6 +233,51 @@ const handleDialogOptionsStrChange = useDebounceFn(
   },
   300,
 );
+
+// 搜索引擎选项
+const searchEngineOptions = [
+  { label: '百度千帆', value: 'qianfan' },
+  { label: '博查 (Bocha)', value: 'bocha' },
+  { label: 'Brave', value: 'brave' },
+];
+
+// 其他技能配置变更
+const handleOtherSkillChange = useDebounceFn(
+  (key: keyof typeof otherSkills.value, value: boolean | number | string) => {
+    updateBotOptions({
+      id: props.bot?.id || '',
+      options: {
+        otherSkills: {
+          ...otherSkills.value,
+          [key]: value,
+        },
+      },
+    });
+  },
+  300,
+);
+
+// 其他技能配置
+const otherSkills = ref({
+  webSearchEnabled: false,
+  webSearchProvider: '',
+  webFetchEnabled: false,
+  todoWriteEnabled: false,
+});
+
+// 跳转到系统设置页面
+const goToSystemSettings = () => {
+  router.push('/sys/settings');
+};
+
+// 系统搜索引擎配置状态
+const systemSearchEngineConfig = ref({
+  provider: '',
+  qianfanApiKey: '',
+  bochaApiKey: '',
+  braveApiKey: '',
+});
+
 const pluginToolDataRef = ref();
 const knowledgeDataRef = ref();
 const workflowDataRef = ref();
@@ -605,6 +661,81 @@ function copyCode(code: string) {
     ElMessage.success($t('bot.copiedToClipboard'));
   });
 }
+
+// 获取系统搜索引擎配置
+const getSystemSearchEngineConfig = async () => {
+  try {
+    const res = await api.get(
+      '/api/v1/sysOption/list?keys=search_engine_provider&keys=search_engine_qianfan_api_key&keys=search_engine_bocha_api_key&keys=search_engine_brave_api_key',
+    );
+    if (res.errorCode === 0) {
+      systemSearchEngineConfig.value = {
+        provider: res.data.search_engine_provider || '',
+        qianfanApiKey: res.data.search_engine_qianfan_api_key || '',
+        bochaApiKey: res.data.search_engine_bocha_api_key || '',
+        braveApiKey: res.data.search_engine_brave_api_key || '',
+      };
+    }
+  } catch (error) {
+    console.error('获取系统搜索引擎配置失败', error);
+  }
+};
+
+// 检查搜索引擎配置是否完整
+const checkSearchEngineConfig = (): boolean => {
+  let provider = otherSkills.value.webSearchProvider;
+
+  // 如果 Bot 未选择提供商，尝试使用系统默认提供商
+  if (!provider && systemSearchEngineConfig.value.provider) {
+    provider = systemSearchEngineConfig.value.provider;
+    // 自动填充 Bot 的提供商选择
+    otherSkills.value.webSearchProvider = provider;
+  }
+
+  if (!provider) {
+    ElMessage.warning('请先选择搜索引擎提供商');
+    return false;
+  }
+
+  if (provider === 'qianfan' && !systemSearchEngineConfig.value.qianfanApiKey) {
+    ElMessage.warning(
+      '系统未配置百度千帆搜索引擎 API Key，请先前往系统设置页面配置',
+    );
+    return false;
+  }
+
+  if (provider === 'bocha' && !systemSearchEngineConfig.value.bochaApiKey) {
+    ElMessage.warning(
+      '系统未配置博查搜索引擎 API Key，请先前往系统设置页面配置',
+    );
+    return false;
+  }
+
+  if (provider === 'brave' && !systemSearchEngineConfig.value.braveApiKey) {
+    ElMessage.warning(
+      '系统未配置 Brave 搜索引擎 API Key，请先前往系统设置页面配置',
+    );
+    return false;
+  }
+
+  return true;
+};
+
+// 处理搜索引擎开关
+const handleWebSearchEnableChange = (value: boolean | number | string) => {
+  const boolValue = Boolean(value);
+  if (
+    boolValue && // 开启时检查配置
+    !checkSearchEngineConfig()
+  ) {
+    // 配置不完整，强制关闭开关（阻止开启）
+    otherSkills.value.webSearchEnabled = false;
+    return;
+  }
+
+  otherSkills.value.webSearchEnabled = boolValue;
+  handleOtherSkillChange('webSearchEnabled', boolValue);
+};
 </script>
 
 <template>
@@ -655,34 +786,18 @@ function copyCode(code: string) {
               "
             />
           </ElCol>
-        </ElRow>
-        <ElRow :gutter="12" align="middle" type="flex">
-          <ElCol class="options-config-item-left">
-            <span class="config-font-style">TopK</span>
-          </ElCol>
-          <ElCol class="options-config-item-middle">
-            <ElSlider
-              :min="1"
-              :max="10"
-              :step="1"
+          <ElCol class="options-config-item-switch">
+            <ElSwitch
+              v-model="llmConfig.temperatureEnabled"
               :disabled="!hasSavePermission"
-              v-model="llmConfig.topK"
+              active-text="启用"
+              inactive-text="关闭"
+              inline-prompt
               @change="
-                (value) => handleLlmOptionsChange('topK', value as number)
+                (value) =>
+                  handleLlmOptionsChange('temperatureEnabled', value as boolean)
               "
-            />
-          </ElCol>
-          <ElCol class="options-config-item-right">
-            <ElInputNumber
-              :min="1"
-              :max="10"
-              :step="1"
-              :disabled="!hasSavePermission"
-              v-model="llmConfig.topK"
-              @change="
-                (value) => handleLlmOptionsChange('topK', value as number)
-              "
-            />
+              />
           </ElCol>
         </ElRow>
         <ElRow :gutter="12" align="middle" type="flex">
@@ -710,6 +825,19 @@ function copyCode(code: string) {
               v-model="llmConfig.topP"
               @change="
                 (value) => handleLlmOptionsChange('topP', value as number)
+              "
+            />
+          </ElCol>
+          <ElCol class="options-config-item-switch">
+            <ElSwitch
+              v-model="llmConfig.topPEnabled"
+              :disabled="!hasSavePermission"
+              active-text="启用"
+              inactive-text="关闭"
+              inline-prompt
+              @change="
+                (value) =>
+                  handleLlmOptionsChange('topPEnabled', value as boolean)
               "
             />
           </ElCol>
@@ -743,6 +871,19 @@ function copyCode(code: string) {
               @change="
                 (value) =>
                   handleLlmOptionsChange('maxReplyLength', value as number)
+              "
+            />
+          </ElCol>
+          <ElCol class="options-config-item-switch">
+            <ElSwitch
+              v-model="llmConfig.maxReplyLengthEnabled"
+              :disabled="!hasSavePermission"
+              active-text="启用"
+              inactive-text="关闭"
+              inline-prompt
+              @change="
+                (value) =>
+                  handleLlmOptionsChange('maxReplyLengthEnabled', value as boolean)
               "
             />
           </ElCol>
@@ -893,6 +1034,88 @@ function copyCode(code: string) {
               description-key="description"
               @delete="deleteWiki"
             />
+          </ElCollapseItem>
+
+          <!-- 其他技能 -->
+          <ElCollapseItem :title="$t('bot.otherSkills')">
+            <template #title>
+              <div class="flex items-center justify-between pr-2">
+                <span>{{ $t('bot.otherSkills') }}</span>
+              </div>
+            </template>
+            <div class="other-skills-container">
+              <!-- 搜索引擎 -->
+              <div class="other-skill-item search-engine-skill">
+                <div class="search-engine-row">
+                  <div class="search-engine-title">
+                    <span class="skill-label">{{
+                      $t('bot.webSearchTool')
+                    }}</span>
+                    <ElSelect
+                      v-model="otherSkills.webSearchProvider"
+                      :placeholder="$t('bot.webSearchProvider')"
+                      size="small"
+                      class="search-engine-select"
+                      @change="
+                        handleOtherSkillChange('webSearchProvider', $event)
+                      "
+                    >
+                      <ElOption
+                        v-for="item in searchEngineOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                      />
+                    </ElSelect>
+                  </div>
+                  <ElSwitch
+                    v-model="otherSkills.webSearchEnabled"
+                    @change="handleWebSearchEnableChange"
+                  />
+                </div>
+                <div class="search-engine-row">
+                  <span class="skill-desc">{{
+                    $t('bot.webSearchToolDesc')
+                  }}</span>
+                  <ElLink
+                    type="primary"
+                    underline="never"
+                    class="settings-link"
+                    @click="goToSystemSettings"
+                  >
+                    {{ $t('bot.goToSettings') }}
+                  </ElLink>
+                </div>
+              </div>
+              <!-- 网页抓取 -->
+              <div class="other-skill-item">
+                <div class="skill-info">
+                  <span class="skill-label">{{
+                    $t('bot.webCrawlerTool')
+                  }}</span>
+                  <span class="skill-desc">{{
+                    $t('bot.webCrawlerToolDesc')
+                  }}</span>
+                </div>
+                <ElSwitch
+                  v-model="otherSkills.webFetchEnabled"
+                  @change="handleOtherSkillChange('webFetchEnabled', $event)"
+                />
+              </div>
+              <!-- 任务分解 -->
+              <div class="other-skill-item">
+                <div class="skill-info">
+                  <span class="skill-label">{{ $t('bot.todoWriteTool') }}</span>
+                  <span class="skill-desc">{{
+                    $t('bot.todoWriteToolDesc')
+                  }}</span>
+                </div>
+                <ElSwitch
+                  v-model="otherSkills.todoWriteEnabled"
+                  @change="handleOtherSkillChange('todoWriteEnabled', $event)"
+                />
+              </div> 
+            </div>
           </ElCollapseItem>
         </ElCollapse>
       </div>
@@ -1268,6 +1491,17 @@ function copyCode(code: string) {
   width: auto;
 }
 
+.options-config-item-switch {
+  flex: 0 0 auto;
+  margin-left: 12px;
+  min-width: 49px;
+}
+
+.switch-placeholder {
+  width: 49px;
+  height: 22px;
+}
+
 :deep(.el-slider__runway) {
   height: 4px;
 }
@@ -1369,5 +1603,68 @@ function copyCode(code: string) {
   height: auto;
   padding: 10px;
   background-color: var(--bot-collapse-itme-back);
+}
+
+/* 其他技能样式 */
+.other-skills-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--bot-collapse-itme-back);
+}
+
+.other-skill-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: var(--el-bg-color);
+  border-radius: 8px;
+}
+
+.skill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skill-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.skill-desc {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 搜索引擎技能样式 */
+.search-engine-skill {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.search-engine-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-engine-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-engine-select {
+  width: 150px;
+}
+
+.settings-link {
+  font-size: 12px;
+  white-space: nowrap;
 }
 </style>
