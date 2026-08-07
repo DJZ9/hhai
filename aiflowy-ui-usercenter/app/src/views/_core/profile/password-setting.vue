@@ -3,6 +3,7 @@ import type { AIFlowyFormSchema } from '#/adapter/form';
 
 import { computed, ref } from 'vue';
 
+import { $t } from '#/locales';
 import { ProfilePasswordSetting, z } from '@aiflowy/common-ui';
 
 import { ElMessage } from 'element-plus';
@@ -13,37 +14,37 @@ const formSchema = computed((): AIFlowyFormSchema[] => {
   return [
     {
       fieldName: 'oldPassword',
-      label: '旧密码',
+      label: $t('profile.password.oldPwd'),
       component: 'AIFlowyInputPassword',
       componentProps: {
-        placeholder: '请输入旧密码',
+        placeholder: $t('profile.password.oldPwdPlaceholder'),
       },
     },
     {
       fieldName: 'newPassword',
-      label: '新密码',
+      label: $t('profile.password.newPwd'),
       component: 'AIFlowyInputPassword',
       componentProps: {
         passwordStrength: true,
-        placeholder: '请输入新密码',
+        placeholder: $t('profile.password.newPwdPlaceholder'),
       },
     },
     {
       fieldName: 'confirmPassword',
-      label: '确认密码',
+      label: $t('profile.password.confirmPwd'),
       component: 'AIFlowyInputPassword',
       componentProps: {
         passwordStrength: true,
-        placeholder: '请再次输入新密码',
+        placeholder: $t('profile.password.confirmPwdPlaceholder'),
       },
       dependencies: {
         rules(values) {
           const { newPassword } = values;
           return z
-            .string({ required_error: '请再次输入新密码' })
-            .min(1, { message: '请再次输入新密码' })
+            .string({ required_error: $t('profile.password.confirmPwdPlaceholder') })
+            .min(1, { message: $t('profile.password.confirmPwdPlaceholder') })
             .refine((value) => value === newPassword, {
-              message: '两次输入的密码不一致',
+              message: $t('profile.password.mismatch'),
             });
         },
         triggerFields: ['newPassword'],
@@ -53,7 +54,7 @@ const formSchema = computed((): AIFlowyFormSchema[] => {
 });
 
 function handleSubmit() {
-  ElMessage.success('密码修改成功');
+  ElMessage.success($t('profile.password.success'));
 }
 </script>
 <template>

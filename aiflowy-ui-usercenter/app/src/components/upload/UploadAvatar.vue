@@ -9,6 +9,8 @@ import { useAccessStore } from '@aiflowy/stores';
 import { Plus } from '@element-plus/icons-vue';
 import { ElIcon, ElImage, ElMessage, ElUpload } from 'element-plus';
 
+import { $t } from '#/locales';
+
 const props = defineProps({
   action: {
     type: String,
@@ -58,10 +60,10 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
         return parts[1] ? parts[1].toUpperCase() : '';
       })
       .filter(Boolean);
-    ElMessage.error(`头像只能是${formatTypes.join(', ')}格式`);
+    ElMessage.error($t('upload.avatarFormat', { format: formatTypes.join(', ') }));
     return false;
   } else if (rawFile.size / 1024 / 1024 > props.fileSize) {
-    ElMessage.error(`头像限制 ${props.fileSize} M`);
+    ElMessage.error($t('upload.avatarSizeLimit', { size: props.fileSize }));
     return false;
   }
   return true;

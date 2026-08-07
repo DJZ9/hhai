@@ -11,5 +11,20 @@
     "title": "概览",
     "analytics": "分析页",
     "workspace": "工作台"
-  }
+  },
+  "my": {
+    "title": "我的",
+    "assetLibrary": "我的素材",
+    "sysDocument": "我的文档",
+    "chatHistory": "聊天记录",
+    "execHistory": "执行记录",
+    "batchExecHistory": "批量执行",
+    "batchExecDetails": "批量执行详情",
+    "execDetails": "执行详情",
+    "profile": "个人资料",
+    "agent": "我的智能体",
+    "editDocument": "编辑文档"
+  },
+  "assistantMarket": "智能体中心",
+  "workflow": "工作流"
 }

@@ -21,8 +21,14 @@ import { tryit } from 'radash';
 
 import { api } from '#/api/request';
 import PageData from '#/components/page/PageData.vue';
+import { $t } from '#/locales';
 
-const listTitles = ['智能体名称', '话题', '创建时间', '操作'];
+const listTitles = [
+  $t('chatHistory.agentName'),
+  $t('chatHistory.topic'),
+  $t('chatHistory.createTime'),
+  $t('chatHistory.operation'),
+];
 
 const router = useRouter();
 const assistantList = ref<any[]>([]);
@@ -60,7 +66,7 @@ async function handleDelete(id: string) {
 
   if (res && res.errorCode === 0) {
     search();
-    ElMessage.success('删除成功');
+    ElMessage.success($t('chatHistory.deleteSuccess'));
   }
 }
 </script>
@@ -69,20 +75,20 @@ async function handleDelete(id: string) {
   <ElContainer class="bg-background-deep h-full">
     <ElHeader class="!h-auto !p-8 !pb-0">
       <ElSpace direction="vertical" :size="24" alignment="flex-start">
-        <h1 class="text-2xl font-medium">聊天记录</h1>
+        <h1 class="text-2xl font-medium">{{ $t('chatHistory.title') }}</h1>
         <div class="flex items-center gap-5">
           <div class="flex items-center gap-4">
-            <span class="text-nowrap text-sm">智能体</span>
+            <span class="text-nowrap text-sm">{{ $t('chatHistory.agent') }}</span>
             <ElSelect
               clearable
               v-model="queryParams.botId"
               :options="assistantList"
-              placeholder="请选择智能体"
+              :placeholder="$t('chatHistory.selectAgent')"
               @change="search"
             />
           </div>
           <ElInput
-            placeholder="搜索关键词"
+            :placeholder="$t('chatHistory.searchKeyword')"
             v-model="queryParams.title"
             @keyup.enter="search"
             @change="search"
@@ -129,7 +135,7 @@ async function handleDelete(id: string) {
                         type="primary"
                         @click="toDetail(record)"
                       >
-                        查看详情
+                        {{ $t('chatHistory.viewDetail') }}
                       </ElButton>
 
                       <ElDropdown>
@@ -144,8 +150,7 @@ async function handleDelete(id: string) {
                                 :icon="Delete"
                                 @click="handleDelete(record.id)"
                               >
-                                删除
-                              </ElButton>
+                                {{ $t('chatHistory.delete') }}</ElButton>
                             </ElDropdownItem>
                           </ElDropdownMenu>
                         </template>

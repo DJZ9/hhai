@@ -5,5 +5,12 @@
   "history": "历史记录",
   "noDataAvailable": "暂无数据",
   "isRequired": "不能为空",
-  "avatar": "头像"
+  "avatar": "头像",
+  "otherLoginType": "其他登录方式",
+  "voice": {
+    "httpsRequired": "语音功能需要 HTTPS 安全连接，当前页面不支持录音功能",
+    "micPermissionDenied": "麦克风权限被拒绝，请在浏览器设置中允许麦克风访问",
+    "micPermissionFailed": "麦克风权限获取失败，请检查浏览器设置",
+    "recognitionFailed": "语音识别失败"
+  }
 }

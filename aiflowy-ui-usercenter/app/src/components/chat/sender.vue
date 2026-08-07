@@ -12,6 +12,7 @@ import { ElButton, ElIcon } from 'element-plus';
 import { sseClient } from '#/api/request';
 import SendingIcon from '#/components/icons/SendingIcon.vue';
 import ChatFileUploader from '#/components/upload/ChatFileUploader.vue';
+import { $t } from '#/locales';
 // import PaperclipIcon from '#/components/icons/PaperclipIcon.vue';
 
 type Think = {
@@ -238,7 +239,7 @@ watch(
     :auto-size="{ minRows: 2, maxRows: 5 }"
     clearable
     allow-speech
-    placeholder="发送消息"
+    :placeholder="$t('bot.sendMessage')"
     @keyup.enter="sendMessage"
     @paste-file="handlePasteFile"
   >

@@ -38,18 +38,18 @@ const options = [
 <template>
   <div class="flex flex-1 flex-col justify-between">
     <ElForm>
-      <ElFormItem required label="input:">
+      <ElFormItem required :label="$t('bot.labelInput')">
         <div class="flex w-full flex-col gap-2">
           <ElInput />
-          <span class="text-xs text-[#969799]">提示词</span>
+          <span class="text-xs text-[#969799]">{{ $t('bot.tipsPrompt') }}</span>
         </div>
       </ElFormItem>
-      <ElFormItem required label="idash:">
+      <ElFormItem required :label="$t('bot.labelIdash')">
         <ElUpload :auto-upload="false" list-type="picture" :limit="1">
-          <ElButton :icon="Upload">上传</ElButton>
+          <ElButton :icon="Upload">{{ $t('bot.upload') }}</ElButton>
         </ElUpload>
       </ElFormItem>
-      <ElFormItem required label="idash:">
+      <ElFormItem required :label="$t('bot.labelIdash')">
         <ElSelect :options="options" />
       </ElFormItem>
     </ElForm>
@@ -57,7 +57,7 @@ const options = [
       <template #icon>
         <IconifyIcon icon="mdi:play-circle" />
       </template>
-      开始运行
+      {{ $t('bot.startRun') }}
     </ElButton>
   </div>
 </template>

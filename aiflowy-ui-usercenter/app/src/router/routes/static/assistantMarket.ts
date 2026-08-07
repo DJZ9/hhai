@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+import { $t } from '#/locales';
+
 const routes: RouteRecordRaw[] = [
   {
     name: 'AssistantMarket',
@@ -8,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'svg:app-store',
       order: 11,
-      title: '智能体中心',
+      title: $t('page.assistantMarket'),
     },
   },
   {
@@ -16,7 +18,7 @@ const routes: RouteRecordRaw[] = [
     path: '/assistantMarket/:id',
     component: () => import('#/views/assistantMarket/assistant/index.vue'),
     meta: {
-      title: '智能体中心',
+      title: $t('page.assistantMarket'),
       hideInMenu: true,
       hideInTab: true,
       hideInBreadcrumb: true,

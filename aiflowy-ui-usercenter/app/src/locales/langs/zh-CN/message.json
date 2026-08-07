@@ -24,5 +24,6 @@
   "downloadFail": "下载失败",
   "copySuccess": "复制成功",
   "copyFail": "复制失败",
-  "clickOrDrop": "点击或将文件拖拽到这里上传"
+  "clickOrDrop": "点击或将文件拖拽到这里上传",
+  "noEloam": "未检测到扫描仪"
 }

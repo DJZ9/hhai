@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { $t } from '#/locales';
 
 import { ProfileNotificationSetting } from '@aiflowy/common-ui';
 
@@ -8,20 +9,20 @@ const formSchema = computed(() => {
     {
       value: true,
       fieldName: 'accountPassword',
-      label: '账户密码',
-      description: '其他用户的消息将以站内信的形式通知',
+      label: $t('profile.notification.account'),
+      description: $t('profile.notification.accountDesc'),
     },
     {
       value: true,
       fieldName: 'systemMessage',
-      label: '系统消息',
-      description: '系统消息将以站内信的形式通知',
+      label: $t('profile.notification.system'),
+      description: $t('profile.notification.systemDesc'),
     },
     {
       value: true,
       fieldName: 'todoTask',
-      label: '待办任务',
-      description: '待办任务将以站内信的形式通知',
+      label: $t('profile.notification.todo'),
+      description: $t('profile.notification.todoDesc'),
     },
   ];
 });

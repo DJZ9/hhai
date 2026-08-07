@@ -1,0 +1,14 @@
+{
+  "users": "Users",
+  "totalUsers": "Total Users",
+  "visits": "Visits",
+  "totalVisits": "Total Visits",
+  "downloads": "Downloads",
+  "totalDownloads": "Total Downloads",
+  "usage": "Usage",
+  "totalUsage": "Total Usage",
+  "trafficTrends": "Traffic Trends",
+  "monthlyVisits": "Monthly Visits",
+  "visitCount": "Visit Count",
+  "visitSource": "Visit Source"
+}

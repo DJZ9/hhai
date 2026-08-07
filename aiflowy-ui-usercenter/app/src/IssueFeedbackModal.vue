@@ -20,23 +20,24 @@ import { tryit } from 'radash';
 import Upload from '#/components/upload/Upload.vue';
 
 import { api } from './api/request';
+import { $t } from '#/locales';
 
 const options = [
   {
     value: 1,
-    label: '功能故障',
+    label: $t('issueFeedback.malfunction'),
   },
   {
     value: 2,
-    label: '优化建议',
+    label: $t('issueFeedback.suggestion'),
   },
   {
     value: 3,
-    label: '账号问题',
+    label: $t('issueFeedback.accountIssue'),
   },
   {
     value: 4,
-    label: '其它',
+    label: $t('issueFeedback.other'),
   },
 ];
 
@@ -70,7 +71,7 @@ const handleSubmit = async () => {
     );
 
     if (res && res.errorCode === 0) {
-      ElMessage.success('反馈成功！');
+      ElMessage.success($t('issueFeedback.success'));
       showDialog.value = false;
       formRef.value?.resetFields();
       uploadRef.value?.clear();
@@ -86,7 +87,7 @@ const handleSubmit = async () => {
     to="#app"
   >
     <div
-      class="fixed bottom-1 right-2 cursor-pointer text-6xl active:opacity-70"
+      class="issue-feedback-btn fixed bottom-1 right-2 cursor-pointer text-6xl active:opacity-70"
       @click="showDialog = !showDialog"
     >
       <IconifyIcon icon="svg:issue" />
@@ -95,46 +96,50 @@ const handleSubmit = async () => {
   <ElDialog
     draggable
     v-model="showDialog"
-    title="问题反馈"
+    :title="$t('issueFeedback.title')"
     style="max-width: 560px"
   >
     <ElForm
       ref="formRef"
       :model="formData"
-      label-width="80px"
+      label-width="90px"
       label-position="left"
       require-asterisk-position="right"
     >
       <ElFormItem
         prop="feedbackType"
-        label="问题类型"
-        :rules="[{ required: true, message: '此为必填项' }]"
+        :label="$t('issueFeedback.feedbackType')"
+        :rules="[{ required: true, message: $t('issueFeedback.required') }]"
       >
         <ElSelect
           :options="options"
           v-model="formData.feedbackType"
-          placeholder="请选择问题类型"
+          :placeholder="$t('issueFeedback.selectType')"
         />
       </ElFormItem>
       <ElFormItem
         prop="feedbackContent"
-        label="问题描述"
-        :rules="[{ required: true, message: '此为必填项' }]"
+        :label="$t('issueFeedback.feedbackContent')"
+        :rules="[{ required: true, message: $t('issueFeedback.required') }]"
       >
         <ElInput
           type="textarea"
           :rows="5"
           v-model="formData.feedbackContent"
-          placeholder="请简要描述下您所遇到的问题"
+          :placeholder="$t('issueFeedback.describeIssue')"
         />
       </ElFormItem>
-      <ElFormItem prop="contactInfo" label="联系方式">
+      <ElFormItem
+        prop="contactInfo"
+        :label="$t('issueFeedback.contactInfo')">
         <ElInput
           v-model="formData.contactInfo"
-          placeholder="请留下手机号/邮箱"
+          :placeholder="$t('issueFeedback.contactPlaceholder')"
         />
       </ElFormItem>
-      <ElFormItem prop="attachmentUrl" label="上传附件">
+      <ElFormItem
+        prop="attachmentUrl"
+        :label="$t('issueFeedback.uploadAttachment')">
         <Upload
           ref="uploadRef"
           @success="uploadSuccess"
@@ -145,11 +150,19 @@ const handleSubmit = async () => {
 
     <template #footer>
       <div class="dialog-footer">
-        <ElButton @click="showDialog = false">取消</ElButton>
+        <ElButton @click="showDialog = false">{{ $t('button.cancel') }}</ElButton>
         <ElButton type="primary" :loading="loading" @click="handleSubmit">
-          立即反馈
+          {{ $t('button.submitFeedback') }}
         </ElButton>
       </div>
     </template>
   </ElDialog>
 </template>
+
+<style scoped>
+@media (width <= 768px) {
+  .issue-feedback-btn {
+    display: none !important;
+  }
+}
+</style>

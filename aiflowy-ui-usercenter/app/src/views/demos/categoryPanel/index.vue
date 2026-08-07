@@ -14,12 +14,13 @@
 <script setup>
 import CategoryPanel from "#/components/categoryPanel/CategoryPanel.vue";
 import { User, Message, Setting } from '@element-plus/icons-vue'
+import { $t } from '#/locales';
 
 // 示例分类数据
 const categoryData = [
-  { name: '用户管理', icon1: User },
-  { name: '消息中心', icon1: Message },
-  { name: '系统设置', icon1: Setting },
+  { name: $t('demos.categoryUserMgmt'), icon1: User },
+  { name: $t('demos.categoryMessages'), icon1: Message },
+  { name: $t('demos.categorySettings'), icon1: Setting },
 ]
 
 // 处理分类点击

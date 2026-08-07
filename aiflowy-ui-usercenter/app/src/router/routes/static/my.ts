@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     name: 'My',
     path: '/my',
     meta: {
-      title: '我的',
+      title: $t('page.my.title'),
       hideInBreadcrumb: true,
     },
     children: [
@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           icon: 'svg:asset-library',
           order: 77,
-          title: '我的素材',
+          title: $t('page.my.assetLibrary'),
         },
       },
       {
@@ -28,7 +28,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           icon: 'svg:chat-history',
           order: 80,
-          title: '聊天记录',
+          title: $t('page.my.chatHistory'),
         },
       },
       {
@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
         path: '/chatHistory/:id',
         component: () => import('#/views/chatHistory/details/index.vue'),
         meta: {
-          title: '聊天记录',
+          title: $t('page.my.chatHistory'),
           hideInMenu: true,
           hideInTab: true,
           hideInBreadcrumb: true,
@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           icon: 'svg:exec-history',
           order: 88,
-          title: '执行记录',
+          title: $t('page.my.execHistory'),
         },
       },
       {
@@ -58,7 +58,7 @@ const routes: RouteRecordRaw[] = [
         path: '/execHistory/:id',
         component: () => import('#/views/execHistory/details/index.vue'),
         meta: {
-          title: '执行记录',
+          title: $t('page.my.execHistory'),
           hideInMenu: true,
           hideInTab: true,
           hideInBreadcrumb: true,

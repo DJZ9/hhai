@@ -48,7 +48,7 @@ function handleSelectionChange(items: any[]) {
   <div class="bg-background w-full rounded-lg p-5">
     <ElTable :data="props.data" @selection-change="handleSelectionChange">
       <ElTableColumn type="selection" width="30" />
-      <ElTableColumn label="文件名称" show-overflow-tooltip :width="300">
+      <ElTableColumn :label="$t('assetLibrary.fileName')" show-overflow-tooltip :width="300">
         <template #default="{ row }">
           <div class="flex items-center gap-2.5">
             <ElAvatar
@@ -63,7 +63,7 @@ function handleSelectionChange(items: any[]) {
           </div>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="文件来源" align="center">
+      <ElTableColumn :label="$t('assetLibrary.fileSource')" align="center">
         <template #default="{ row }">
           <Tag
             size="small"
@@ -73,7 +73,7 @@ function handleSelectionChange(items: any[]) {
           />
         </template>
       </ElTableColumn>
-      <ElTableColumn label="文件类型" align="center">
+      <ElTableColumn :label="$t('assetLibrary.fileType')" align="center">
         <template #default="{ row }">
           <Tag
             size="small"
@@ -83,13 +83,13 @@ function handleSelectionChange(items: any[]) {
           />
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="fileSize" label="文件大小" align="center">
+      <ElTableColumn prop="fileSize" :label="$t('assetLibrary.fileSize')" align="center">
         <template #default="{ row }">
           {{ formatBytes(row.fileSize) }}
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="modified" label="修改时间" align="center" />
-      <ElTableColumn label="操作" width="150" align="center">
+      <ElTableColumn prop="modified" :label="$t('assetLibrary.modified')" align="center" />
+      <ElTableColumn :label="$t('assetLibrary.operation')" width="150" align="center">
         <template #default="{ row }">
           <div class="flex items-center gap-3">
             <div class="flex items-center">
@@ -99,7 +99,7 @@ function handleSelectionChange(items: any[]) {
                 type="primary"
                 @click="onPreview?.(row)"
               >
-                预览
+                {{ $t('assetLibrary.preview') }}
               </ElButton>
               <ElButton
                 class="[--el-font-weight-primary:400]"
@@ -107,7 +107,7 @@ function handleSelectionChange(items: any[]) {
                 type="primary"
                 @click="onEdit?.(row)"
               >
-                编辑
+                {{ $t('assetLibrary.edit') }}
               </ElButton>
             </div>
 
@@ -117,11 +117,11 @@ function handleSelectionChange(items: any[]) {
               <template #dropdown>
                 <ElDropdownMenu>
                   <ElDropdownItem @click="onDownload?.(row)">
-                    <ElButton :icon="Download" link>下载</ElButton>
+                    <ElButton :icon="Download" link>{{ $t('assetLibrary.download') }}</ElButton>
                   </ElDropdownItem>
                   <ElDropdownItem @click="onRemove?.(row)">
                     <ElButton type="danger" :icon="Delete" link>
-                      删除
+                      {{ $t('assetLibrary.delete') }}
                     </ElButton>
                   </ElDropdownItem>
                 </ElDropdownMenu>

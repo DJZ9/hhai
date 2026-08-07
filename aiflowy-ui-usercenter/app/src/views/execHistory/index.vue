@@ -52,7 +52,13 @@ const options = [
   },
 ];
 
-const listTitles = ['任务名称', '启动时间', '耗时', '状态', '操作'];
+const listTitles = [
+  $t('execHistory.taskName'),
+  $t('execHistory.startTime'),
+  $t('execHistory.duration'),
+  $t('execHistory.status'),
+  $t('execHistory.operation'),
+];
 
 const queryParams = ref<any>({});
 const pageRef = ref();
@@ -118,25 +124,25 @@ function getDateRange() {
   <ElContainer class="bg-background-deep h-full">
     <ElHeader class="!h-auto !p-8 !pb-0">
       <ElSpace direction="vertical" :size="24" alignment="flex-start">
-        <h1 class="text-2xl font-medium">执行记录</h1>
+        <h1 class="text-2xl font-medium">{{ $t('execHistory.title') }}</h1>
         <div class="flex items-center gap-8">
           <div class="flex items-center gap-4">
-            <span class="text-nowrap text-sm">执行状态</span>
+            <span class="text-nowrap text-sm">{{ $t('execHistory.execStatus') }}</span>
             <ElSelect
               clearable
               v-model="queryParams.status"
               :options="options"
-              placeholder="请选择执行状态"
+              :placeholder="$t('execHistory.selectExecStatus')"
               @change="search"
             />
           </div>
           <div class="flex items-center gap-4">
-            <span class="text-nowrap text-sm">智能体</span>
+            <span class="text-nowrap text-sm">{{ $t('execHistory.filterAgent') }}</span>
             <ElSelect
               class="bot-select"
               clearable
               :options="workflowList"
-              placeholder="请选择智能体"
+              :placeholder="$t('execHistory.agentPlaceholder')"
               v-model="queryParams.workflowId"
               @change="search"
               :props="{
@@ -146,13 +152,13 @@ function getDateRange() {
             />
           </div>
           <div class="flex items-center gap-4">
-            <span class="text-nowrap text-sm">筛选时间</span>
+            <span class="text-nowrap text-sm">{{ $t('execHistory.filterTime') }}</span>
             <ElDatePicker
               clearable
               type="daterange"
               v-model="dateRange"
-              start-placeholder="选择开始日期"
-              end-placeholder="选择结束日期"
+              :start-placeholder="$t('execHistory.selectStartDate')"
+              :end-placeholder="$t('execHistory.selectEndDate')"
               @change="search"
               value-format="YYYY-MM-DD"
             />
@@ -203,7 +209,7 @@ function getDateRange() {
                         type="primary"
                         @click="toDetail(record)"
                       >
-                        查看详情
+                        {{ $t('execHistory.viewDetail') }}
                       </ElButton>
 
                       <ElDropdown>
@@ -213,7 +219,7 @@ function getDateRange() {
                           <ElDropdownMenu>
                             <ElDropdownItem>
                               <ElButton type="danger" :icon="Delete" link>
-                                删除
+                                {{ $t('button.delete') }}
                               </ElButton>
                             </ElDropdownItem>
                           </ElDropdownMenu>

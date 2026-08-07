@@ -1,0 +1,14 @@
+{
+  "navHome": "首页",
+  "navDashboard": "仪表盘",
+  "navComponents": "组件",
+  "navSysAdmin": "系统管理",
+  "navPermissions": "权限管理",
+  "navCharts": "图表",
+  "greeting": "早安, {name}, 开始您一天的工作吧！",
+  "weather": "今日晴，20℃ - 32℃！",
+  "projects": "项目",
+  "latestTrends": "最新动态",
+  "quickNav": "快捷导航",
+  "todoList": "待办事项"
+}

@@ -5,6 +5,7 @@ import type { AIFlowyFormSchema } from '#/adapter/form';
 
 import { computed, onMounted, ref } from 'vue';
 
+import { $t } from '#/locales';
 import { ProfileBaseSetting } from '@aiflowy/common-ui';
 
 import { getUserInfoApi } from '#/api';
@@ -13,15 +14,15 @@ const profileBaseSettingRef = ref();
 
 const MOCK_ROLES_OPTIONS: BasicOption[] = [
   {
-    label: '管理员',
+    label: $t('profile.role.admin'),
     value: 'super',
   },
   {
-    label: '用户',
+    label: $t('profile.role.user'),
     value: 'user',
   },
   {
-    label: '测试',
+    label: $t('profile.role.test'),
     value: 'test',
   },
 ];
@@ -31,12 +32,12 @@ const formSchema = computed((): AIFlowyFormSchema[] => {
     {
       fieldName: 'realName',
       component: 'Input',
-      label: '姓名',
+      label: $t('profile.label.realName'),
     },
     {
       fieldName: 'username',
       component: 'Input',
-      label: '用户名',
+      label: $t('profile.label.username'),
     },
     {
       fieldName: 'roles',
@@ -45,12 +46,12 @@ const formSchema = computed((): AIFlowyFormSchema[] => {
         mode: 'tags',
         options: MOCK_ROLES_OPTIONS,
       },
-      label: '角色',
+      label: $t('profile.label.role'),
     },
     {
       fieldName: 'introduction',
       component: 'Textarea',
-      label: '个人简介',
+      label: $t('profile.label.introduction'),
     },
   ];
 });

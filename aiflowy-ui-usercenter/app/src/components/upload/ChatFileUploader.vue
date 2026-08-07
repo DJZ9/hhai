@@ -6,6 +6,7 @@ import { Attachments } from 'vue-element-plus-x';
 
 import { ElMessage } from 'element-plus';
 
+import { $t } from '#/locales';
 import { api } from '#/api/request';
 
 const props = defineProps({
@@ -39,7 +40,7 @@ const files = ref<SelfFilesCardProps[]>([]);
 function handleBeforeUpload(file: File) {
   const maxSizeBytes = props.maxSize * 1024 * 1024;
   if (file.size > maxSizeBytes) {
-    ElMessage.error(`文件大小不能超过 ${props.maxSize}MB!`);
+    ElMessage.error($t('upload.fileSizeLimit', { size: props.maxSize }));
     return false;
   }
   return true;
@@ -51,7 +52,7 @@ function handleBeforeUpload(file: File) {
 async function handleUploadDrop(dropFiles: File[]) {
   if (dropFiles?.length) {
     if (dropFiles[0]?.type === '') {
-      ElMessage.error('禁止上传文件夹！');
+      ElMessage.error($t('upload.noFolder'));
       return false;
     }
     for (const file of dropFiles) {
@@ -86,7 +87,7 @@ async function handleHttpRequest(options: { file: File }) {
 
     files.value.push(fileItem);
   } catch (error) {
-    ElMessage.error(`${file.name} 上传失败`);
+    ElMessage.error($t('upload.uploadFailedName', { name: file.name }));
     console.error('上传失败:', error);
   }
 }

@@ -93,7 +93,7 @@ const steps = computed(() => {
         <div
           class="bg-background flex flex-1 flex-col gap-6 overflow-hidden rounded-lg p-5"
         >
-          <h1 class="text-base font-medium">运行结果</h1>
+          <h1 class="text-base font-medium">{{ $t('execHistory.runResult') }}</h1>
           <div
             class="border-border bg-background-deep flex-1 rounded-lg border p-4"
           >
@@ -110,7 +110,7 @@ const steps = computed(() => {
         <div
           class="bg-background flex h-full flex-1 flex-col gap-6 rounded-lg p-5"
         >
-          <h1 class="text-base font-medium">执行步骤</h1>
+          <h1 class="text-base font-medium">{{ $t('aiWorkflow.steps') }}</h1>
           <WorkflowSteps
             v-if="nodeJson"
             workflow-id="workflowId"

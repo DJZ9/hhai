@@ -57,7 +57,7 @@ function checkedItems() {
       :indeterminate="isIndeterminate"
       @change="handleCheckAllChange"
     >
-      全选
+      {{ $t('assetLibrary.selectAll') }}
     </ElCheckbox>
     <ElCheckboxGroup
       class="grid w-full grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5"

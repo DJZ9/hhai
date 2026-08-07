@@ -1,0 +1,17 @@
+{
+  "title": "Asset Library",
+  "onlyOneItem": "Only one item can be operated",
+  "fileName": "File Name",
+  "fileSource": "File Source",
+  "fileType": "File Type",
+  "fileSize": "File Size",
+  "modifyTime": "Modify Time",
+  "operation": "Operation",
+  "preview": "Preview",
+  "edit": "Edit",
+  "delete": "Delete",
+  "uploadLocal": "Local Upload",
+  "download": "Download",
+  "selectAll": "Select All",
+  "modified": "Modify Time"
+}

@@ -1,0 +1,49 @@
+{
+  "tab": {
+    "basic": "基本设置",
+    "security": "安全设置",
+    "password": "修改密码",
+    "notice": "新消息提醒"
+  },
+  "label": {
+    "realName": "姓名",
+    "username": "用户名",
+    "role": "角色",
+    "introduction": "个人简介"
+  },
+  "role": {
+    "admin": "管理员",
+    "user": "用户",
+    "test": "测试"
+  },
+  "password": {
+    "oldPwd": "旧密码",
+    "oldPwdPlaceholder": "请输入旧密码",
+    "newPwd": "新密码",
+    "newPwdPlaceholder": "请输入新密码",
+    "confirmPwd": "确认密码",
+    "confirmPwdPlaceholder": "请再次输入新密码",
+    "mismatch": "两次输入的密码不一致",
+    "success": "密码修改成功"
+  },
+  "notification": {
+    "account": "账户密码",
+    "accountDesc": "其他用户的消息将以站内信的形式通知",
+    "system": "系统消息",
+    "systemDesc": "系统消息将以站内信的形式通知",
+    "todo": "待办任务",
+    "todoDesc": "待办任务将以站内信的形式通知"
+  },
+  "security": {
+    "password": "账户密码",
+    "passwordStrength": "当前密码强度：强",
+    "phone": "密保手机",
+    "phoneBound": "已绑定手机：138****8293",
+    "question": "密保问题",
+    "questionDesc": "未设置密保问题，密保问题可有效保护账户安全",
+    "email": "备用邮箱",
+    "emailBound": "已绑定邮箱：ant***sign.com",
+    "mfa": "MFA 设备",
+    "mfaDesc": "未绑定 MFA 设备，绑定后，可以进行二次确认"
+  }
+}

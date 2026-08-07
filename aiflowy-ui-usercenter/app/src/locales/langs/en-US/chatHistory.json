@@ -1,0 +1,15 @@
+{
+  "agentName": "Agent Name",
+  "topic": "Topic",
+  "createTime": "Create Time",
+  "operation": "Operation",
+  "agent": "Agent",
+  "selectAgent": "Please select agent",
+  "searchKeyword": "Search keyword",
+  "shareSuccess": "Share link copied!",
+  "deleteSuccess": "Deleted successfully",
+  "runResult": "Run Result",
+  "title": "Chat History",
+  "viewDetail": "View Details",
+  "delete": "Delete"
+}

@@ -77,7 +77,7 @@ function makeItem(item: any, index: number) {
             <img :src="fileIcon" alt="" class="h-20 w-20" />
           </div>
           <div class="text-foreground mt-3 text-center">
-            <a :href="`${item}`" target="_blank">下载</a>
+            <a :href="`${item}`" target="_blank">{{ $t('aiWorkflow.download') }}</a>
           </div>
         </div>
       </div>

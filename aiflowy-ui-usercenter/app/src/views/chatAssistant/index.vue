@@ -275,7 +275,7 @@ const toggleFold = () => {
         class="bg-background border-border flex flex-col gap-5 border-l p-5 pt-4"
       >
         <div class="flex items-center justify-between">
-          <span class="pl-2.5 text-base font-medium">智能体</span>
+          <span class="pl-2.5 text-base font-medium">{{ $t('bot.agentTitle') }}</span>
           <IconifyIcon
             icon="svg:assistant-fold"
             class="rotate-180 cursor-pointer"

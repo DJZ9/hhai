@@ -1,0 +1,14 @@
+{
+  "users": "用户量",
+  "totalUsers": "总用户量",
+  "visits": "访问量",
+  "totalVisits": "总访问量",
+  "downloads": "下载量",
+  "totalDownloads": "总下载量",
+  "usage": "使用量",
+  "totalUsage": "总使用量",
+  "trafficTrends": "流量趋势",
+  "monthlyVisits": "月访问量",
+  "visitCount": "访问数量",
+  "visitSource": "访问来源"
+}

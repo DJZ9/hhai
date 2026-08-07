@@ -21,5 +21,6 @@
     "status10": "Error",
     "status20": "Success",
     "status21": "Failed",
-    "status22": "Cancel"
+    "status22": "Cancel",
+    "batchExecHistory": "BatchExecHistory"
 }

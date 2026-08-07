@@ -1,0 +1,14 @@
+{
+  "navHome": "Home",
+  "navDashboard": "Dashboard",
+  "navComponents": "Components",
+  "navSysAdmin": "System Admin",
+  "navPermissions": "Permissions",
+  "navCharts": "Charts",
+  "greeting": "Good morning, {name}, start your day's work!",
+  "weather": "Sunny today, 20℃ - 32℃!",
+  "projects": "Projects",
+  "latestTrends": "Latest Trends",
+  "quickNav": "Quick Navigation",
+  "todoList": "Todo List"
+}

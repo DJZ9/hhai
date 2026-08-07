@@ -1,0 +1,15 @@
+{
+  "notification": {
+    "title": "System Notifications",
+    "center": "Notification Center",
+    "unreadCount": "Unread Notifications：",
+    "markAllRead": "Mark All As Read",
+    "loading": "Loading...",
+    "empty": "No Notifications",
+    "detailTitle": "Notification Detail",
+    "markReadSuccess": "Marked as read",
+    "markReadFail": "Failed to mark as read, please try again later",
+    "markAllReadSuccess": "All notifications marked as read",
+    "markAllReadFail": "Failed to mark all as read, please try again later"
+  }
+}

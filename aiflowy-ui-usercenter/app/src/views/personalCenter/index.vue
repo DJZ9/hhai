@@ -18,6 +18,7 @@ import {
 } from 'element-plus';
 import { tryit } from 'radash';
 
+import { $t } from '#/locales';
 import { api } from '#/api/request';
 import { useAuthStore } from '#/store';
 
@@ -37,10 +38,10 @@ const editing = reactive({
   mobile: false,
 });
 const rules = {
-  nickname: [{ required: true, message: '请输入用户名' }],
+  nickname: [{ required: true, message: $t('personalCenter.usernameRequired') }],
   mobile: [
-    { required: true, message: '请输入手机号' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' },
+    { required: true, message: $t('personalCenter.phoneRequired') },
+    { pattern: /^1[3-9]\d{9}$/, message: $t('personalCenter.phoneInvalid') },
   ],
 };
 
@@ -68,7 +69,7 @@ function submit(field: keyof typeof formData) {
   api.post('/userCenter/sysAccount/updateProfile', formData).then((res) => {
     btnLoading.value = false;
     if (res.errorCode === 0) {
-      ElMessage.success('修改成功');
+      ElMessage.success($t('personalCenter.updateSuccess'));
       editing[field] = false;
       useAuth.fetchUserInfo();
     }
@@ -90,7 +91,7 @@ function logout() {
       :rules="rules"
       hide-required-asterisk
     >
-      <ElFormItem label="用户名：" prop="nickname">
+      <ElFormItem :label="$t('personalCenter.username')" prop="nickname">
         <div class="flex w-full justify-between gap-5">
           <template v-if="editing.nickname">
             <ElInput v-model="formData.nickname" />
@@ -100,18 +101,18 @@ function logout() {
                 type="primary"
                 @click="handleFieldChange('nickname')"
               >
-                确定
+                {{ $t('personalCenter.confirm') }}
               </ElButton>
-              <ElButton @click="handleCancelEdit('nickname')"> 取消 </ElButton>
+              <ElButton @click="handleCancelEdit('nickname')">{{ $t('personalCenter.cancel') }}</ElButton>
             </ElSpace>
           </template>
           <template v-else>
             <span>{{ formData.nickname }}</span>
-            <ElButton @click="editing.nickname = true">编辑用户名</ElButton>
+            <ElButton @click="editing.nickname = true">{{ $t('personalCenter.editUsername') }}</ElButton>
           </template>
         </div>
       </ElFormItem>
-      <ElFormItem label="头像：">
+      <ElFormItem :label="$t('personalCenter.avatar')">
         <ElSpace>
           <ElUpload
             :action="`${apiURL}/userCenter/commons/upload`"
@@ -123,10 +124,10 @@ function logout() {
           >
             <ElAvatar :src="formData.avatar" :size="46" />
           </ElUpload>
-          <span>支持 2M 以内的 JPG 或 PNG 图片</span>
+          <span>{{ $t('personalCenter.avatarTip') }}</span>
         </ElSpace>
       </ElFormItem>
-      <ElFormItem label="手机号：" prop="mobile">
+      <ElFormItem :label="$t('personalCenter.phone')" prop="mobile">
         <div class="flex w-full justify-between gap-5">
           <template v-if="editing.mobile">
             <ElInput v-model="formData.mobile" />
@@ -136,21 +137,21 @@ function logout() {
                 type="primary"
                 @click="handleFieldChange('mobile')"
               >
-                确定
+                {{ $t('personalCenter.confirm') }}
               </ElButton>
-              <ElButton @click="handleCancelEdit('mobile')">取消</ElButton>
+              <ElButton @click="handleCancelEdit('mobile')">{{ $t('personalCenter.cancel') }}</ElButton>
             </ElSpace>
           </template>
           <template v-else>
             <span>{{ formData.mobile }}</span>
-            <ElButton @click="editing.mobile = true">修改手机号</ElButton>
+            <ElButton @click="editing.mobile = true">{{ $t('personalCenter.modifyPhone') }}</ElButton>
           </template>
         </div>
       </ElFormItem>
       <ElFormItem>
         <div class="mt-20 flex w-full justify-center">
           <ElButton @click="logout" type="primary" class="!h-11 w-[333px]">
-            退出登录
+            {{ $t('personalCenter.logout') }}
           </ElButton>
         </div>
       </ElFormItem>

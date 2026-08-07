@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { $t } from '#/locales';
 import { Profile } from '@aiflowy/common-ui';
 import { useUserStore } from '@aiflowy/stores';
 
@@ -15,19 +16,19 @@ const tabsValue = ref<string>('basic');
 
 const tabs = ref([
   {
-    label: '基本设置',
+    label: $t('profile.tab.basic'),
     value: 'basic',
   },
   {
-    label: '安全设置',
+    label: $t('profile.tab.security'),
     value: 'security',
   },
   {
-    label: '修改密码',
+    label: $t('profile.tab.password'),
     value: 'password',
   },
   {
-    label: '新消息提醒',
+    label: $t('profile.tab.notice'),
     value: 'notice',
   },
 ]);

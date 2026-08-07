@@ -20,6 +20,8 @@ import {
 
 import { api } from '#/api/request';
 
+import { $t } from '#/locales';
+
 // 定义组件props
 interface Props {
   modelValue?: string[]; // 双向绑定的图片URL数组
@@ -85,7 +87,7 @@ const headers = computed(() => ({
 
 // 默认裁剪配置
 const defaultCropConfig: CropConfig = {
-  title: '图片裁剪',
+  title: $t('upload.imageCrop'),
   outputSize: 1,
   outputType: 'png',
   info: true,
@@ -176,13 +178,13 @@ const handleFileSelect = (file: File, index: number) => {
   // 验证文件
   const isImage = file.type.startsWith('image/');
   if (!isImage) {
-    ElMessage.error('只能上传图片文件!');
+    ElMessage.error($t('upload.onlyImage'));
     return;
   }
 
   const isLtLimit = file.size / 1024 / 1024 < props.limit;
   if (!isLtLimit) {
-    ElMessage.error(`图片大小不能超过 ${props.limit}MB!`);
+    ElMessage.error($t('upload.imageSizeLimit', { limit: props.limit }));
     return;
   }
 
@@ -203,18 +205,18 @@ const handleFileSelect = (file: File, index: number) => {
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
   const isImage = rawFile.type.startsWith('image/');
   if (!isImage) {
-    ElMessage.error('只能上传图片文件!');
+    ElMessage.error($t('upload.onlyImage'));
     return false;
   }
 
   const isLtLimit = rawFile.size / 1024 / 1024 < props.limit;
   if (!isLtLimit) {
-    ElMessage.error(`图片大小不能超过 ${props.limit}MB!`);
+    ElMessage.error($t('upload.imageSizeLimit', { limit: props.limit }));
     return false;
   }
 
   if (fileList.value.length >= props.maxCount) {
-    ElMessage.error(`最多只能上传 ${props.maxCount} 个文件`);
+    ElMessage.error($t('upload.maxFileCount', { count: props.maxCount }));
     return false;
   }
 
@@ -252,13 +254,13 @@ const uploadFile = async (file: File, index: number) => {
     });
 
     if (response.errorCode !== 0) {
-      throw new Error(`上传失败: ${response.message}`);
+      throw new Error($t('upload.uploadFailed'));
     }
 
     const imageUrl = response.data.path;
 
     if (!imageUrl) {
-      throw new Error('上传成功但未返回图片URL');
+      throw new Error($t('upload.noImageUrl'));
     }
 
     // 更新文件列表
@@ -282,9 +284,9 @@ const uploadFile = async (file: File, index: number) => {
     emit('update:modelValue', urls);
     emit('uploadSuccess', imageUrl, urls);
 
-    ElMessage.success(index >= 0 ? '重新上传成功!' : '上传成功!');
+    ElMessage.success(index >= 0 ? $t('upload.reuploadSuccess') : $t('upload.uploadSuccess'));
   } catch (error) {
-    const err = error instanceof Error ? error : new Error('上传失败');
+    const err = error instanceof Error ? error : new Error($t('upload.uploadFailed'));
 
     // 重置上传状态
     if (index >= 0 && index < fileList.value.length && fileList.value[index]) {
@@ -310,13 +312,13 @@ const handleUpload: UploadRequestHandler = async (options) => {
 // 处理裁剪
 const handleCrop = () => {
   if (!cropperRef.value) {
-    ElMessage.error('裁剪器未初始化');
+    ElMessage.error($t('upload.cropperNotInit'));
     return;
   }
 
   cropperRef.value.getCropBlob(async (blob: Blob | null) => {
     if (!blob) {
-      ElMessage.error('裁剪失败，无法获取裁剪后的图片');
+      ElMessage.error($t('upload.cropFailed'));
       return;
     }
 
@@ -333,7 +335,7 @@ const handleCrop = () => {
       await uploadFile(file, currentCropIndex.value);
       showCropDialog.value = false;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('上传失败');
+      const err = error instanceof Error ? error : new Error($t('upload.uploadFailed'));
       emit('uploadError', err);
       ElMessage.error(err.message);
     } finally {
@@ -351,7 +353,7 @@ const handleRemove = (index: number) => {
   emit('update:modelValue', urls);
   emit('remove', removedUrl || '', urls);
 
-  ElMessage.success('删除成功!');
+  ElMessage.success($t('upload.deleteSuccess'));
 };
 
 // 清理URL对象
@@ -387,11 +389,11 @@ watch(showCropDialog, (newVal) => {
               @click="triggerReupload(index)"
             >
               <ElIcon><Edit /></ElIcon>
-              {{ file.uploading ? '上传中...' : '重新上传' }}
+              {{ file.uploading ? $t('upload.uploading') : $t('upload.reupload') }}
             </ElButton>
             <ElButton type="danger" text @click="handleRemove(index)">
               <ElIcon><Delete /></ElIcon>
-              删除
+              {{ $t('upload.delete') }}
             </ElButton>
           </div>
           <ElTag v-if="file.name" class="file-name" size="small">
@@ -413,8 +415,8 @@ watch(showCropDialog, (newVal) => {
           :multiple="true"
         >
           <ElIcon class="avatar-uploader-icon"><Plus /></ElIcon>
-          <div class="upload-text">点击上传</div>
-          <div class="upload-hint">最多 {{ maxCount }} 个文件</div>
+          <div class="upload-text">{{ $t('upload.clickUpload') }}</div>
+          <div class="upload-hint">{{ $t('upload.maxFiles', { count: maxCount }) }}</div>
         </ElUpload>
       </div>
     </div>
@@ -453,10 +455,10 @@ watch(showCropDialog, (newVal) => {
       <template #footer>
         <span class="dialog-footer">
           <ElButton @click="showCropDialog = false" :disabled="uploading">
-            取消
+            {{ $t('upload.cancel') }}
           </ElButton>
           <ElButton type="primary" @click="handleCrop" :loading="uploading">
-            {{ uploading ? '上传中...' : '确认裁剪' }}
+            {{ uploading ? $t('upload.uploading') : $t('upload.confirmCrop') }}
           </ElButton>
         </span>
       </template>

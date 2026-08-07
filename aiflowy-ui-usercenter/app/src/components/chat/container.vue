@@ -86,7 +86,7 @@ function getSessionList(resetSession = false) {
 provide('getSessionList', getSessionList);
 function addSession() {
   const newSession = sessionList.value.find(
-    (session: any) => session.title === '新对话' && !session.created,
+    (session: any) => session.title === $t('bot.newConversation') && !session.created,
   );
 
   if (newSession) {
@@ -97,7 +97,7 @@ function addSession() {
     api.get('/userCenter/bot/generateConversationId').then((res) => {
       const data = {
         botId: props.bot.id,
-        title: '新对话',
+        title: $t('bot.newConversation'),
         id: res.data,
       };
       sessionList.value.unshift(data);
@@ -162,7 +162,7 @@ function updateTitle() {
       updateLoading.value = false;
       if (res.errorCode === 0) {
         dialogVisible.value = false;
-        ElMessage.success('成功');
+        ElMessage.success($t('message.success'));
         getSessionList();
       }
     });
@@ -212,7 +212,7 @@ function remove(row: any) {
         class="border-border flex flex-col border-r p-5 pb-2"
       >
         <div class="flex items-center justify-between">
-          <span class="text-sm font-medium">会话</span>
+          <span class="text-sm font-medium">{{ $t('bot.session') }}</span>
           <IconifyIcon
             icon="svg:assistant-fold"
             class="cursor-pointer"
@@ -226,7 +226,7 @@ function remove(row: any) {
           plain
           @click="addSession"
         >
-          新建会话
+          {{ $t('button.newSession') }}
         </ElButton>
         <div class="mt-5 max-h-[calc(100%-98px)] overflow-auto">
           <div
@@ -249,9 +249,9 @@ function remove(row: any) {
                   currentSession.id === conversation.id && 'text-primary',
                 )
               "
-              :title="conversation.title || '未命名'"
+              :title="conversation.title || $t('bot.unnamed')"
             >
-              {{ conversation.title || '未命名' }}
+              {{ conversation.title || $t('bot.unnamed') }}
             </span>
             <span
               :class="
@@ -281,7 +281,7 @@ function remove(row: any) {
                   @mouseleave="handleMouseEvent()"
                 >
                   <ElDropdownItem @click="dialogVisible = true">
-                    <ElButton link :icon="Edit">编辑</ElButton>
+                    <ElButton link :icon="Edit">{{ $t('button.edit') }}</ElButton>
                   </ElDropdownItem>
                   <ElDropdownItem>
                     <ElButton
@@ -290,7 +290,7 @@ function remove(row: any) {
                       type="danger"
                       :icon="Delete"
                     >
-                      删除
+                      {{ $t('button.delete') }}
                     </ElButton>
                   </ElDropdownItem>
                 </ElDropdownMenu>
@@ -340,22 +340,22 @@ function remove(row: any) {
         <slot :conversation-id="currentSession.id"></slot>
       </ElMain>
     </ElContainer>
-    <ElDialog title="编辑" v-model="dialogVisible">
+    <ElDialog :title="$t('bot.editTitle')" v-model="dialogVisible">
       <div class="p-5">
         <ElForm>
           <ElFormItem>
             <ElInput
               v-model="currentSession.title"
-              placeholder="请输入会话名称"
+              :placeholder="$t('bot.inputSessionName')"
             />
           </ElFormItem>
         </ElForm>
       </div>
 
       <template #footer>
-        <ElButton @click="dialogVisible = false">取消</ElButton>
+        <ElButton @click="dialogVisible = false">{{ $t('button.cancel') }}</ElButton>
         <ElButton type="primary" @click="updateTitle" :loading="updateLoading">
-          确认
+          {{ $t('button.confirm') }}
         </ElButton>
       </template>
     </ElDialog>

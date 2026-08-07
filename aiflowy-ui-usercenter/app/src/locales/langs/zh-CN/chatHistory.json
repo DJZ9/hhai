@@ -1,0 +1,15 @@
+{
+  "agentName": "智能体名称",
+  "topic": "话题",
+  "createTime": "创建时间",
+  "operation": "操作",
+  "agent": "智能体",
+  "selectAgent": "请选择智能体",
+  "searchKeyword": "搜索关键词",
+  "shareSuccess": "分享链接复制成功！",
+  "deleteSuccess": "删除成功",
+  "runResult": "运行结果",
+  "title": "聊天记录",
+  "viewDetail": "查看详情",
+  "delete": "删除"
+}

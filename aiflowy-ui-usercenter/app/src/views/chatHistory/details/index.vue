@@ -20,6 +20,7 @@ import { tryit } from 'radash';
 import { api } from '#/api/request';
 import { ChatBubbleList } from '#/components/chat';
 import { router } from '#/router';
+import { $t } from '#/locales';
 
 const route = useRoute();
 
@@ -72,7 +73,7 @@ async function handleShare() {
   const { success, error } = await copyToClipboard(shareLink);
 
   if (success) {
-    ElMessage.success('分享链接复制成功！');
+    ElMessage.success($t('chatHistory.shareSuccess'));
   } else {
     ElMessage.error(error);
   }
@@ -83,7 +84,7 @@ async function handleDelete() {
   });
 
   if (res && res.errorCode === 0) {
-    ElMessage.success('删除成功');
+    ElMessage.success($t('chatHistory.deleteSuccess'));
     router.back();
   }
 }
@@ -135,7 +136,7 @@ async function handleDelete() {
                 :icon="Delete"
                 @click="handleDelete"
               >
-                删除
+                {{ $t('chatHistory.delete') }}
               </ElDropdownItem>
             </template>
           </ElDropdown>

@@ -1,0 +1,15 @@
+{
+  "notification": {
+    "title": "系统通知",
+    "center": "通知中心",
+    "unreadCount": "未读通知：",
+    "markAllRead": "标记全部已读",
+    "loading": "加载中...",
+    "empty": "暂无通知",
+    "detailTitle": "通知详情",
+    "markReadSuccess": "已标记为已读",
+    "markReadFail": "标记已读失败，请稍后重试",
+    "markAllReadSuccess": "全部通知已标记为已读",
+    "markAllReadFail": "标记全部已读失败，请稍后重试"
+  }
+}

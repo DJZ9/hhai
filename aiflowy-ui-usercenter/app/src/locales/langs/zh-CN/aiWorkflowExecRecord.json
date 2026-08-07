@@ -21,5 +21,6 @@
     "status10": "错误",
     "status20": "成功",
     "status21": "失败",
-    "status22": "取消"
+    "status22": "取消",
+    "batchExecHistory": "批量执行"
 }

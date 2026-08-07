@@ -111,7 +111,7 @@ function batchRemove() {
 }
 function handleOperation(type: string) {
   if (checkedItems.value.length > 1 || checkedItems.value.length === 0) {
-    ElMessage.warning('只能操作一项数据');
+    ElMessage.warning($t('assetLibrary.onlyOneItem'));
     return;
   }
   switch (type) {
@@ -134,7 +134,7 @@ function handleOperation(type: string) {
   <ElContainer class="bg-background-deep h-full">
     <ElHeader class="flex flex-col gap-6 !p-8 !pb-0" height="auto">
       <ElSpace :size="24">
-        <h1 class="text-2xl font-medium">素材库</h1>
+        <h1 class="text-2xl font-medium">{{ $t('assetLibrary.title') }}</h1>
         <!--<ElSpace
           class="rounded-lg border border-[#E6E9EE] bg-[#F8FBFE] px-3.5 py-2.5"
         >
@@ -187,7 +187,7 @@ function handleOperation(type: string) {
               :icon="View"
               @click="handleOperation('preview')"
             >
-              预览
+              {{ $t('assetLibrary.preview') }}
             </ElButton>
             <ElButton
               class="[--el-font-weight-primary:400]"
@@ -195,7 +195,7 @@ function handleOperation(type: string) {
               :icon="EditPen"
               @click="handleOperation('edit')"
             >
-              编辑
+              {{ $t('assetLibrary.edit') }}
             </ElButton>
             <ElButton
               class="[--el-font-weight-primary:400]"
@@ -203,11 +203,11 @@ function handleOperation(type: string) {
               :icon="Delete"
               @click="batchRemove"
             >
-              删除
+              {{ $t('assetLibrary.delete') }}
             </ElButton>
           </div>
           <ElButton type="primary" :icon="Plus" @click="showDialog({})">
-            本地上传
+            {{ $t('assetLibrary.uploadLocal') }}
           </ElButton>
         </div>
       </div>

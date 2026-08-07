@@ -110,7 +110,7 @@ function onAsyncExecute(info: any) {
           </Card>
           <RouterLink to="/execHistory">
             <ElButton type="primary" size="large" round plain>
-              执行记录
+              {{ $t('bot.execRecord') }}
             </ElButton>
           </RouterLink>
         </div>
@@ -122,7 +122,7 @@ function onAsyncExecute(info: any) {
           width="366px"
           class="border-border bg-background flex flex-col gap-6 rounded-lg border p-5"
         >
-          <h1 class="text-base font-medium">输入参数</h1>
+          <h1 class="text-base font-medium">{{ $t('bot.inputParams') }}</h1>
           <WorkflowForm
             v-if="runParams && tinyFlowData"
             ref="workflowForm"
@@ -137,7 +137,7 @@ function onAsyncExecute(info: any) {
           <div
             class="border-border bg-background flex h-full flex-col gap-6 rounded-lg border p-5"
           >
-            <h1 class="text-base font-medium">执行步骤</h1>
+            <h1 class="text-base font-medium">{{ $t('bot.execSteps') }}</h1>
             <WorkflowSteps
               v-if="tinyFlowData"
               :workflow-id="workflowId"
@@ -151,7 +151,7 @@ function onAsyncExecute(info: any) {
         <div
           class="bg-background border-border flex flex-1 flex-col gap-6 rounded-lg border p-5"
         >
-          <h1 class="text-base font-medium">运行结果</h1>
+          <h1 class="text-base font-medium">{{ $t('bot.runResult') }}</h1>
           <div
             class="bg-background-deep border-border flex-1 rounded-lg border p-4"
           >

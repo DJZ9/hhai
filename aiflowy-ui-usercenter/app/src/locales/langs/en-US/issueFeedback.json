@@ -1,0 +1,16 @@
+{
+  "title": "Issue Feedback",
+  "feedbackType": "Issue Type",
+  "selectType": "Please select issue type",
+  "feedbackContent": "Issue Desc",
+  "describeIssue": "Please briefly describe the issue",
+  "contactInfo": "Contact Info",
+  "contactPlaceholder": "Please leave your phone/email",
+  "uploadAttachment": "Upload file",
+  "required": "This field is required",
+  "malfunction": "Malfunction",
+  "suggestion": "Suggestion",
+  "accountIssue": "Account Issue",
+  "other": "Other",
+  "success": "Feedback submitted!"
+}

@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+import { $t } from '#/locales';
+
 const routes: RouteRecordRaw[] = [
   {
     name: 'Workflow',
@@ -8,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'svg:bot',
       order: 33,
-      title: '智能体',
+      title: $t('bot.title'),
     },
   },
   {
@@ -16,7 +18,7 @@ const routes: RouteRecordRaw[] = [
     path: '/workflow/:id',
     component: () => import('#/views/bots/bot/index.vue'),
     meta: {
-      title: '智能体',
+      title: $t('bot.title'),
       hideInMenu: true,
       hideInTab: true,
       hideInBreadcrumb: true,

@@ -176,7 +176,7 @@ const stopThinking = () => {
           :icon="Plus"
           @click="addBotToRecentlyUsed(botInfo.id)"
         >
-          添加到我的智能体
+        {{ $t('bot.addToMyAgents') }}
         </ElButton>
         <ElButton
           v-else
@@ -186,7 +186,7 @@ const stopThinking = () => {
           :icon="Minus"
           @click="removeBotFromRecentlyUsed(botInfo.id)"
         >
-          从我的智能体移除
+          {{ $t('bot.removeFromMyAgents') }}
         </ElButton>
       </Card>
     </ElAside>

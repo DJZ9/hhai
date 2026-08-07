@@ -1,0 +1,49 @@
+{
+  "tab": {
+    "basic": "Basic Settings",
+    "security": "Security Settings",
+    "password": "Change Password",
+    "notice": "Notifications"
+  },
+  "label": {
+    "realName": "Name",
+    "username": "Username",
+    "role": "Role",
+    "introduction": "Introduction"
+  },
+  "role": {
+    "admin": "Admin",
+    "user": "User",
+    "test": "Test"
+  },
+  "password": {
+    "oldPwd": "Old Password",
+    "oldPwdPlaceholder": "Please enter old password",
+    "newPwd": "New Password",
+    "newPwdPlaceholder": "Please enter new password",
+    "confirmPwd": "Confirm Password",
+    "confirmPwdPlaceholder": "Please re-enter new password",
+    "mismatch": "Passwords do not match",
+    "success": "Password changed successfully"
+  },
+  "notification": {
+    "account": "Account Password",
+    "accountDesc": "Notifications from other users will be sent as in-app messages",
+    "system": "System Messages",
+    "systemDesc": "System messages will be sent as in-app messages",
+    "todo": "Todo Tasks",
+    "todoDesc": "Todo tasks will be sent as in-app messages"
+  },
+  "security": {
+    "password": "Account Password",
+    "passwordStrength": "Current password strength: Strong",
+    "phone": "Security Phone",
+    "phoneBound": "Bound phone: 138****8293",
+    "question": "Security Question",
+    "questionDesc": "Security question is not set. Security questions can effectively protect your account",
+    "email": "Backup Email",
+    "emailBound": "Bound email: ant***sign.com",
+    "mfa": "MFA Device",
+    "mfaDesc": "MFA device is not bound. After binding, secondary confirmation can be performed"
+  }
+}

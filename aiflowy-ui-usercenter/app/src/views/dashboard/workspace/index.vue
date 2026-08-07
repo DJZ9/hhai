@@ -21,6 +21,8 @@ import { preferences } from '@aiflowy/preferences';
 import { useUserStore } from '@aiflowy/stores';
 import { openWindow } from '@aiflowy/utils';
 
+import { $t } from '#/locales';
+
 import AnalyticsVisitsSource from '../analytics/analytics-visits-source.vue';
 
 const userStore = useUserStore();
@@ -239,9 +241,9 @@ function navTo(nav: WorkbenchProjectItem | WorkbenchQuickNavItem) {
       :avatar="userStore.userInfo?.avatar || preferences.app.defaultAvatar"
     >
       <template #title>
-        早安, {{ userStore.userInfo?.realName }}, 开始您一天的工作吧！
+        {{ $t('workspace.greeting', { name: userStore.userInfo?.realName }) }}
       </template>
-      <template #description> 今日晴，20℃ - 32℃！ </template>
+      <template #description> {{ $t('workspace.weather') }} </template>
     </WorkbenchHeader>
 
     <div class="mt-5 flex flex-col lg:flex-row">

@@ -18,5 +18,8 @@
     "steps": "Steps",
     "result": "Result",
     "confirm": "For contents to be confirmed, please confirm first!",
-    "completed": "Chain has been completed, please start a new one."
+    "completed": "Chain has been completed, please start a new one.",
+    "inputParams": "Input Params",
+  "runResult": "Run Result",
+  "download": "Download"
 }

@@ -7,6 +7,7 @@ import { Search } from '@element-plus/icons-vue';
 import { ElContainer, ElHeader, ElInput, ElMain, ElSpace } from 'element-plus';
 
 import { api } from '#/api/request';
+import { $t } from '#/locales';
 import defaultBotAvatar from '#/assets/ai/workflow/workflowIcon.png';
 import {
   Card,
@@ -58,10 +59,10 @@ function handleTagClick(tag: any) {
   <ElContainer class="bg-background-deep h-full">
     <ElHeader class="!h-auto !p-8 !pb-0">
       <ElSpace direction="vertical" :size="24" alignment="flex-start">
-        <h1 class="text-2xl font-medium">智能体</h1>
+        <h1 class="text-2xl font-medium">{{ $t('bot.title') }}</h1>
         <ElSpace :size="20">
           <ElInput
-            placeholder="搜索"
+            :placeholder="$t('bot.searchPlaceholder')"
             v-model="queryParams.title"
             @keyup.enter="getWorkflowList"
             :prefix-icon="Search"

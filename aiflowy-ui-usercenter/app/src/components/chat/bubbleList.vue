@@ -12,6 +12,7 @@ import { ElAvatar, ElCollapse, ElCollapseItem, ElIcon } from 'element-plus';
 import defaultAssistantAvatar from '#/assets/defaultAssistantAvatar.svg';
 import defaultUserAvatar from '#/assets/defaultUserAvatar.png';
 import ShowJson from '#/components/json/ShowJson.vue';
+import { $t } from '#/locales';
 
 interface Props {
   bot: any;
@@ -84,7 +85,7 @@ defineExpose({ scrollBottom });
                         <ElIcon size="16">
                           <IconifyIcon icon="mdi:clock-time-five-outline" />
                         </ElIcon>
-                        <span>工具调用中...</span>
+                        <span>{{ $t('bot.toolCalling') }}</span>
                       </div>
                     </template>
                     <template v-else>
@@ -94,17 +95,17 @@ defineExpose({ scrollBottom });
                         <ElIcon size="16" color="var(--el-color-success)">
                           <CircleCheck />
                         </ElIcon>
-                        <span>调用成功</span>
+                        <span>{{ $t('bot.callSuccess') }}</span>
                       </div>
                     </template>
                   </div>
                 </template>
                 <div class="border-border flex flex-col gap-1 border-t pt-2">
-                  <span class="ml-2">参数：</span>
+                  <span class="ml-2">{{ $t('bot.paramsLabel') }}</span>
                   <ShowJson :value="chain.arguments" />
                 </div>
                 <div class="mt-2 flex flex-col gap-1">
-                  <span class="ml-2">结果：</span>
+                  <span class="ml-2">{{ $t('bot.resultLabel') }}</span>
                   <ShowJson :value="chain.result" />
                 </div>
               </ElCollapseItem>

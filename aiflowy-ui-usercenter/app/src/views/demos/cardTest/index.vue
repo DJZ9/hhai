@@ -26,6 +26,7 @@ import {Upload, Edit, Plus, Delete, View, Share, Download} from '@element-plus/i
 
 import CardPage from "#/components/cardPage/CardPage.vue";
 import PageData from "#/components/page/PageData.vue";
+import { $t } from '#/locales';
 
 // 用户数据
 const userList = ref([])
@@ -38,37 +39,37 @@ const pageSize = ref(5)
 const actions = ref([
   {
     name: 'edit',
-    label: '编辑',
+    label: $t('demos.actionEdit'),
     type: 'primary',
     icon: markRaw(Edit)
   },
   {
     name: 'view',
-    label: '查看',
+    label: $t('demos.actionView'),
     type: 'success',
     icon: markRaw(View)
   },
   {
     name: 'delete',
-    label: '删除',
+    label: $t('demos.actionDelete'),
     type: 'danger',
     icon: markRaw(Delete)
   },
   {
     name: 'share',
-    label: '分享',
+    label: $t('demos.actionShare'),
     type: 'info',
     icon: markRaw(Share)
   },
   {
     name: 'download',
-    label: '下载',
+    label: $t('demos.actionDownload'),
     type: 'warning',
     icon: markRaw(Download)
   },
   {
     name: 'download',
-    label: '下载',
+    label: $t('demos.actionDownload'),
     type: 'warning',
     icon: markRaw(Download)
   }

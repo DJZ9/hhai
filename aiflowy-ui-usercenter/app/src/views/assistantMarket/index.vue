@@ -45,7 +45,7 @@ function getCategoryList() {
     categories.value = [
       {
         id: '',
-        categoryName: '全部',
+        categoryName: $t('bot.all'),
       },
       ...res.data,
     ];
@@ -110,10 +110,10 @@ function removeBotFromRecentlyUsed(botId: any) {
   <ElContainer class="bg-background-deep h-full">
     <ElHeader class="!h-auto !p-8 !pb-0">
       <ElSpace direction="vertical" :size="24" alignment="flex-start">
-        <h1 class="text-2xl font-medium">智能体中心</h1>
+        <h1 class="text-2xl font-medium">{{ $t('bot.marketTitle') }}</h1>
         <ElSpace :size="20">
           <ElInput
-            placeholder="搜索"
+            :placeholder="$t('bot.searchPlaceholder')"
             v-model="queryParams.title"
             @keyup.enter="getBotList"
             :prefix-icon="Search"
@@ -176,7 +176,7 @@ function removeBotFromRecentlyUsed(botId: any) {
               plain
               @click="addBotToRecentlyUsed(assistant.id)"
             >
-              添加到我的智能体
+              {{ $t('bot.addToMyAgents') }}
             </ElButton>
             <ElButton
               v-else
@@ -187,7 +187,7 @@ function removeBotFromRecentlyUsed(botId: any) {
               plain
               @click="removeBotFromRecentlyUsed(assistant.id)"
             >
-              从我的智能体移除
+              {{ $t('bot.removeFromMyAgents') }}
             </ElButton>
 
             <ElButton
@@ -199,7 +199,7 @@ function removeBotFromRecentlyUsed(botId: any) {
               <template #icon>
                 <IconifyIcon icon="mdi:play-outline" />
               </template>
-              立即体验
+              {{ $t('bot.tryNow') }}
             </ElButton>
           </div>
 

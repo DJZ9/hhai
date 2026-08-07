@@ -11,5 +11,20 @@
     "title": "Dashboard",
     "analytics": "Analytics",
     "workspace": "Workspace"
-  }
+  },
+  "my": {
+    "title": "My",
+    "assetLibrary": "My Assets",
+    "sysDocument": "My Documents",
+    "chatHistory": "Chat History",
+    "execHistory": "Execution History",
+    "batchExecHistory": "Batch Execution",
+    "batchExecDetails": "Batch Execution Details",
+    "execDetails": "Execution Details",
+    "profile": "Profile",
+    "agent": "My Agent",
+    "editDocument": "Edit Document"
+  },
+  "assistantMarket": "Agent Center",
+  "workflow": "Workflow"
 }

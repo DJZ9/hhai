@@ -1,0 +1,17 @@
+{
+  "title": "素材库",
+  "onlyOneItem": "只能操作一项数据",
+  "fileName": "文件名称",
+  "fileSource": "文件来源",
+  "fileType": "文件类型",
+  "fileSize": "文件大小",
+  "modifyTime": "修改时间",
+  "operation": "操作",
+  "preview": "预览",
+  "edit": "编辑",
+  "delete": "删除",
+  "uploadLocal": "本地上传",
+  "download": "下载",
+  "selectAll": "全选",
+  "modified": "修改时间"
+}

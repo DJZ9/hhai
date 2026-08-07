@@ -1,0 +1,16 @@
+{
+  "title": "问题反馈",
+  "feedbackType": "问题类型",
+  "selectType": "请选择问题类型",
+  "feedbackContent": "问题描述",
+  "describeIssue": "请简要描述下您所遇到的问题",
+  "contactInfo": "联系方式",
+  "contactPlaceholder": "请留下手机号/邮箱",
+  "uploadAttachment": "上传附件",
+  "required": "此为必填项",
+  "malfunction": "功能故障",
+  "suggestion": "优化建议",
+  "accountIssue": "账号问题",
+  "other": "其它",
+  "success": "反馈成功！"
+}

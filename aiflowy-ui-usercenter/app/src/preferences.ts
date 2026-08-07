@@ -10,7 +10,7 @@ export const overridesPreferences = defineOverridesPreferences({
   app: {
     name: import.meta.env.VITE_APP_TITLE,
     accessMode: 'mixed',
-    defaultHomePath: '/workflow',
+    defaultHomePath: '/chatAssistant',
     enablePreferences: false,
   },
   breadcrumb: {
@@ -19,7 +19,7 @@ export const overridesPreferences = defineOverridesPreferences({
   widget: {
     timezone: false,
     globalSearch: false,
-    languageToggle: false,
+    languageToggle: true,
   },
   theme: {
     mode: 'light',

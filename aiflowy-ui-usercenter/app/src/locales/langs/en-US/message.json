@@ -24,5 +24,6 @@
   "downloadFail": "Download fail",
   "copySuccess": "Copy success",
   "copyFail": "Copy fail",
-  "clickOrDrop": "Click or drag and drop files here to upload"
+  "clickOrDrop": "Click or drag and drop files here to upload",
+  "noEloam": "No scanner detected"
 }

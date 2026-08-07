@@ -5,5 +5,12 @@
   "history": "History",
   "noDataAvailable": "No data available",
   "isRequired": " is required",
-  "avatar": "Avatar"
+  "avatar": "Avatar",
+  "otherLoginType": "Other Login Methods",
+  "voice": {
+    "httpsRequired": "Voice requires HTTPS secure connection, recording is not supported on this page",
+    "micPermissionDenied": "Microphone permission denied, please allow microphone access in browser settings",
+    "micPermissionFailed": "Failed to access microphone, please check browser settings",
+    "recognitionFailed": "Speech recognition failed"
+  }
 }

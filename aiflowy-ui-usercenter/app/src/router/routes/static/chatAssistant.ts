@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+import { $t } from '#/locales';
+
 const routes: RouteRecordRaw[] = [
   {
     name: 'ChatAssistant',
@@ -8,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'svg:chat-assistant',
       order: 22,
-      title: '我的智能体',
+      title: $t('page.my.agent'),
     },
   },
 ];
