@@ -62,9 +62,11 @@ const selectedId = ref<string>('');
 const llmConfig = ref({
   maxMessageCount: 0,
   maxReplyLength: 0,
+  maxReplyLengthEnabled: false,
   temperature: 0,
-  topK: 0,
+  temperatureEnabled: false,
   topP: 0,
+  topPEnabled: false,
 });
 const dialogueSettings = ref({
   welcomeMessage: '',
@@ -208,7 +210,7 @@ const handleLlmChange = async (value: string) => {
   }
 };
 const handleLlmOptionsChange = useDebounceFn(
-  (key: keyof typeof llmConfig.value, value: number) => {
+  (key: keyof typeof llmConfig.value, value: number | boolean) => {
     updateLlmOptions({
       id: props.bot?.id || '',
       llmOptions: {
