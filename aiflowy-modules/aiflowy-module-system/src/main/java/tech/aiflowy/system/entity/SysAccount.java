@@ -1,14 +1,16 @@
 package tech.aiflowy.system.entity;
 
 import cn.hutool.core.bean.BeanUtil;
-import tech.aiflowy.common.entity.LoginAccount;
-import tech.aiflowy.system.entity.base.SysAccountBase;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.mybatisflex.annotation.RelationManyToMany;
 import com.mybatisflex.annotation.Table;
+import tech.aiflowy.common.entity.LoginAccount;
+import tech.aiflowy.system.entity.base.SysAccountBase;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户表 实体类。
@@ -67,5 +69,35 @@ public class SysAccount extends SysAccountBase {
         LoginAccount loginAccount = new LoginAccount();
         BeanUtil.copyProperties(this, loginAccount);
         return loginAccount;
+    }
+
+    /**
+     * 获取元数据的键值对 Map
+     * 解析 metaData Map，提取 value 字段，忽略 description
+     *
+     * @return 键值对 Map，key 为变量名，value 为变量值
+     */
+    public Map<String, Object> getMetadataMap() {
+        Map<String, Object> metaDataMap = getMetaData();
+        if (metaDataMap == null || metaDataMap.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        for (Map.Entry<String, Object> entry : metaDataMap.entrySet()) {
+            Object val = entry.getValue();
+            if (val instanceof Map) {
+                // 格式: {"key": {"value": "xxx", "description": "yyy"}}
+                Map<?, ?> valMap = (Map<?, ?>) val;
+                Object valueObj = valMap.get("value");
+                if (valueObj != null) {
+                    result.put(entry.getKey(), valueObj.toString());
+                }
+            } else if (val != null) {
+                // 格式: {"key": "xxx"}
+                result.put(entry.getKey(), val.toString());
+            }
+        }
+        return result;
     }
 }

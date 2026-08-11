@@ -3,9 +3,11 @@ package tech.aiflowy.ai.entity.base;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
+import com.mybatisflex.core.handler.FastjsonTypeHandler;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Map;
 import tech.aiflowy.common.entity.DateEntity;
 
 
@@ -43,11 +45,41 @@ public class BotConversationBase extends DateEntity implements Serializable {
     @Column(comment = "创建时间")
     private Date created;
 
+    /**
+     * 创建者Id
+     */
+    @Column(comment = "创建者Id")
     private BigInteger createdBy;
 
+    /**
+     * 修改者
+     */
+    @Column(comment = "修改者")
     private Date modified;
 
+    /**
+     * 修改者id
+     */
+    @Column(comment = "修改者id")
     private BigInteger modifiedBy;
+
+    /**
+     * 选项
+     */
+    @Column(typeHandler = FastjsonTypeHandler.class, comment = "选项")
+    private Map<String, Object> options;
+
+    /**
+     * 系统提示词
+     */
+    @Column(comment = "系统提示词")
+    private String systemPrompt;
+
+    /**
+     * 用户变量表单
+     */
+    @Column(typeHandler = FastjsonTypeHandler.class, comment = "用户变量表单")
+    private Map<String, Object> variablesFormOptions;
 
     public BigInteger getId() {
         return id;
@@ -111,6 +143,30 @@ public class BotConversationBase extends DateEntity implements Serializable {
 
     public void setModifiedBy(BigInteger modifiedBy) {
         this.modifiedBy = modifiedBy;
+    }
+
+    public Map<String, Object> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, Object> options) {
+        this.options = options;
+    }
+
+    public String getSystemPrompt() {
+        return systemPrompt;
+    }
+
+    public void setSystemPrompt(String systemPrompt) {
+        this.systemPrompt = systemPrompt;
+    }
+
+    public Map<String, Object> getVariablesFormOptions() {
+        return variablesFormOptions;
+    }
+
+    public void setVariablesFormOptions(Map<String, Object> variablesFormOptions) {
+        this.variablesFormOptions = variablesFormOptions;
     }
 
 }

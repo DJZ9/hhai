@@ -1,6 +1,7 @@
 package tech.aiflowy.ai.agentsflex.memory;
 
 import com.agentsflex.core.memory.ChatMemory;
+import com.agentsflex.core.message.AiMessage;
 import com.agentsflex.core.message.Message;
 import com.agentsflex.core.util.CollectionUtil;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -15,6 +16,8 @@ public class BotMessageMemory implements ChatMemory {
     private final BigInteger accountId;
     private final BigInteger conversationId;
     private final BotMessageService messageService;
+
+    private BigInteger lastAiMessageId;
     
     public BotMessageMemory(BigInteger botId, BigInteger accountId, BigInteger conversationId,
                             BotMessageService messageService) {
@@ -58,7 +61,15 @@ public class BotMessageMemory implements ChatMemory {
         dbMessage.setConversationId(conversationId);
         dbMessage.setContentAndRole(message);
         dbMessage.setModified(new Date());
+
+        if (message instanceof AiMessage) {
+            this.lastAiMessageId = dbMessage.getId();
+        }
         messageService.save(dbMessage);
+    }
+
+    public BigInteger getLastAiMessageId() {
+        return lastAiMessageId;
     }
 
     @Override

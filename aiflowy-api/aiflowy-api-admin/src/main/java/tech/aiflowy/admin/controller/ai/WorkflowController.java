@@ -29,7 +29,7 @@ import tech.aiflowy.common.web.jsonbody.JsonBody;
 import tech.aiflowy.system.service.SysApiKeyService;
 import tech.aiflowy.system.service.SysOptionService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigInteger;

@@ -41,7 +41,7 @@ import tech.aiflowy.common.util.FileUtil;
 import tech.aiflowy.common.util.StringUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;

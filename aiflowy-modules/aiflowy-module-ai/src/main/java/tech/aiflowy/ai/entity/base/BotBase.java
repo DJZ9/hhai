@@ -111,6 +111,13 @@ public class BotBase extends DateEntity implements Serializable {
     @Column(comment = "修改者ID")
     private BigInteger modifiedBy;
 
+    /**
+     * 数据权限类型, 0-所有人可见，1-指定部门可见
+     */
+    @Column(comment = "数据权限类型, 0-所有人可见，1-指定部门可见")
+    private Integer authType;
+
+
     public BigInteger getId() {
         return id;
     }
@@ -237,6 +244,14 @@ public class BotBase extends DateEntity implements Serializable {
 
     public void setModifiedBy(BigInteger modifiedBy) {
         this.modifiedBy = modifiedBy;
+    }
+
+    public Integer getAuthType() {
+        return authType;
+    }
+
+    public void setAuthType(Integer authType) {
+        this.authType = authType;
     }
 
 }

@@ -7,7 +7,7 @@ import tech.aiflowy.common.audio.config.AudioConfig;
 import tech.aiflowy.common.audio.impl.ali.AliAudioClient;
 import tech.aiflowy.common.util.SpringContextUtil;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.InputStream;
 
 @Component

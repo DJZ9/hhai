@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.utils.DocUtil;
 import tech.aiflowy.common.constant.CacheKey;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedList;

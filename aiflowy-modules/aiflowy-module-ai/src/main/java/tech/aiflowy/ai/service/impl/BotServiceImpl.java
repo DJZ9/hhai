@@ -11,7 +11,14 @@ import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
 import com.agentsflex.core.model.chat.StreamResponseListener;
 import com.agentsflex.core.model.chat.tool.Tool;
+import com.agentsflex.core.model.chat.tool.ToolScanner;
 import com.agentsflex.core.prompt.MemoryPrompt;
+import com.agentsflex.tool.todowrite.TodoWriteTool;
+import com.agentsflex.tool.webfetch.WebFetchTool;
+import com.agentsflex.websearch.WebSearchTool;
+import com.agentsflex.websearch.baidu.BaiduQianfanSearchProvider;
+import com.agentsflex.websearch.bocha.BochaSearchProvider;
+import com.agentsflex.websearch.brave.BraveSearchProvider;
 import com.agentsflex.wiki.WikiTool;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -32,7 +39,9 @@ import tech.aiflowy.ai.entity.*;
 import tech.aiflowy.ai.mapper.BotMapper;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.utils.CustomBeanUtils;
+import tech.aiflowy.ai.utils.EventUtil;
 import tech.aiflowy.ai.utils.RegexUtils;
+import tech.aiflowy.common.entity.LoginAccount;
 import tech.aiflowy.common.filestorage.FileStorageService;
 import tech.aiflowy.common.filestorage.utils.PathGeneratorUtil;
 import tech.aiflowy.common.satoken.util.SaTokenUtil;
@@ -42,6 +51,8 @@ import tech.aiflowy.common.util.UrlEncoderUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseEmitter;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
+import tech.aiflowy.system.entity.SysOption;
+import tech.aiflowy.system.service.SysOptionService;
 import tech.aiflowy.wiki.agentsflex.AIFlowyWikiProvider;
 import tech.aiflowy.wiki.entity.BotWiki;
 import tech.aiflowy.wiki.entity.Wiki;
@@ -115,6 +126,8 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     private BotWikiService botWikiService;
     @Resource
     private AIFlowyWikiProvider aiFlowyWikiProvider;
+    @Resource
+    private SysOptionService sysOptionService;
 
     @Override
     public Bot getDetail(String id) {
@@ -164,7 +177,10 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         if (model == null) {
             return ChatSseUtil.sendSystemError(conversationId, "模型不存在，请检查配置");
         }
-        ChatModel chatModel = model.toChatModel();
+        Maps customProps = Maps.of("botId", botId);
+        // REMOVE_TAG_START:COMMERCIAL
+        EventUtil.setAccount(customProps);
+        ChatModel chatModel = model.toChatModel(customProps);
         if (chatModel == null) {
             return ChatSseUtil.sendSystemError(conversationId, "对话模型获取失败，请检查配置");
         }
@@ -179,6 +195,8 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     @Override
     public SseEmitter startChat(BigInteger botId, String prompt, BigInteger conversationId, List<Map<String, String>> messages,
                                 BotServiceImpl.ChatCheckResult chatCheckResult, List<String> attachments) {
+        // 获取当前登录用户信息，传递给 ChatStreamListener
+        LoginAccount currentUser = SaTokenUtil.getLoginAccount();
         Map<String, Object> modelOptions = chatCheckResult.getModelOptions();
         ChatModel chatModel = chatCheckResult.getChatModel();
         final MemoryPrompt memoryPrompt = new MemoryPrompt();
@@ -209,11 +227,45 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
             memoryPrompt.setMemory(memory);
         }
         memoryPrompt.addMessage(userMessage);
+        BigInteger accountId = SaTokenUtil.getLoginAccount().getId();
+        chatOptions.setContextAccountId(accountId);
+        // 判断是否启用了其他技能工具
+        Map<String, Object> botOptions = chatCheckResult.getAiBot().getOptions();
+        Map<String, Object> otherSkillsMap = null;
+        if (botOptions != null) {
+            Object otherSkillsObj = botOptions.get("otherSkills");
+            if (otherSkillsObj instanceof Map<?, ?> otherSkills) {
+                otherSkillsMap = (Map<String, Object>) otherSkills;
+                // 搜索引擎工具
+                Object webSearchEnabled = otherSkills.get("webSearchEnabled");
+                if (Boolean.TRUE.equals(webSearchEnabled)) {
+                    addWebSearchTool(memoryPrompt, otherSkillsMap);
+                }
+                // 网页抓取工具
+                Object webFetchEnabled = otherSkills.get("webFetchEnabled");
+                if (Boolean.TRUE.equals(webFetchEnabled)) {
+                    memoryPrompt.addTools(ToolScanner.scan(WebFetchTool.builder().useDefaultProviders().build()));
+                }
+                // 任务分解工具
+                Object todoWriteEnabled = otherSkills.get("todoWriteEnabled");
+                if (Boolean.TRUE.equals(todoWriteEnabled)) {
+                    memoryPrompt.addTools(ToolScanner.scan(TodoWriteTool.builder().build()));
+                }
+            }
+        }
+
+        Map<String, Object> buildParams = Maps.of("botId", botId)
+                .set("needAccountId", true)
+                .set("accountId", accountId)
+                .set("chatModel", chatModel)
+                .set("conversationId", conversationId);
+        memoryPrompt.addTools(buildFunctionList(buildParams));
+
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         threadPoolTaskExecutor.execute(() -> {
             ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
             RequestContextHolder.setRequestAttributes(sra, true);
-            StreamResponseListener streamResponseListener = new ChatStreamListener(conversationId.toString(), chatModel, memoryPrompt, chatSseEmitter, chatOptions);
+            StreamResponseListener streamResponseListener = new ChatStreamListener(botId.toString(), null, String.valueOf(conversationId), chatModel, memoryPrompt, chatSseEmitter, chatOptions, true, currentUser);
             chatModel.chatStream(memoryPrompt, streamResponseListener, chatOptions);
         });
 
@@ -227,6 +279,8 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
      */
     @Override
     public SseEmitter startPublicChat(BigInteger botId, String prompt,  List<Message> messages, BotServiceImpl.ChatCheckResult chatCheckResult) {
+        // 获取当前登录用户信息，传递给 ChatStreamListener
+        LoginAccount currentUser = SaTokenUtil.getLoginAccount();
         Map<String, Object> modelOptions = chatCheckResult.getModelOptions();
         ChatOptions chatOptions = getChatOptions(modelOptions);
         ChatModel chatModel = chatCheckResult.getChatModel();
@@ -245,7 +299,8 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
         threadPoolTaskExecutor.execute(() -> {
             RequestContextHolder.setRequestAttributes(sra, true);
-            StreamResponseListener streamResponseListener = new ChatStreamListener(chatCheckResult.getConversationIdStr(), chatModel, memoryPrompt, chatSseEmitter, chatOptions);
+            StreamResponseListener streamResponseListener = new ChatStreamListener(botId.toString(), null, chatCheckResult.getConversationIdStr(), chatModel, memoryPrompt, chatSseEmitter, chatOptions, true, currentUser);
+//            StreamResponseListener streamResponseListener = new ChatStreamListener(chatCheckResult.getConversationIdStr(), chatModel, memoryPrompt, chatSseEmitter, chatOptions);
             chatModel.chatStream(memoryPrompt, streamResponseListener, chatOptions);
         });
 
@@ -288,24 +343,29 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     public static ChatOptions getChatOptions(Map<String, Object> llmOptions) {
         ChatOptions defaultOptions = new ChatOptions();
         if (llmOptions != null) {
-            Object topK = llmOptions.get("topK");
-            Object maxReplyLength = llmOptions.get("maxReplyLength");
-            Object temperature = llmOptions.get("temperature");
-            Object topP = llmOptions.get("topP");
-            Object thinkingEnabled = llmOptions.get("thinkingEnabled");
 
-            if (topK != null) {
-                defaultOptions.setTopK(Integer.parseInt(String.valueOf(topK)));
-            }
-            if (maxReplyLength != null) {
-                defaultOptions.setMaxTokens(Integer.parseInt(String.valueOf(maxReplyLength)));
-            }
-            if (temperature != null) {
+            // 温度参数：检查是否启用
+            Object temperatureEnabled = llmOptions.get("temperatureEnabled");
+            Object temperature = llmOptions.get("temperature");
+            if (Boolean.TRUE.equals(temperatureEnabled) && temperature != null) {
                 defaultOptions.setTemperature(Float.parseFloat(String.valueOf(temperature)));
             }
-            if (topP != null) {
+
+            // TopP参数，检查是否启用
+            Object topPEnabled = llmOptions.get("topPEnabled");
+            Object topP = llmOptions.get("topP");
+            if (Boolean.TRUE.equals(topPEnabled) && topP != null) {
                 defaultOptions.setTopP(Float.parseFloat(String.valueOf(topP)));
             }
+
+            // 最大回复长度：检查是否启用
+            Object maxReplyLengthEnabled = llmOptions.get("maxReplyLengthEnabled");
+            Object maxReplyLength = llmOptions.get("maxReplyLength");
+            if (Boolean.TRUE.equals(maxReplyLengthEnabled) && maxReplyLength != null) {
+                defaultOptions.setMaxTokens(Integer.parseInt(String.valueOf(maxReplyLength)));
+            }
+
+            Object thinkingEnabled = llmOptions.get("thinkingEnabled");
             if (thinkingEnabled != null) {
                 defaultOptions.setThinkingEnabled(Boolean.parseBoolean(String.valueOf(thinkingEnabled)));
             }
@@ -426,6 +486,78 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
             }
         }
         return messageBuilder.toString();
+    }
+
+    /**
+     * 添加搜索引擎工具
+     */
+    private void addWebSearchTool(MemoryPrompt memoryPrompt, Map<String, Object> otherSkills) {
+        try {
+            // 优先从 Bot 配置中获取搜索引擎提供商
+            String searchEngineProvider = MapUtil.getString(otherSkills, "webSearchProvider");
+
+            // 如果 Bot 未配置，则从系统配置获取
+            if (!StringUtils.hasText(searchEngineProvider)) {
+                SysOption providerOption = sysOptionService.getByOptionKey("search_engine_provider");
+                if (providerOption != null) {
+                    searchEngineProvider = providerOption.getValue();
+                }
+            }
+
+            if (!StringUtils.hasText(searchEngineProvider)) {
+                log.warn("搜索引擎未配置，请在系统设置或 Bot 配置中配置搜索引擎提供商");
+                return;
+            }
+
+            WebSearchTool webSearchTool = null;
+
+            switch (searchEngineProvider) {
+                case "qianfan" -> {
+                    SysOption apiKeyOption = sysOptionService.getByOptionKey("search_engine_qianfan_api_key");
+                    String apiKey = apiKeyOption != null ? apiKeyOption.getValue() : null;
+                    if (!StringUtils.hasText(apiKey)) {
+                        log.warn("百度千帆搜索引擎 API Key 未配置");
+                        return;
+                    }
+                    webSearchTool = WebSearchTool.builder()
+                            .provider(new BaiduQianfanSearchProvider(apiKey))
+                            .build();
+                }
+                case "bocha" -> {
+                    SysOption apiKeyOption = sysOptionService.getByOptionKey("search_engine_bocha_api_key");
+                    String apiKey = apiKeyOption != null ? apiKeyOption.getValue() : null;
+                    if (!StringUtils.hasText(apiKey)) {
+                        log.warn("博查搜索引擎 API Key 未配置");
+                        return;
+                    }
+                    webSearchTool = WebSearchTool.builder()
+                            .provider(new BochaSearchProvider(apiKey))
+                            .build();
+                }
+                case "brave" -> {
+                    SysOption apiKeyOption = sysOptionService.getByOptionKey("search_engine_brave_api_key");
+                    String apiKey = apiKeyOption != null ? apiKeyOption.getValue() : null;
+                    if (!StringUtils.hasText(apiKey)) {
+                        log.warn("Brave 搜索引擎 API Key 未配置");
+                        return;
+                    }
+                    webSearchTool = WebSearchTool.builder()
+                            .provider(new BraveSearchProvider(apiKey))
+                            .build();
+                }
+                default -> {
+                    log.warn("不支持的搜索引擎提供商: {}", searchEngineProvider);
+                    return;
+                }
+            }
+
+            if (webSearchTool != null) {
+                memoryPrompt.addTools(ToolScanner.scan(webSearchTool));
+                log.debug("搜索引擎工具已添加: {}", searchEngineProvider);
+            }
+        } catch (Exception e) {
+            log.error("添加搜索引擎工具失败", e);
+        }
     }
 
 }

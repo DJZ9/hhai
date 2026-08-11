@@ -12,7 +12,7 @@ import tech.aiflowy.common.web.jsonbody.JsonBody;
 import tech.aiflowy.system.entity.SysAccount;
 import tech.aiflowy.system.service.SysAccountService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.Date;
 

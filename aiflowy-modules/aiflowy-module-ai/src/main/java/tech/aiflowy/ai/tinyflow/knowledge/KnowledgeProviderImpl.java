@@ -9,7 +9,7 @@ import dev.tinyflow.core.node.KnowledgeNode;
 import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.service.DocumentCollectionService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;

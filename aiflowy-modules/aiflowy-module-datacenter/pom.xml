@@ -28,5 +28,9 @@
             <groupId>tech.aiflowy</groupId>
             <artifactId>aiflowy-common-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-module-system</artifactId>
+        </dependency>
     </dependencies>
 </project>

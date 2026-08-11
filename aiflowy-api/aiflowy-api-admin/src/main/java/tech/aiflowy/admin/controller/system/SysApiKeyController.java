@@ -21,7 +21,7 @@ import tech.aiflowy.system.entity.SysApiKeyResourceMapping;
 import tech.aiflowy.system.service.SysApiKeyResourceMappingService;
 import tech.aiflowy.system.service.SysApiKeyService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.ZoneId;

@@ -24,6 +24,7 @@ CREATE TABLE `tb_bot`
     `created_by`    bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建者ID',
     `modified`      datetime NULL DEFAULT NULL COMMENT '修改时间',
     `modified_by`   bigint UNSIGNED NULL DEFAULT NULL COMMENT '修改者ID',
+    `auth_type`     int(0) NULL DEFAULT NULL COMMENT '数据权限类型, 0-所有人可见，1-指定部门可见',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `tb_ai_bot_alias_uindex`(`alias`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot表' ROW_FORMAT = DYNAMIC;
@@ -51,14 +52,17 @@ CREATE TABLE `tb_bot_category`
 DROP TABLE IF EXISTS `tb_bot_conversation`;
 CREATE TABLE `tb_bot_conversation`
 (
-    `id`          bigint UNSIGNED NOT NULL COMMENT '会话id',
-    `title`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '会话标题',
-    `bot_id`      bigint UNSIGNED NULL DEFAULT NULL COMMENT 'botid',
-    `account_id`  bigint UNSIGNED NULL DEFAULT NULL COMMENT '账户 id',
-    `created`     datetime NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  bigint UNSIGNED NULL DEFAULT NULL,
-    `modified`    datetime NULL DEFAULT NULL,
-    `modified_by` bigint UNSIGNED NULL DEFAULT NULL,
+    `id`                     bigint UNSIGNED NOT NULL COMMENT '会话id',
+    `title`                  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '会话标题',
+    `bot_id`                 bigint UNSIGNED NULL DEFAULT NULL COMMENT 'botid',
+    `account_id`             bigint UNSIGNED NULL DEFAULT NULL COMMENT '账户 id',
+    `created`                datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `created_by`             bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建者Id',
+    `modified`               datetime NULL DEFAULT NULL COMMENT '修改者',
+    `modified_by`            bigint UNSIGNED NULL DEFAULT NULL COMMENT '修改者id',
+    `options`                text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '选项',
+    `system_prompt`          text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '系统提示词',
+    `variables_form_options` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '用户变量表单',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'bot对话' ROW_FORMAT = DYNAMIC;
 
@@ -91,11 +95,14 @@ CREATE TABLE `tb_bot_message`
     `options`         text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '选项',
     `created`         datetime NULL DEFAULT NULL COMMENT '创建时间',
     `modified`        datetime NULL DEFAULT NULL COMMENT '更新时间',
+    `summary`         text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '对话历史摘要',
+    `round_number`    int NULL DEFAULT NULL COMMENT '对话轮数',
     PRIMARY KEY (`id`) USING BTREE,
-    INDEX             `bot_id`(`bot_id`) USING BTREE,
-    INDEX             `account_id`(`account_id`) USING BTREE,
-    INDEX             `session_id`(`conversation_id`) USING BTREE
+    INDEX             `bot_id`(`bot_id` ASC) USING BTREE,
+    INDEX             `account_id`(`account_id` ASC) USING BTREE,
+    INDEX             `session_id`(`conversation_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot消息记录表' ROW_FORMAT = DYNAMIC;
+
 
 -- ----------------------------
 -- Table structure for tb_bot_model
@@ -692,6 +699,7 @@ CREATE TABLE `tb_sys_account`
     `modified`     datetime                                                      NOT NULL COMMENT '修改时间',
     `modified_by`  bigint UNSIGNED NOT NULL COMMENT '修改者',
     `remark`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
+    `meta_data`    text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '用户元信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `uni_login_name`(`login_name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户表' ROW_FORMAT = DYNAMIC;
@@ -1142,6 +1150,7 @@ CREATE TABLE `tb_bot_mcp`
     `mcp_id`               bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT 'mcpId',
     `mcp_tool_name`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'mcp工具名称',
     `mcp_tool_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT 'mcp工具描述',
+    `output_template`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '自定义输出模板内容',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
@@ -1216,6 +1225,227 @@ CREATE TABLE `tb_bot_wiki`
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='bot绑定的wiki';
 
+-- Table structure for tb_bot_tool_call_record
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_tool_call_record`;
+CREATE TABLE `tb_bot_tool_call_record`
+(
+    `id`              bigint(0) UNSIGNED NOT NULL COMMENT '主键ID',
+    `dept_id`         bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '部门ID',
+    `tenant_id`       bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '租户ID',
+    `bot_id`          bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '智能体ID',
+    `bot_title`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '智能体名称',
+    `conversation_id` bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '会话ID',
+    `tool_name`       varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工具名称',
+    `input_params`    text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '工具调用入参(JSON)',
+    `output_params`   text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '工具调用输出(JSON)',
+    `created`         datetime(0) NULL DEFAULT NULL COMMENT '调用时间',
+    `created_by`      bigint(0) UNSIGNED NOT NULL COMMENT '创建人ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX             `idx_bot_id`(`bot_id`) USING BTREE,
+    INDEX             `idx_conversation_id`(`conversation_id`) USING BTREE,
+    INDEX             `idx_created`(`created`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '智能体工具调用记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_bot_datacenter_table
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_datacenter_table`;
+CREATE TABLE `tb_bot_datacenter_table`
+(
+    `id`       bigint UNSIGNED NOT NULL,
+    `bot_id`   bigint UNSIGNED NULL DEFAULT NULL,
+    `table_id` bigint UNSIGNED NULL DEFAULT NULL,
+    `options`  text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot绑定的数据中枢' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- tb_bot_datasource
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_datasource`;
+CREATE TABLE `tb_bot_datasource`
+(
+    `id`        bigint UNSIGNED NOT NULL,
+    `bot_id`    bigint UNSIGNED NULL DEFAULT NULL,
+    `source_id` bigint UNSIGNED NULL DEFAULT NULL,
+    `options`   text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot绑定的数据源' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_bot_subagent
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_subagent`;
+CREATE TABLE `tb_bot_subagent`
+(
+    `id`          bigint(0) UNSIGNED NOT NULL,
+    `bot_id`      bigint(0) UNSIGNED NULL DEFAULT NULL,
+    `subagent_id` bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '子代理id',
+    `options`     text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot子代理关联表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_datacenter_source
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_source`;
+CREATE TABLE `tb_datacenter_source`
+(
+    `id`             bigint UNSIGNED NOT NULL COMMENT '主键',
+    `dept_id`        bigint UNSIGNED NOT NULL COMMENT '部门ID',
+    `tenant_id`      bigint UNSIGNED NOT NULL COMMENT '租户ID',
+    `source_type`    int                                                           NOT NULL DEFAULT 0 COMMENT '数据源类型[EnumDatasourceType]',
+    `title`          varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci  NOT NULL COMMENT '数据源别名',
+    `description`    varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '数据源描述',
+    `source_name`    varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci  NOT NULL COMMENT '数据库名',
+    `source_address` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '数据库地址',
+    `username`       varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '用户名',
+    `password`       varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '密码',
+    `status`         int                                                           NOT NULL DEFAULT 0 COMMENT '数据状态',
+    `created`        datetime                                                      NOT NULL COMMENT '创建时间',
+    `created_by`     bigint UNSIGNED NOT NULL COMMENT '创建者',
+    `modified`       datetime                                                      NOT NULL COMMENT '修改时间',
+    `modified_by`    bigint UNSIGNED NOT NULL COMMENT '修改者',
+    `options`        text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '扩展项',
+    `auth_type`      int NULL DEFAULT 0 COMMENT '权限[0全部可看,1指定部门可看]',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据源' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_datacenter_source_field
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_source_field`;
+CREATE TABLE `tb_datacenter_source_field`
+(
+    `id`             bigint UNSIGNED NOT NULL COMMENT '主键',
+    `table_id`       bigint UNSIGNED NOT NULL COMMENT '表ID',
+    `type`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '类型',
+    `length`         int NULL DEFAULT NULL COMMENT '长度',
+    `nullable`       int NULL DEFAULT NULL COMMENT '可为空',
+    `primary_key`    tinyint(1) NULL DEFAULT NULL COMMENT '是否为主键',
+    `auto_increment` tinyint(1) NULL DEFAULT NULL COMMENT '是否自增',
+    `name`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '字段名',
+    `description`    varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '描述',
+    `dept_id`        bigint UNSIGNED NOT NULL COMMENT '部门ID',
+    `tenant_id`      bigint UNSIGNED NOT NULL COMMENT '租户ID',
+    `status`         int      NOT NULL DEFAULT 0 COMMENT '数据状态',
+    `created`        datetime NOT NULL COMMENT '创建时间',
+    `created_by`     bigint UNSIGNED NOT NULL COMMENT '创建者',
+    `modified`       datetime NOT NULL COMMENT '修改时间',
+    `modified_by`    bigint UNSIGNED NOT NULL COMMENT '修改者',
+    `options`        text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '扩展项',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据源-字段' ROW_FORMAT = DYNAMIC;
+
+
+-- ----------------------------
+-- Table structure for tb_datacenter_source_table
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_source_table`;
+CREATE TABLE `tb_datacenter_source_table`
+(
+    `id`          bigint UNSIGNED NOT NULL COMMENT '主键',
+    `source_id`   bigint UNSIGNED NOT NULL COMMENT '数据源ID',
+    `schema`      varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'schema',
+    `name`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '表名',
+    `description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '描述',
+    `dept_id`     bigint UNSIGNED NOT NULL COMMENT '部门ID',
+    `tenant_id`   bigint UNSIGNED NOT NULL COMMENT '租户ID',
+    `status`      int      NOT NULL DEFAULT 0 COMMENT '数据状态',
+    `created`     datetime NOT NULL COMMENT '创建时间',
+    `created_by`  bigint UNSIGNED NOT NULL COMMENT '创建者',
+    `modified`    datetime NOT NULL COMMENT '修改时间',
+    `modified_by` bigint UNSIGNED NOT NULL COMMENT '修改者',
+    `options`     text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '扩展项',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据源-数据表' ROW_FORMAT = DYNAMIC;
+
+-- REMOVE_TAG_START:COMMERCIAL
+-- ----------------------------
+-- Table structure for tb_model_trigger
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_model_trigger`;
+CREATE TABLE `tb_model_trigger`
+(
+    `id`              bigint UNSIGNED NOT NULL COMMENT '主键ID',
+    `tenant_id`       bigint UNSIGNED NOT NULL COMMENT '租户ID',
+    `dept_id`         bigint UNSIGNED NOT NULL COMMENT '部门ID',
+    `model_id`        bigint UNSIGNED NOT NULL COMMENT '模型ID',
+    `provider`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '模型供应商',
+    `model_name`      varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '模型名称',
+    `total_tokens`    int                                                           NOT NULL DEFAULT 0 COMMENT '消耗tokens',
+    `chat_time`       bigint NULL DEFAULT NULL COMMENT '对话耗时',
+    `stream_time`     bigint NULL DEFAULT NULL COMMENT '流式请求耗时',
+    `non_stream_time` bigint NULL DEFAULT NULL COMMENT '非流式请求耗时',
+    `workflow_id`     bigint UNSIGNED NULL DEFAULT NULL COMMENT '工作流ID',
+    `bot_id`          bigint UNSIGNED NULL DEFAULT NULL COMMENT 'BOT ID',
+    `account_id`      bigint UNSIGNED NULL DEFAULT NULL COMMENT '用户ID',
+    `created`         datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `created_day`     date NULL DEFAULT NULL COMMENT '创建日期',
+    `created_by`      bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建者ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX             `idx_created_day`(`created_day` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '模型统计' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_workflow_batch_pre
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_workflow_batch_pre`;
+CREATE TABLE `tb_workflow_batch_pre`
+(
+    `id`          bigint UNSIGNED NOT NULL COMMENT '主键',
+    `batch_id`    bigint UNSIGNED NOT NULL COMMENT '批次ID',
+    `retry_count` int NULL DEFAULT 0 COMMENT '重试次数',
+    `input`       longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '执行参数',
+    `input_str`   longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '执行参数显示',
+    `output`      longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '执行结果',
+    `status`      int NOT NULL DEFAULT 0 COMMENT '数据状态[1-执行中][2-执行完成][3-执行失败]',
+    `title`       varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '标题',
+    `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '描述',
+    `start_time`  datetime(3) NULL DEFAULT NULL COMMENT '开始时间',
+    `end_time`    datetime(3) NULL DEFAULT NULL COMMENT '结束时间',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '批量预执行列表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_bot_dept_mapping
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_dept_mapping`;
+CREATE TABLE `tb_bot_dept_mapping`
+(
+    `id`      bigint(0) UNSIGNED NOT NULL COMMENT '主键',
+    `bot_id`  bigint(0) UNSIGNED NOT NULL COMMENT '智能体id',
+    `dept_id` bigint(0) UNSIGNED NOT NULL DEFAULT 0 COMMENT '部门ID',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '智能体部门关联表' ROW_FORMAT = Dynamic;
+
+
+-- ----------------------------
+-- Table structure for tb_workflow_exec_result
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_workflow_exec_result`;
+CREATE TABLE `tb_workflow_exec_result`
+(
+    `id`            bigint UNSIGNED NOT NULL COMMENT '主键',
+    `exec_key`      varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '执行标识',
+    `workflow_id`   bigint UNSIGNED NOT NULL COMMENT '工作流ID',
+    `title`         varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '标题',
+    `description`   varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '描述',
+    `input`         longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '输入',
+    `output`        longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '输出',
+    `workflow_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '工作流执行时的配置',
+    `start_time`    datetime(3) NOT NULL COMMENT '开始时间',
+    `end_time`      datetime(3) NULL DEFAULT NULL COMMENT '结束时间',
+    `tokens`        bigint UNSIGNED NULL DEFAULT NULL COMMENT '消耗总token',
+    `status`        int                                                           NOT NULL DEFAULT 0 COMMENT '数据状态',
+    `created_key`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '执行人标识[有可能是用户|外部|定时任务等情况]',
+    `created_by`    varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '执行人',
+    `error_info`    text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '错误信息',
+    `pre_id`        bigint UNSIGNED NULL DEFAULT NULL COMMENT '预执行ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `uni_exec_key`(`exec_key` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '工作流执行记录' ROW_FORMAT = DYNAMIC;
 
 SET
 FOREIGN_KEY_CHECKS = 1;

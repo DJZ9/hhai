@@ -41,6 +41,12 @@ public class BotMcpBase implements Serializable {
     @Column(comment = "mcp工具描述")
     private String mcpToolDescription;
 
+    /**
+     * 自定义输出模板内容
+     */
+    @Column(comment = "自定义输出模板内容")
+    private String outputTemplate;
+
     public BigInteger getId() {
         return id;
     }
@@ -70,4 +76,12 @@ public class BotMcpBase implements Serializable {
     public String getMcpToolDescription() {return mcpToolDescription;}
 
     public void setMcpToolDescription(String mcpToolDescription) {this.mcpToolDescription = mcpToolDescription;}
+
+    public String getOutputTemplate() {
+        return outputTemplate;
+    }
+
+    public void setOutputTemplate(String outputTemplate) {
+        this.outputTemplate = outputTemplate;
+    }
 }

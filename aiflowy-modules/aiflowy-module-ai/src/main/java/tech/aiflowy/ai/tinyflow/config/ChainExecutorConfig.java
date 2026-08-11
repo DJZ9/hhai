@@ -10,7 +10,7 @@ import tech.aiflowy.ai.tinyflow.listener.ChainErrorListenerForSave;
 import tech.aiflowy.ai.tinyflow.listener.ChainEventListenerForSave;
 import tech.aiflowy.ai.tinyflow.listener.NodeErrorListenerForSave;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 @Configuration
 public class ChainExecutorConfig {

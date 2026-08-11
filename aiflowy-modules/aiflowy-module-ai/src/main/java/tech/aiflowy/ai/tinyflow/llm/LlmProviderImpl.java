@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.entity.Model;
 import tech.aiflowy.ai.service.ModelService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
+import tech.aiflowy.common.util.Maps;
+
 import java.math.BigInteger;
 
 @Component
@@ -27,7 +29,7 @@ public class LlmProviderImpl implements LlmProvider {
             return null;
         }
         AgentsFlexLlm llm = new AgentsFlexLlm();
-        llm.setChatModel(model.toChatModel());
+        llm.setChatModel(model.toChatModel(Maps.of()));
         return llm;
     }
 }

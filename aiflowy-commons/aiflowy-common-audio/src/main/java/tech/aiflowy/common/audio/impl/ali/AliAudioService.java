@@ -16,7 +16,8 @@ import tech.aiflowy.common.audio.core.AudioService;
 import tech.aiflowy.common.audio.core.BaseAudioClient;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import javax.annotation.Resource;
+
+import jakarta.annotation.Resource;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;

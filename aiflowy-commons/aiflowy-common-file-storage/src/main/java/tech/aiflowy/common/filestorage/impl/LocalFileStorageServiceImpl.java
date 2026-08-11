@@ -69,6 +69,21 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
+    public String saveTemp(MultipartFile file) {
+        try {
+            String path = PathGeneratorUtil.generateTempPath(file.getOriginalFilename());
+            File target = getLocalFile(path);
+            if (!target.getParentFile().exists() && !target.getParentFile().mkdirs()) {
+                LOG.error("创建临时文件失败: {} ", target.getParentFile());
+            }
+            file.transferTo(target);
+            return prefix + path;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
     public void delete(String path) {
         try {
             File file = getLocalFile(path);

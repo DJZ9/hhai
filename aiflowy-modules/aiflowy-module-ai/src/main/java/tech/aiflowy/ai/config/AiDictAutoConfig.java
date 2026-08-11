@@ -8,7 +8,7 @@ import tech.aiflowy.common.util.SpringContextUtil;
 import tech.aiflowy.common.dict.DictManager;
 import tech.aiflowy.common.dict.loader.DbDataLoader;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 @Configuration
 public class AiDictAutoConfig {

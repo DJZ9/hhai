@@ -31,7 +31,7 @@ import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.util.StringUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;

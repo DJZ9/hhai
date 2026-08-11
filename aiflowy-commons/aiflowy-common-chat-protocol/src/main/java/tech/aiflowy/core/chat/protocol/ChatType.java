@@ -9,5 +9,5 @@ public enum ChatType {
     ERROR,
     FORM_REQUEST,
     FORM_CANCEL,
-    DONE
+    REFERENCES, DONE,
 }

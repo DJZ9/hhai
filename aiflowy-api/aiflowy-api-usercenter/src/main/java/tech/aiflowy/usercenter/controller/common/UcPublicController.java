@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.aiflowy.common.captcha.tainai.CaptchaData;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 公共接口

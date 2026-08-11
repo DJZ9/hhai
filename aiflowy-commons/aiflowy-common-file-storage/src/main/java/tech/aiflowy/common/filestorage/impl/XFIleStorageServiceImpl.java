@@ -18,6 +18,9 @@ public class XFIleStorageServiceImpl implements FileStorageService {
     private static final Logger LOG = LoggerFactory.getLogger(XFIleStorageServiceImpl.class);
 
     @Autowired
+    private org.dromara.x.file.storage.core.FileStorageService xFileStorageService;
+
+    @Autowired
     private org.dromara.x.file.storage.core.FileStorageService fileStorageService;
 
     @Override
@@ -33,6 +36,18 @@ public class XFIleStorageServiceImpl implements FileStorageService {
     @Override
     public void delete(String path) {
         fileStorageService.delete(path);
+    }
+
+    @Override
+    public String saveTemp(MultipartFile file) {
+        String path = PathGeneratorUtil.generateTempPath("");
+        String filename = PathGeneratorUtil.getPureFileName(file.getOriginalFilename());
+        FileInfo fileInfo = xFileStorageService.of(file)
+                .setPath(path)
+                .setSaveFilename(filename)
+                .setContentType(getFileContentType(file))
+                .upload();
+        return fileInfo == null ? "上传失败！" : fileInfo.getUrl();
     }
 
     @Override

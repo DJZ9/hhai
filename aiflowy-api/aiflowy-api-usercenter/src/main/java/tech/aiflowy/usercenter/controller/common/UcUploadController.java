@@ -10,7 +10,7 @@ import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.vo.UploadResVo;
 import tech.aiflowy.common.filestorage.FileStorageService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 文件上传

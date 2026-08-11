@@ -6,7 +6,7 @@ import com.agentsflex.core.model.chat.tool.ToolContext;
 import com.agentsflex.core.model.chat.tool.ToolInterceptor;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.Map;
 @Component
 public class ToolLoggingInterceptor implements ToolInterceptor {

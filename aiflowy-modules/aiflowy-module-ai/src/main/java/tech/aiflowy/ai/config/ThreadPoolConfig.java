@@ -7,9 +7,33 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
+import java.util.concurrent.ThreadPoolExecutor;
+
 @Configuration
 public class ThreadPoolConfig {
     private static final Logger log = LoggerFactory.getLogger(ThreadPoolConfig.class);
+
+    /**
+     * 通用异步任务线程池（如：对话压缩等后台任务）
+     */
+    @Bean("commonExecutor")
+    public ThreadPoolTaskExecutor commonExecutor() {
+        int cpuCoreNum = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+        // 通用IO密集型（DB/HTTP/Redis）4核最优
+        int corePoolSize = cpuCoreNum * 4;   // 4核=16
+        int maxPoolSize = Math.max(corePoolSize * 2, 32); // 确保 maxPoolSize > corePoolSize，最小32
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(500);             // 队列 500
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("CommonAsync-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+        executor.initialize();
+        return executor;
+    }
 
     /**
      * SSE消息发送专用线程池
