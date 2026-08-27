@@ -7,6 +7,13 @@ import { ElButton, ElCard, ElCheckbox, ElMessage } from 'element-plus';
 
 import { useAIFlowyForm } from '#/adapter/form';
 import { getAllMenusApi } from '#/api';
+import { $t } from '#/locales';
+
+const optionLabelMap: Record<string, string> = {
+  A: $t('demos.optionA'),
+  B: $t('demos.optionB'),
+  C: $t('demos.optionC'),
+};
 
 const [Form, formApi] = useAIFlowyForm({
   commonConfig: {
@@ -19,7 +26,7 @@ const [Form, formApi] = useAIFlowyForm({
   // 大屏一行显示3个，中屏一行显示2个，小屏一行显示1个
   // wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
   handleSubmit: (values) => {
-    ElMessage.success(`表单数据：${JSON.stringify(values)}`);
+    ElMessage.success($t('demos.formDataMessage', { json: JSON.stringify(values) }));
   },
   schema: [
     {
@@ -104,7 +111,7 @@ const [Form, formApi] = useAIFlowyForm({
       fieldName: 'checkbox',
       label: 'Checkbox',
       componentProps: {
-        options: ['A', 'B', 'C'].map((v) => ({ value: v, label: `选项${v}` })),
+        options: ['A', 'B', 'C'].map((v) => ({ value: v, label: optionLabelMap[v] || v })),
       },
     },
     {
@@ -128,9 +135,9 @@ const [Form, formApi] = useAIFlowyForm({
       componentProps: {
         isButton: true,
         options: [
-          { value: 'A', label: '选项A' },
-          { value: 'B', label: '选项B' },
-          { value: 'C', label: '选项C' },
+          { value: 'A', label: $t('demos.optionA') },
+          { value: 'B', label: $t('demos.optionB') },
+          { value: 'C', label: $t('demos.optionC') },
         ],
       },
     },
@@ -146,9 +153,9 @@ const [Form, formApi] = useAIFlowyForm({
       componentProps: {
         filterable: true,
         options: [
-          { value: 'A', label: '选项A' },
-          { value: 'B', label: '选项B' },
-          { value: 'C', label: '选项C' },
+          { value: 'A', label: $t('demos.optionA') },
+          { value: 'B', label: $t('demos.optionB') },
+          { value: 'C', label: $t('demos.optionC') },
         ],
       },
     },
@@ -172,20 +179,20 @@ function setFormValues() {
 </script>
 <template>
   <Page
-    description="我们重新包装了CheckboxGroup、RadioGroup、Select，可以通过options属性传入选项属性数组以自动生成选项"
-    title="表单演示"
+    :description="$t('demos.formDesc')"
+    :title="$t('demos.formTitle')"
   >
-    <Drawer class="w-[600px]" title="基础表单示例">
+    <Drawer class="w-[600px]" :title="$t('demos.basicForm')">
       <Form />
     </Drawer>
     <ElCard>
       <template #header>
         <div class="flex items-center">
-          <span class="flex-auto">基础表单演示</span>
-          <ElButton type="primary" @click="setFormValues">设置表单值</ElButton>
+          <span class="flex-auto">{{ $t('demos.basicForm') }}</span>
+          <ElButton type="primary" @click="setFormValues">{{ $t('demos.setFormValues') }}</ElButton>
         </div>
       </template>
-      <ElButton type="primary" @click="drawerApi.open"> 打开抽屉 </ElButton>
+      <ElButton type="primary" @click="drawerApi.open"> {{ $t('demos.openDrawer') }} </ElButton>
     </ElCard>
   </Page>
 </template>

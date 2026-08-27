@@ -16,5 +16,7 @@
     "isDeleted": "删除标识",
     "fileSize": "文件大小",
     "categoryId": "分类",
-    "choose": "选择素材"
+    "choose": "选择素材",
+  "unsupportedVideo": "您的浏览器不支持 video 元素。",
+  "unsupportedAudio": "您的浏览器不支持 audio 元素。"
 }

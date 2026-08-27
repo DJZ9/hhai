@@ -16,5 +16,7 @@
     "isDeleted": "IsDeleted",
     "fileSize": "FileSize",
     "categoryId": "Category",
-    "choose": "Choose"
+    "choose": "Choose",
+  "unsupportedVideo": "Your browser does not support the video element.",
+  "unsupportedAudio": "Your browser does not support the audio element."
 }
