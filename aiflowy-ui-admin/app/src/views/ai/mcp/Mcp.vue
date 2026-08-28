@@ -2,8 +2,9 @@
 import type { FormInstance } from 'element-plus';
 
 import { markRaw, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-import { Delete, MoreFilled, Plus, Refresh } from '@element-plus/icons-vue';
+import { Delete, MoreFilled, Plus, Refresh, ShoppingCart } from '@element-plus/icons-vue';
 import {
   ElButton,
   ElDropdown,
@@ -23,6 +24,8 @@ import PageData from '#/components/page/PageData.vue';
 import { $t } from '#/locales';
 
 import McpModal from './McpModal.vue';
+
+const router = useRouter();
 
 const formRef = ref<FormInstance>();
 const pageDataRef = ref();
@@ -85,6 +88,13 @@ const handleUpdate = (row: any, isRefresh: boolean) => {
 };
 const headerButtons = [
   {
+    key: 'market',
+    type: 'primary',
+    text: $t('mcp.mcpMarket'),
+    icon: markRaw(ShoppingCart),
+    data: { action: 'market' },
+  },
+  {
     key: 'create',
     type: 'primary',
     text: $t('button.add'),
@@ -98,6 +108,8 @@ const handleSearch = (params: string) => {
 const handleHeaderButtonClick = (button: any) => {
   if (button.key === 'create') {
     showDialog({});
+  } else if (button.key === 'market') {
+    router.push({ name: 'IframeMcpMarket' });
   }
 };
 const loadingMap = ref<Record<number | string, boolean>>({});

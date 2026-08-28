@@ -9,6 +9,10 @@
   "note": "注意：此项配置，仅用于系统的 AI 功能，而非【智能体】。",
   "userCenterSettings": "用户中心设置",
   "userCenterDomain": "用户中心域名",
+  "skillMarketSettings": "技能功能配置",
+  "skillMarketDomain": "技能商城域名",
+  "skillMarketDomainPlaceholder": "请输入技能商城域名，如 http://skill.aiflowy.tech",
+  "skillMarketNote": "配置技能商城地址，用于快捷安装skill使用。若未配置，默认使用 https://skill.aiflowy.tech。",
   "message": {
     "userCenterDomain": "请输入域名",
     "userCenterDomainError": "请输入有效的域名（如 aiflowy.tech 或 http://aiflowy.tech）"
