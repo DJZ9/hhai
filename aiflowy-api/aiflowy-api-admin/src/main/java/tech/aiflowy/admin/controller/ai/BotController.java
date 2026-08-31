@@ -274,7 +274,7 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         defaultLlmOptions.put("topK", 4);
         defaultLlmOptions.put("maxReplyLength", 20000);
         defaultLlmOptions.put("topP", 0.7);
-        defaultLlmOptions.put("maxMessageCount", 10);
+        defaultLlmOptions.put("maxMessageCount", 100);
         return defaultLlmOptions;
     }
 
