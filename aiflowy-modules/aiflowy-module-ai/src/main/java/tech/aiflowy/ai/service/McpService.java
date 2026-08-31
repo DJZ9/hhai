@@ -30,4 +30,6 @@ public interface McpService extends IService<Mcp> {
     Mcp getMcpTools(String id);
 
     Page<Mcp> pageTools(Page<Mcp> mcpPage);
+
+    com.alibaba.fastjson2.JSONObject getMcpToolData(java.math.BigInteger mcpId, String toolName);
 }

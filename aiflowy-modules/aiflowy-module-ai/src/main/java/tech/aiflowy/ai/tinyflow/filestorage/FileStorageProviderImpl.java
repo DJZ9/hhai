@@ -4,7 +4,7 @@ import dev.tinyflow.core.filestoreage.FileStorage;
 import dev.tinyflow.core.filestoreage.FileStorageProvider;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 @Component
 public class FileStorageProviderImpl implements FileStorageProvider {

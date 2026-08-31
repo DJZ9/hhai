@@ -27,8 +27,8 @@ public class PromptChoreChatStreamListener implements StreamResponseListener {
         this.sseEmitter = sseEmitter;
     }
     @Override
-    public void onStart(StreamContext context) {
-        StreamResponseListener.super.onStart(context);
+    public void onOpen(StreamContext context) {
+        StreamResponseListener.super.onOpen(context);
     }
 
     @Override
@@ -50,14 +50,14 @@ public class PromptChoreChatStreamListener implements StreamResponseListener {
     }
 
     @Override
-    public void onStop(StreamContext context) {
+    public void onClose(StreamContext context) {
         System.out.println("onStop");
         sseEmitter.sendDone(new ChatEnvelope<>());
-        StreamResponseListener.super.onStop(context);
+        StreamResponseListener.super.onClose(context);
     }
 
     @Override
-    public void onFailure(StreamContext context, Throwable throwable) {
-        StreamResponseListener.super.onFailure(context, throwable);
+    public void onError(StreamContext context, Throwable throwable) {
+        StreamResponseListener.super.onError(context, throwable);
     }
 }

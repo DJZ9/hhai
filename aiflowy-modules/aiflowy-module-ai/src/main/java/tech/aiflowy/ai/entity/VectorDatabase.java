@@ -9,8 +9,6 @@ import com.agentsflex.store.milvus.MilvusVectorStore;
 import com.agentsflex.store.milvus.MilvusVectorStoreConfig;
 import com.agentsflex.store.opensearch.OpenSearchVectorStore;
 import com.agentsflex.store.opensearch.OpenSearchVectorStoreConfig;
-import com.agentsflex.store.qcloud.QCloudVectorStore;
-import com.agentsflex.store.qcloud.QCloudVectorStoreConfig;
 import com.agentsflex.store.redis.RedisVectorStore;
 import com.agentsflex.store.redis.RedisVectorStoreConfig;
 import com.mybatisflex.annotation.Table;
@@ -55,8 +53,6 @@ public class VectorDatabase extends VectorDatabaseBase {
                 return elasticSearchStore(vectorDatabaseConfigOptions, otherConfigOptions);
             case "aliyun":
                 return aliyunStore(vectorDatabaseConfigOptions, otherConfigOptions);
-            case "qcloud":
-                return qcloudStore(vectorDatabaseConfigOptions, otherConfigOptions);
         }
         return null;
     }
@@ -159,18 +155,6 @@ public class VectorDatabase extends VectorDatabaseBase {
             aliyunVectorStoreConfig.setDefaultCollectionName(MapUtil.getString(otherConfigOptions, DocumentCollection.KEY_COLLECTION_NAME));
         }
         return new AliyunVectorStore(aliyunVectorStoreConfig);
-    }
-
-    private DocumentStore qcloudStore(Map<String, Object> vectorDatabaseConfigOptions, Map<String, Object> otherConfigOptions) {
-        QCloudVectorStoreConfig qCloudVectorStoreConfig = new QCloudVectorStoreConfig();
-        String username = MapUtil.getString(vectorDatabaseConfigOptions, VectorDatabase.USERNAME);
-        String apiKey = MapUtil.getString(vectorDatabaseConfigOptions, VectorDatabase.APIKEY);
-        qCloudVectorStoreConfig.setAccount(username);
-        qCloudVectorStoreConfig.setApiKey(apiKey);
-        if (otherConfigOptions != null && otherConfigOptions.containsKey(DocumentCollection.KEY_COLLECTION_NAME)) {
-            qCloudVectorStoreConfig.setDefaultCollectionName(MapUtil.getString(otherConfigOptions, DocumentCollection.KEY_COLLECTION_NAME));
-        }
-        return new QCloudVectorStore(qCloudVectorStoreConfig);
     }
 
     /**

@@ -1,23 +1,9 @@
 package tech.aiflowy.ai.entity;
 
 import com.agentsflex.core.model.chat.tool.Tool;
-import com.agentsflex.core.store.DocumentStore;
-import com.agentsflex.store.aliyun.AliyunVectorStore;
-import com.agentsflex.store.aliyun.AliyunVectorStoreConfig;
-import com.agentsflex.store.elasticsearch.ElasticSearchVectorStore;
-import com.agentsflex.store.elasticsearch.ElasticSearchVectorStoreConfig;
-import com.agentsflex.store.opensearch.OpenSearchVectorStore;
-import com.agentsflex.store.opensearch.OpenSearchVectorStoreConfig;
-import com.agentsflex.store.qcloud.QCloudVectorStore;
-import com.agentsflex.store.qcloud.QCloudVectorStoreConfig;
-import com.agentsflex.store.redis.RedisVectorStore;
-import com.agentsflex.store.redis.RedisVectorStoreConfig;
 import com.mybatisflex.annotation.Table;
 import tech.aiflowy.ai.agentsflex.tool.DocumentCollectionTool;
 import tech.aiflowy.ai.entity.base.DocumentCollectionBase;
-import tech.aiflowy.common.util.PropertiesUtil;
-import tech.aiflowy.common.util.StringUtil;
-import tech.aiflowy.common.web.exceptions.BusinessException;
 
 import java.math.BigDecimal;
 import java.util.HashMap;

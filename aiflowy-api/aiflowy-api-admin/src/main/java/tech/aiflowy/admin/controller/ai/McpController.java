@@ -4,19 +4,17 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import tech.aiflowy.ai.dto.GetMcpToolsRequestDTO;
 import tech.aiflowy.ai.entity.BotMcp;
 import tech.aiflowy.ai.entity.Mcp;
 import tech.aiflowy.ai.service.BotMcpService;
 import tech.aiflowy.ai.service.McpService;
 import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.web.controller.BaseCurdController;
-import tech.aiflowy.common.web.jsonbody.JsonBody;
+import tech.aiflowy.common.web.dto.RemoveRequestDTO;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.Serializable;
 
 /**
@@ -58,10 +56,16 @@ public class McpController extends BaseCurdController<McpService, Mcp> {
         return service.pageMcp(page);
     }
 
+    /**
+     * 获取MCP工具
+     *
+     * @param request 请求参数
+     * @return MCP信息
+     */
     @PostMapping("/getMcpTools")
-    public Result<Mcp> getMcpTools(@JsonBody("id") String id) {
+    public Result<Mcp> getMcpTools(@RequestBody GetMcpToolsRequestDTO request) {
 
-        return Result.ok(service.getMcpTools(id));
+        return Result.ok(service.getMcpTools(request.getId()));
     }
 
 
@@ -79,5 +83,30 @@ public class McpController extends BaseCurdController<McpService, Mcp> {
         Page<Mcp> mcpPage = queryPage(new Page<>(pageNumber, pageSize), queryWrapper);
 
         return Result.ok(service.pageTools(mcpPage));
+    }
+
+    @GetMapping("/getTinyFlowData")
+    public Result<?> getTinyFlowData(java.math.BigInteger mcpId, String toolName) {
+        com.alibaba.fastjson2.JSONObject nodeData = service.getMcpToolData(mcpId, toolName);
+        com.alibaba.fastjson2.JSONArray parameters = nodeData.getJSONArray("parameters");
+        if (parameters != null) {
+            handleArray(parameters);
+        }
+        return Result.ok(nodeData);
+    }
+
+    private void handleArray(com.alibaba.fastjson2.JSONArray array) {
+        for (Object o : array) {
+            com.alibaba.fastjson2.JSONObject obj = (com.alibaba.fastjson2.JSONObject) o;
+            obj.put("id", cn.hutool.core.util.IdUtil.simpleUUID());
+            obj.put("nameDisabled", true);
+            obj.put("dataTypeDisabled", true);
+            obj.put("deleteDisabled", true);
+            obj.put("addChildDisabled", true);
+            com.alibaba.fastjson2.JSONArray children = obj.getJSONArray("children");
+            if (children != null) {
+                handleArray(children);
+            }
+        }
     }
 }

@@ -1,5 +1,8 @@
 package tech.aiflowy.admin.controller.wiki.task;
 
+import com.agentsflex.asynctask.AsyncTask;
+import com.agentsflex.asynctask.AsyncTaskStatus;
+import com.agentsflex.core.model.ocr.OcrResponse;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.tenant.TenantManager;
 import jakarta.annotation.Resource;
@@ -10,16 +13,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import tech.aiflowy.admin.controller.wiki.event.WikiUpdateEvent;
-import tech.aiflowy.ai.agentsflex.ocrModel.OcrModel;
-import tech.aiflowy.ai.agentsflex.ocrModel.ParseResult;
-import tech.aiflowy.ai.entity.Model;
+import tech.aiflowy.ai.asynctask.OcrTaskService;
 import tech.aiflowy.ai.service.ModelService;
 import tech.aiflowy.common.constant.enums.EnumOcrTaskStatus;
 import tech.aiflowy.common.constant.enums.EnumRecognitionMode;
 import tech.aiflowy.wiki.entity.Wiki;
 import tech.aiflowy.wiki.service.WikiService;
 
-import java.math.BigInteger;
 import java.util.List;
 
 @Component
@@ -29,7 +29,7 @@ public class WikiTask {
     @Resource
     private WikiService wikiService;
     @Resource
-    private ModelService modelService;
+    private OcrTaskService ocrTaskService;
     @Value("${job.wiki.enabled:true}")
     private boolean enabled;
     @Resource
@@ -53,24 +53,26 @@ public class WikiTask {
     }
 
     private void handleQuery(Wiki wiki) {
-        String taskId = wiki.getTaskId();
-        BigInteger ocrModelId = wiki.getOcrModelId();
-        Model model = modelService.getModelInstance(ocrModelId);
-        OcrModel ocrModel = model.toOcrModel();
-        ParseResult res = ocrModel.queryTask(taskId);
-        if (EnumOcrTaskStatus.COMPLETED.getCode().equals(res.getStatus())) {
+        AsyncTask task = ocrTaskService.get(wiki.getTaskId());
+        if (task == null || task.getStatus() == null || !task.getStatus().isTerminal()) {
+            return;
+        }
+        if (task.getStatus() == AsyncTaskStatus.SUCCEEDED) {
+            OcrResponse res = task.getResult() instanceof OcrResponse ? (OcrResponse) task.getResult() : null;
+            String content = (res != null && res.getMarkdown() != null && !res.getMarkdown().isEmpty())
+                    ? res.getMarkdown() : (res != null ? res.getText() : null);
             wiki.setTaskStatus(EnumOcrTaskStatus.COMPLETED.getCode());
-            wiki.setContent(res.getContent());
+            wiki.setContent(content);
             wikiService.updateById(wiki);
             WikiUpdateEvent event = new WikiUpdateEvent();
             event.setWikiId(wiki.getId());
-            event.setContent(res.getContent());
+            event.setContent(content);
             publisher.publishEvent(event);
-        }
-        if (EnumOcrTaskStatus.FAILED.getCode().equals(res.getStatus())) {
+        } else {
             wiki.setTaskStatus(EnumOcrTaskStatus.FAILED.getCode());
-            wiki.setFailReason(res.getErrorMsg());
+            wiki.setFailReason(task.getErrorMessage());
             wikiService.updateById(wiki);
         }
     }
+
 }

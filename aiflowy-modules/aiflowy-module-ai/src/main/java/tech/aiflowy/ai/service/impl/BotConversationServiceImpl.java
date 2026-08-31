@@ -9,7 +9,7 @@ import tech.aiflowy.ai.mapper.BotConversationMapper;
 import tech.aiflowy.ai.mapper.BotMessageMapper;
 import tech.aiflowy.ai.service.BotConversationService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 
 /**

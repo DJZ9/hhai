@@ -31,7 +31,7 @@ import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.util.StringUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -75,6 +75,9 @@ public class DocumentCollectionServiceImpl extends ServiceImpl<DocumentCollectio
             throw new BusinessException("知识库不存在");
         }
         BigInteger vectorDatabaseId = documentCollection.getVectorDatabaseId();
+        if (vectorDatabaseId == null) {
+            throw new BusinessException("知识库未配置向量数据库");
+        }
         VectorDatabase vectorDatabase = vectorDatabaseService.getById(vectorDatabaseId);
         if (vectorDatabase == null) {
             throw new BusinessException("向量数据库没有配置");

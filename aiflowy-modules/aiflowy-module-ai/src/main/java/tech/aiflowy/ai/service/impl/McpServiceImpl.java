@@ -35,7 +35,7 @@ import java.util.*;
  * @since 2026-01-04
  */
 @Service
-public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpService {
+public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpService{
     private final McpClientManager mcpClientManager = McpClientManager.getInstance();
     protected Logger Log = LoggerFactory.getLogger(DocumentServiceImpl.class);
 
@@ -55,12 +55,12 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
             Log.error("MCP服务名称：{} 注册失败", serverName, e);
         }
         if (entity.getStatus()) {
-        try {
-            getMcpClient(entity, mcpClientManager);
-        } catch (Exception e) {
-            Log.error("MCP服务名称：{} 启动失败", serverName, e);
-            return Result.fail("MCP服务名称：" + serverName + " 启动失败", serverName);
-        }
+            try {
+                getMcpClient(entity, mcpClientManager);
+            } catch (Exception e) {
+                Log.error("MCP服务名称：{} 启动失败", serverName, e);
+                return Result.fail("MCP服务名称：" + serverName + " 启动失败", serverName);
+            }
         }
 
         LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
@@ -89,7 +89,7 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
                 getMcpClient(entity, mcpClientManager);
             } catch (Exception e) {
                 Log.error("MCP服务名称：{} 启动失败", serverName, e);
-                return Result.fail("MCP服务名称：" + serverName + " 启动失败," + "请尝试重新启动！");
+                return Result.fail("MCP服务名称：" + serverName + " 启动失败" + "请尝试重新启动！");
             }
 
         } else {
@@ -119,8 +119,8 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
     public Result<Page<Mcp>> pageMcp(Result<Page<Mcp>> page) {
         List<Mcp> records = page.getData().getRecords();
         records.forEach(mcp -> {
-            boolean clientOnline = mcpClientManager.isClientOnline(getFirstMcpServerName(mcp.getConfigJson()));
-            mcp.setClientOnline(clientOnline);
+                    boolean clientOnline = mcpClientManager.isClientOnline(getFirstMcpServerName(mcp.getConfigJson()));
+                    mcp.setClientOnline(clientOnline);
                 }
         );
         page.getData().setRecords(records);
@@ -153,15 +153,19 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
     @Override
     public Tool toFunction(BotMcp botMcp) {
         Mcp mcpInfo = this.getById(botMcp.getMcpId());
-        String configJson = mcpInfo.getConfigJson();
+        String configJson = null;
+        if (mcpInfo != null) {
+            configJson = mcpInfo.getConfigJson();
+        }
         String mcpServerName = getFirstMcpServerName(configJson);
         if (StringUtil.hasText(mcpServerName)) {
             McpSyncClient mcpClient = mcpClientManager.getMcpClient(mcpServerName);
             List<McpSchema.Tool> tools = mcpClient.listTools().tools();
             for (McpSchema.Tool tool : tools) {
                 if (tool.name().equals(botMcp.getMcpToolName())) {
-                    Map<String, Object> properties = tool.inputSchema().properties();
-                    List<String> required = tool.inputSchema().required();
+                    Map<String, Object> inputSchema = tool.inputSchema();
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> properties = (Map<String, Object>) inputSchema.get("properties");
                     McpTool mcpTool = new McpTool();
                     mcpTool.setName(tool.name());
                     mcpTool.setDescription(tool.description());
@@ -211,28 +215,77 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
 
     @Override
     public Page<Mcp> pageTools(Page<Mcp> page) {
-        page.getRecords().forEach(mcp -> {
-            // mcp 未启用，不查询工具
+        List<Mcp> filteredRecords = new ArrayList<>();
+        for (Mcp mcp : page.getRecords()) {
             if (!mcp.getStatus()) {
-                return;
+                continue;
             }
             String configJson = mcp.getConfigJson();
             String serverName = getFirstMcpServerName(configJson);
-            if (StringUtil.hasText(serverName)) {
-                mcpClientManager.registerFromJson(configJson);
-                try {
-                    McpSyncClient mcpClient = mcpClientManager.getMcpClient(serverName);
-                    List<McpSchema.Tool> tools = mcpClient.listTools().tools();
-                    mcp.setTools(tools);
-                } catch (Exception e) {
-                    Log.error("MCP服务名称：{} 启动失败", serverName, e);
-                }
-
-            } else {
-                throw new BusinessException("MCP 配置 JSON 中没有找到任何 MCP 服务名称");
+            if (!StringUtil.hasText(serverName)) {
+                continue;
             }
-        });
+            boolean clientOnline = mcpClientManager.isClientOnline(serverName);
+            mcp.setClientOnline(clientOnline);
+            if (!clientOnline) {
+                continue;
+            }
+            try {
+                McpSyncClient mcpClient = mcpClientManager.getMcpClient(serverName);
+                List<McpSchema.Tool> tools = mcpClient.listTools().tools();
+                mcp.setTools(tools);
+                filteredRecords.add(mcp);
+            } catch (Exception e) {
+                Log.error("MCP服务名称：{} 获取工具失败", serverName, e);
+            }
+        }
+        page.setRecords(filteredRecords);
         return page;
+    }
+
+    @Override
+    public com.alibaba.fastjson2.JSONObject getMcpToolData(java.math.BigInteger mcpId, String toolName) {
+        com.alibaba.fastjson2.JSONObject nodeData = new com.alibaba.fastjson2.JSONObject();
+        Mcp mcp = this.getById(mcpId);
+        if (mcp == null) {
+            return nodeData;
+        }
+        nodeData.put("mcpId", mcp.getId().toString());
+        nodeData.put("mcpName", mcp.getTitle());
+        nodeData.put("mcpToolName", toolName);
+
+        String serverName = getFirstMcpServerName(mcp.getConfigJson());
+        if (StringUtil.hasText(serverName)) {
+            McpSyncClient mcpClient = mcpClientManager.getMcpClient(serverName);
+            if (mcpClient != null) {
+                java.util.List<McpSchema.Tool> tools = mcpClient.listTools().tools();
+                for (McpSchema.Tool tool : tools) {
+                    if (tool.name().equals(toolName)) {
+                        java.util.Map<String, Object> inputSchema = tool.inputSchema();
+                        @SuppressWarnings("unchecked")
+                        java.util.Map<String, Object> properties = (java.util.Map<String, Object>) inputSchema.get("properties");
+                        @SuppressWarnings("unchecked")
+                        java.util.List<String> requiredFields = (java.util.List<String>) inputSchema.get("required");
+                        com.alibaba.fastjson2.JSONArray parameters = new com.alibaba.fastjson2.JSONArray();
+                        if (properties != null) {
+                            for (String key : properties.keySet()) {
+                                com.alibaba.fastjson2.JSONObject param = new com.alibaba.fastjson2.JSONObject();
+                                param.put("name", key);
+                                java.util.LinkedHashMap property = (java.util.LinkedHashMap) properties.get(key);
+                                param.put("dataType", property.get("type"));
+                                param.put("description", property.get("description"));
+                                param.put("required", requiredFields != null && requiredFields.contains(key));
+                                parameters.add(param);
+                            }
+                        }
+                        nodeData.put("parameters", parameters);
+                        break;
+                    }
+                }
+            }
+        }
+        nodeData.put("outputDefs", new com.alibaba.fastjson2.JSONArray());
+        return nodeData;
     }
 
     private Result<?> validateMcpConfig(Mcp entity) {

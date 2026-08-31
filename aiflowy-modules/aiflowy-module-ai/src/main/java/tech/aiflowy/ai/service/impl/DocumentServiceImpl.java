@@ -6,7 +6,7 @@ import com.agentsflex.core.document.splitter.MarkdownHeaderSplitter;
 import com.agentsflex.core.document.splitter.RegexDocumentSplitter;
 import com.agentsflex.core.document.splitter.SimpleDocumentSplitter;
 import com.agentsflex.core.document.splitter.SimpleTokenizeSplitter;
-import com.agentsflex.core.file2text.File2TextUtil;
+import com.agentsflex.doc.DocumentExtractionService;
 import com.agentsflex.core.model.embedding.EmbeddingModel;
 import com.agentsflex.core.model.embedding.EmbeddingOptions;
 import com.agentsflex.core.store.DocumentStore;
@@ -41,7 +41,7 @@ import tech.aiflowy.common.util.FileUtil;
 import tech.aiflowy.common.util.StringUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -82,6 +82,9 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
     @Resource
     private VectorDatabaseService vectorDatabaseService;
+
+    @Resource
+    private DocumentExtractionService documentExtractionService;
 
     @Override
     public Page<Document> getDocumentList(String knowledgeId, int pageSize, int pageNum, String fileName) {
@@ -181,7 +184,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
             Document aiDocument = new Document();
             List<DocumentChunk> previewList = new ArrayList<>();
             DocumentSplitter documentSplitter = getDocumentSplitter(documentCollectionSplitParams);
-            String content = File2TextUtil.readFromStream(inputStream, fileOriginName, null);
+            String content = documentExtractionService.extract(inputStream, fileOriginName, null);
             com.agentsflex.core.document.Document document = new com.agentsflex.core.document.Document(content);;
             inputStream.close();
             List<com.agentsflex.core.document.Document> documents = documentSplitter.split(document);

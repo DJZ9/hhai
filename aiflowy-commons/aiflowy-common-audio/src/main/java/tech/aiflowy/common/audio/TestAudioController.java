@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tech.aiflowy.common.audio.core.AudioServiceManager;
 import tech.aiflowy.common.web.controller.BaseController;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 @SaIgnore
 @RequestMapping("/tts")

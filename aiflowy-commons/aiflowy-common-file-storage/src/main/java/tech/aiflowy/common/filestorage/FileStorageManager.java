@@ -1,11 +1,11 @@
 package tech.aiflowy.common.filestorage;
 
-import tech.aiflowy.common.filestorage.xFileStorage.StorageConfig;
-import tech.aiflowy.common.util.SpringContextUtil;
-import tech.aiflowy.common.filestorage.impl.LocalFileStorageServiceImpl;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import tech.aiflowy.common.filestorage.impl.LocalFileStorageServiceImpl;
+import tech.aiflowy.common.filestorage.xFileStorage.StorageConfig;
+import tech.aiflowy.common.util.SpringContextUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,10 +20,15 @@ public class FileStorageManager implements FileStorageService {
     }
 
     @Override
+    public String saveTemp(MultipartFile file) {
+        return getService().saveTemp(file);
+    }
+
+    @Override
     public String save(MultipartFile file,String prePath) {
         return getService().save(file,prePath);
     }
-	
+
 	@Override
     public void delete(String path) {
         getService().delete(path);

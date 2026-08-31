@@ -12,7 +12,7 @@ import tech.aiflowy.system.mapper.SysAccountRoleMapper;
 import tech.aiflowy.system.mapper.SysRoleMapper;
 import tech.aiflowy.system.service.SysAccountService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;

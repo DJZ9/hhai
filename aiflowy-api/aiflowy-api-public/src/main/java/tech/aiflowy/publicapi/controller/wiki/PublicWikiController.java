@@ -1,8 +1,8 @@
 package tech.aiflowy.publicapi.controller.wiki;
 
-import com.agentsflex.core.file2text.File2TextUtil;
 import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
+import com.agentsflex.doc.DocumentExtractionService;
 import com.agentsflex.wiki.WikiTool;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
@@ -14,7 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tech.aiflowy.admin.controller.wiki.WikiOptimizeDto;
 import tech.aiflowy.admin.controller.wiki.event.WikiUpdateEvent;
 import tech.aiflowy.ai.agentsflex.listener.PromptChoreChatStreamListener;
-import tech.aiflowy.ai.agentsflex.ocrModel.OcrModel;
+import tech.aiflowy.ai.asynctask.OcrTaskService;
 import tech.aiflowy.ai.entity.Model;
 import tech.aiflowy.ai.service.ModelService;
 import tech.aiflowy.common.constant.enums.EnumOcrTaskStatus;
@@ -54,11 +54,15 @@ public class PublicWikiController extends BaseCurdController<WikiService, Wiki> 
     @Resource
     private ModelService modelService;
     @Resource
+    private OcrTaskService ocrTaskService;
+    @Resource
     private BotWikiService botWikiService;
     @Resource
     private ApplicationEventPublisher publisher;
     @Resource
     private AIFlowyWikiProvider wikiProvider;
+    @Resource
+    private DocumentExtractionService documentExtractionService;
 
     public PublicWikiController(WikiService service) {
         super(service);
@@ -99,7 +103,7 @@ public class PublicWikiController extends BaseCurdController<WikiService, Wiki> 
 
         ChatSseEmitter sseEmitter = new ChatSseEmitter();
         Model model = modelService.getSystemModel();
-        ChatModel chatModel = model.toChatModel();
+        ChatModel chatModel = model.toChatModel(null);
         if (chatModel == null) {
             return ChatSseUtil.sendSystemError(null, "模型不存在");
         }
@@ -118,7 +122,7 @@ public class PublicWikiController extends BaseCurdController<WikiService, Wiki> 
         if (isSave) {
             Integer recognitionMode = entity.getRecognitionMode();
             Integer type = entity.getType();
-            ChatModel chatModel = modelService.getSystemModel().toChatModel();
+            ChatModel chatModel = modelService.getSystemModel().toChatModel(null);
             if (EnumWikiType.CONTENT.getCode().equals(type)) {
                 Assert.notNull(recognitionMode, "识别模式不能为空");
                 Assert.notNull(chatModel, "请先配置系统模型");
@@ -130,15 +134,13 @@ public class PublicWikiController extends BaseCurdController<WikiService, Wiki> 
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                String content = File2TextUtil.readFromStream(inputStream, FilenameUtils.getName(entity.getFileUrl()), null);
+                String content = documentExtractionService.extract(inputStream, FilenameUtils.getName(entity.getFileUrl()), null);
                 entity.setContent(content);
                 entity.setTaskStatus(EnumOcrTaskStatus.IN_PROGRESS.getCode());
             }
             if (EnumRecognitionMode.OCR.getCode().equals(recognitionMode)) {
                 Assert.notNull(entity.getOcrModelId(), "OCR模型不能为空");
-                Model model = modelService.getModelInstance(entity.getOcrModelId());
-                OcrModel ocrModel = model.toOcrModel();
-                String taskId = ocrModel.runAsync(entity.getFileUrl());
+                String taskId = ocrTaskService.submit(entity.getOcrModelId(), entity.getFileUrl(), null);
                 entity.setTaskId(taskId);
                 entity.setTaskStatus(EnumOcrTaskStatus.IN_PROGRESS.getCode());
             }

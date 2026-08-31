@@ -46,14 +46,14 @@ public class ChatStreamListener implements StreamResponseListener {
     }
 
     @Override
-    public void onStart(StreamContext context) {
-        StreamResponseListener.super.onStart(context);
+    public void onOpen(StreamContext context) {
+        StreamResponseListener.super.onOpen(context);
     }
 
     @Override
     public void onMessage(StreamContext context, AiMessageResponse aiMessageResponse) {
         try {
-            if (maxToolCallCount.get() >= 20) {
+            if (maxToolCallCount.get() >= 100) {
                 sendSystemError(sseEmitter, "工具调用次数超出限制，请重新开始会话。");
                 return;
             }
@@ -106,7 +106,7 @@ public class ChatStreamListener implements StreamResponseListener {
     }
 
     @Override
-    public void onStop(StreamContext context) {
+    public void onClose(StreamContext context) {
         // 仅当canStop为true（最后一次无后续工具调用的响应）时，执行业务逻辑
         if (this.canStop) {
             if (context.getThrowable() != null) {
@@ -117,13 +117,13 @@ public class ChatStreamListener implements StreamResponseListener {
             ChatEnvelope<Map<String, String>> chatEnvelope = new ChatEnvelope<>();
             chatEnvelope.setDomain(ChatDomain.SYSTEM);
             sseEmitter.sendDone(chatEnvelope);
-            StreamResponseListener.super.onStop(context);
+            StreamResponseListener.super.onClose(context);
         }
 
     }
 
     @Override
-    public void onFailure(StreamContext context, Throwable throwable) {
+    public void onError(StreamContext context, Throwable throwable) {
         if (throwable != null) {
             throwable.printStackTrace();
             sendSystemError(sseEmitter, throwable.getMessage());

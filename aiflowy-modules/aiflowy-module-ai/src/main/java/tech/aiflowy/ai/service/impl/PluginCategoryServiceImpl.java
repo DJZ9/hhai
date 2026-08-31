@@ -10,7 +10,7 @@ import tech.aiflowy.ai.service.PluginCategoryService;
 import org.springframework.stereotype.Service;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 
 /**

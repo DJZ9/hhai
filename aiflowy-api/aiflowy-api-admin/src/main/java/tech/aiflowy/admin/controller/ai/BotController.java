@@ -28,7 +28,7 @@ import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
 import tech.aiflowy.wiki.entity.BotWiki;
 import tech.aiflowy.wiki.service.BotWikiService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.*;
@@ -378,7 +378,7 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         if (model == null) {
             return ChatSseUtil.sendSystemError(null, "模型不存在");
         }
-        ChatModel chatModel = model.toChatModel();
+        ChatModel chatModel = model.toChatModel(null);
         if (chatModel == null) {
             return ChatSseUtil.sendSystemError(null, "模型不存在");
         }

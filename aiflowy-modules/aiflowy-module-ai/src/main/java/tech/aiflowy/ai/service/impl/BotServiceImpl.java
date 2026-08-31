@@ -1,8 +1,6 @@
 package tech.aiflowy.ai.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.agentsflex.core.file2text.File2TextService;
-import com.agentsflex.core.file2text.source.HttpDocumentSource;
 import com.agentsflex.core.memory.ChatMemory;
 import com.agentsflex.core.message.Message;
 import com.agentsflex.core.message.SystemMessage;
@@ -12,9 +10,11 @@ import com.agentsflex.core.model.chat.ChatOptions;
 import com.agentsflex.core.model.chat.StreamResponseListener;
 import com.agentsflex.core.model.chat.tool.Tool;
 import com.agentsflex.core.prompt.MemoryPrompt;
+import com.agentsflex.doc.DocumentExtractionService;
 import com.agentsflex.wiki.WikiTool;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -47,7 +47,6 @@ import tech.aiflowy.wiki.entity.BotWiki;
 import tech.aiflowy.wiki.entity.Wiki;
 import tech.aiflowy.wiki.service.BotWikiService;
 
-import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,6 +114,8 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     private BotWikiService botWikiService;
     @Resource
     private AIFlowyWikiProvider aiFlowyWikiProvider;
+    @Resource
+    private DocumentExtractionService documentExtractionService;
 
     @Override
     public Bot getDetail(String id) {
@@ -164,7 +165,7 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         if (model == null) {
             return ChatSseUtil.sendSystemError(conversationId, "模型不存在，请检查配置");
         }
-        ChatModel chatModel = model.toChatModel();
+        ChatModel chatModel = model.toChatModel(null);
         if (chatModel == null) {
             return ChatSseUtil.sendSystemError(conversationId, "对话模型获取失败，请检查配置");
         }
@@ -411,16 +412,15 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     public String attachmentsToString(List<String> fileList) {
         StringBuilder messageBuilder = new StringBuilder();
         if (fileList != null && !fileList.isEmpty()) {
-            File2TextService fileTextService = new File2TextService();
             for (int i = 0; i < fileList.size(); i++) {
                 String fileUrl = fileList.get(i);
                 String encodedUrl = UrlEncoderUtil.getEncodedUrl(fileUrl);
-                String result = fileTextService.extractTextFromSource(new HttpDocumentSource(encodedUrl));
+                String result = documentExtractionService.extract(new com.agentsflex.doc.source.HttpDocumentSource(encodedUrl));
                 if (result != null) {
                     if (i > 0) {
                         messageBuilder.append("\n\n");
                     }
-                    messageBuilder.append("附件").append(i + 1).append("，文件名为：").append(PathGeneratorUtil.getPureFileName(fileUrl)).append("，内容为：  \n").append(result);
+                    messageBuilder.append("附件").append(i + 1).append("，文件名为：").append(PathGeneratorUtil.getPureFileName(fileUrl)).append("，访问地址为：").append(fileUrl).append("，内容为：  \n").append(result);
                 }
                 storageService.delete(fileUrl);
             }

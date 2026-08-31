@@ -14,7 +14,7 @@ import java.util.UUID;
 public class PathGeneratorUtil {
 
     public static String generateUserPath(String fileName) {
-        return "/" + getAccountLoginIdOrCommons() + PathGeneratorUtil.generatePath(fileName);
+        return "/" + getAccountLoginIdOrCommons() +  PathGeneratorUtil.generatePath(fileName);
     }
 
     private static String getAccountLoginIdOrCommons() {
@@ -37,6 +37,23 @@ public class PathGeneratorUtil {
         LocalDate currentDate = LocalDate.now();
         String uuid = UUID.randomUUID().toString();
         return buildPath(currentDate, uuid, fileName);
+    }
+
+    /**
+     * 生成临时文件路径（用于定时清理）
+     * 路径格式：/temp/{年/月/日/uuid/文件名}
+     *
+     * @param fileName 文件名（含后缀，如 "temp_file.xlsx"）
+     * @return 示例："/temp/2024/10/15/1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed/temp_file.xlsx"
+     */
+    public static String generateTempPath(String fileName) {
+        LocalDate currentDate = LocalDate.now();
+        String uuid = UUID.randomUUID().toString();
+        String pureFileName = getPureFileName(fileName);
+        int year = currentDate.getYear();
+        int month = currentDate.getMonthValue();
+        int day = currentDate.getDayOfMonth();
+        return String.format("/temp/%d/%d/%d/%s/%s", year, month, day, uuid, pureFileName);
     }
 
     /**

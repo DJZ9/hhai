@@ -11,7 +11,7 @@ import tech.aiflowy.ai.service.BotConversationService;
 import tech.aiflowy.ai.service.BotMessageService;
 import tech.aiflowy.ai.service.BotRecentlyUsedService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.List;
 
