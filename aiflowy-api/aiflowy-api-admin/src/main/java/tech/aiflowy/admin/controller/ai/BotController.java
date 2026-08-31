@@ -15,14 +15,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tech.aiflowy.ai.agentsflex.listener.PromptChoreChatStreamListener;
-import tech.aiflowy.ai.dto.BotPromptChoreRequestDTO;
 import tech.aiflowy.ai.entity.*;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.service.impl.BotServiceImpl;
-import tech.aiflowy.ai.utils.EventUtil;
 import tech.aiflowy.common.audio.core.AudioServiceManager;
 import tech.aiflowy.common.domain.Result;
-import tech.aiflowy.common.util.Maps;
 import tech.aiflowy.common.web.controller.BaseCurdController;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.common.web.jsonbody.JsonBody;
@@ -31,7 +28,7 @@ import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
 import tech.aiflowy.wiki.entity.BotWiki;
 import tech.aiflowy.wiki.service.BotWikiService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.*;
@@ -312,13 +309,16 @@ public class BotController extends BaseCurdController<BotService, Bot> {
     /**
      * 系统提示词优化
      *
-     * @param request 优化请求参数
-     * @return SSE流式响应
+     * @param prompt
+     * @return
      */
     @PostMapping("prompt/chore/chat")
     @SaIgnore
-    public SseEmitter chat(@RequestBody BotPromptChoreRequestDTO request) {
-        if (!StringUtils.hasLength(request.getPrompt())) {
+    public SseEmitter chat(
+            @JsonBody(value = "prompt", required = true) String prompt,
+            @JsonBody(value = "botId", required = true) BigInteger botId
+    ){
+        if (!StringUtils.hasLength(prompt)) {
             throw new BusinessException("提示词不能为空！");
         }
         String promptChore = "# 角色与目标\n" +
@@ -368,8 +368,8 @@ public class BotController extends BaseCurdController<BotService, Bot> {
                 "---\n" +
                 "\n" +
                 "## 用户原始提示词\n" +
-                "[" + request.getPrompt() + "]\n";
-        Bot aiBot = service.getById(request.getBotId());
+                "[" + prompt + "]\n";
+        Bot aiBot = service.getById(botId);
         if (aiBot == null) {
             return ChatSseUtil.sendSystemError(null, "聊天助手不存在");
         }
@@ -378,13 +378,7 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         if (model == null) {
             return ChatSseUtil.sendSystemError(null, "模型不存在");
         }
-        Maps customProps = Maps.of("botId", request.getBotId());
-
-        // REMOVE_TAG_START:COMMERCIAL
-        EventUtil.setAccount(customProps);
-        // REMOVE_TAG_END:COMMERCIAL
-
-        ChatModel chatModel = model.toChatModel(customProps);
+        ChatModel chatModel = model.toChatModel();
         if (chatModel == null) {
             return ChatSseUtil.sendSystemError(null, "模型不存在");
         }

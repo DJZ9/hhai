@@ -14,7 +14,7 @@ import tech.aiflowy.ai.service.PluginItemService;
 import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.*;
 

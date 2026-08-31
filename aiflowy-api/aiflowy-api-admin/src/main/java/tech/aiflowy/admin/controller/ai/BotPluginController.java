@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.aiflowy.common.web.jsonbody.JsonBody;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.List;
 

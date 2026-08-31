@@ -11,7 +11,7 @@ import tech.aiflowy.common.captcha.tainai.CaptchaData;
 import tech.aiflowy.system.entity.SysOption;
 import tech.aiflowy.system.service.SysOptionService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 

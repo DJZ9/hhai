@@ -18,7 +18,7 @@ import tech.aiflowy.ai.service.WorkflowService;
 import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.util.List;
 
 @RequestMapping("/api/v1/workflowNode")

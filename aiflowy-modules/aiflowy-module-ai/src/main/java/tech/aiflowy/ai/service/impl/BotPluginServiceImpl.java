@@ -9,7 +9,7 @@ import tech.aiflowy.ai.mapper.BotPluginMapper;
 import tech.aiflowy.ai.mapper.PluginMapper;
 import tech.aiflowy.ai.service.BotPluginService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;

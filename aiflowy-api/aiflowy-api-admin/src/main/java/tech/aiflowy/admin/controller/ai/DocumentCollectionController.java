@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Collection;

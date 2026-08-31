@@ -9,7 +9,7 @@ import tech.aiflowy.system.entity.SysOption;
 import tech.aiflowy.system.service.SysOptionService;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 
 @Component
 public class DefaultOptionStore implements SysOptionStore {

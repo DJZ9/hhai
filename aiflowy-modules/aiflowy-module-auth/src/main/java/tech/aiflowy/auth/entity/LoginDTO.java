@@ -1,7 +1,6 @@
 package tech.aiflowy.auth.entity;
 
-
-import jakarta.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 
 public class LoginDTO {
 

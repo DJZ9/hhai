@@ -16,8 +16,6 @@ import java.util.Optional;
 
 public class McpTool extends BaseTool {
     private BigInteger mcpId;
-    // mcp 自定义输出模板
-    private String botOutputTemplate;
 
     @Override
     public Object invoke(Map<String, Object> argsMap) {
@@ -45,13 +43,5 @@ public class McpTool extends BaseTool {
 
     public BigInteger getMcpId() {
         return mcpId;
-    }
-
-    public String getBotOutputTemplate() {
-        return botOutputTemplate;
-    }
-
-    public void setBotOutputTemplate(String botOutputTemplate) {
-        this.botOutputTemplate = botOutputTemplate;
     }
 }

@@ -20,15 +20,14 @@ import com.agentsflex.rerank.DefaultRerankModel;
 import com.agentsflex.rerank.DefaultRerankModelConfig;
 import com.agentsflex.rerank.gitee.GiteeRerankModel;
 import com.agentsflex.rerank.gitee.GiteeRerankModelConfig;
-import com.alibaba.fastjson2.JSON;
 import com.mybatisflex.annotation.RelationManyToOne;
 import com.mybatisflex.annotation.Table;
-import tech.aiflowy.ai.agentsflex.ocrModel.*;
+import tech.aiflowy.ai.agentsflex.ocrModel.GiteeOcrModel;
+import tech.aiflowy.ai.agentsflex.ocrModel.GiteeOcrModelConfig;
+import tech.aiflowy.ai.agentsflex.ocrModel.OcrModel;
 import tech.aiflowy.ai.entity.base.ModelBase;
 import tech.aiflowy.common.util.StringUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
-
-import java.util.Map;
 
 /**
  * 实体类。
@@ -48,7 +47,6 @@ public class Model extends ModelBase {
      */
     public final static String[] MODEL_TYPES = {"chatModel", "embeddingModel", "rerankModel", "ocrModel"};
 
-
     public ModelProvider getModelProvider() {
         return modelProvider;
     }
@@ -57,12 +55,11 @@ public class Model extends ModelBase {
         this.modelProvider = modelProvider;
     }
 
-    public ChatModel toChatModel(Map<String, Object> customProperties) {
+    public ChatModel toChatModel() {
         String providerType = modelProvider.getProviderType();
         if (StringUtil.noText(providerType)) {
-            throw new BusinessException("模型提供者不能为空");
+            return null;
         }
-
         switch (providerType.toLowerCase()) {
             case "ollama":
                 OllamaChatConfig ollamaChatConfig = new OllamaChatConfig();
@@ -72,9 +69,6 @@ public class Model extends ModelBase {
                 }
                 ollamaChatConfig.setModel(checkAndGetModelName());
                 ollamaChatConfig.setProvider(getModelProvider().getProviderName());
-                setChatConfig(customProperties);
-                ollamaChatConfig.setCustomProperties(customProperties);
-                ollamaChatConfig.setSupportImage(isTrueOr(this.getSupportImage(), this.getSupportImageB64Only()));
                 return new OllamaChatModel(ollamaChatConfig);
             case "deepseek":
                 DeepseekConfig deepseekConfig = new DeepseekConfig();
@@ -83,9 +77,6 @@ public class Model extends ModelBase {
                 deepseekConfig.setApiKey(checkAndGetApiKey());
                 deepseekConfig.setModel(checkAndGetModelName());
                 deepseekConfig.setRequestPath(checkAndGetRequestPath());
-                deepseekConfig.setSupportImage(isTrueOr(this.getSupportImage(), this.getSupportImageB64Only()));
-                setChatConfig(customProperties);
-                deepseekConfig.setCustomProperties(customProperties);
                 return new DeepseekChatModel(deepseekConfig);
             default:
                 OpenAIChatConfig openAIChatConfig = new OpenAIChatConfig();
@@ -93,21 +84,11 @@ public class Model extends ModelBase {
                 openAIChatConfig.setEndpoint(checkAndGetEndpoint());
                 openAIChatConfig.setApiKey(checkAndGetApiKey());
                 openAIChatConfig.setModel(checkAndGetModelName());
-                openAIChatConfig.setLogEnabled(true);
                 openAIChatConfig.setRequestPath(checkAndGetRequestPath());
-                openAIChatConfig.setSupportImage(isTrueOr(this.getSupportImage(), this.getSupportImageB64Only()));
                 if (getSupportToolMessage() != null) {
                     openAIChatConfig.setSupportToolMessage(getSupportToolMessage());
                 }
-                setChatConfig(customProperties);
-                openAIChatConfig.setCustomProperties(customProperties);
                 return new OpenAIChatModel(openAIChatConfig);
-        }
-    }
-
-    private void setChatConfig(Map<String, Object> customProperties) {
-        if (customProperties != null) {
-            customProperties.put("modelId", getId());
         }
     }
 
@@ -143,9 +124,7 @@ public class Model extends ModelBase {
                     OllamaEmbeddingConfig ollamaEmbeddingConfig = new OllamaEmbeddingConfig();
                     ollamaEmbeddingConfig.setProvider(getModelProvider().getProviderName());
                     ollamaEmbeddingConfig.setEndpoint(checkAndGetEndpoint());
-                    if (StringUtil.hasText(getApiKey())) {
-                        ollamaEmbeddingConfig.setApiKey(getApiKey());
-                    }
+                    ollamaEmbeddingConfig.setApiKey(getApiKey());
                     ollamaEmbeddingConfig.setModel(checkAndGetModelName());
                     ollamaEmbeddingConfig.setRequestPath(getRequestPath());
                     return new OllamaEmbeddingModel(ollamaEmbeddingConfig);
@@ -161,6 +140,7 @@ public class Model extends ModelBase {
         } catch (Exception e) {
             throw new BusinessException("向量模型配置失败：" + e.getMessage());
         }
+
     }
 
     public OcrModel toOcrModel() {
@@ -170,80 +150,9 @@ public class Model extends ModelBase {
                 GiteeOcrModel giteeOcrModel = new GiteeOcrModel(giteeOcrModelConfig);
                 giteeOcrModel.setApiKey(checkAndGetApiKey());
                 giteeOcrModel.setEndpoint(checkAndGetEndpoint());
-                if (StrUtil.isNotBlank(getRequestPath())) {
-                    giteeOcrModel.setRequestPath(getRequestPath());
-                }
+                giteeOcrModel.setRequestPath(checkAndGetRequestPath());
                 giteeOcrModel.setModel(checkAndGetModelName());
                 return giteeOcrModel;
-            case "mineru":
-                MineruOcrModelConfig mineruOcrModelConfig = new MineruOcrModelConfig();
-                MineruOcrModel mineruOcrModel = new MineruOcrModel(mineruOcrModelConfig);
-                mineruOcrModel.setApiKey(checkAndGetApiKey());
-                mineruOcrModel.setEndpoint(checkAndGetEndpoint());
-                if (StrUtil.isNotBlank(getRequestPath())) {
-                    mineruOcrModel.setRequestPath(getRequestPath());
-                }
-                mineruOcrModel.setModel(checkAndGetModelName());
-                // 从 options 中读取额外配置
-                Map<String, Object> options = getOptions();
-                if (options != null) {
-                    if (options.containsKey("modelVersion")) {
-                        mineruOcrModel.setModelVersion((String) options.get("modelVersion"));
-                    }
-                    if (options.containsKey("enableTable")) {
-                        mineruOcrModel.setEnableTable((Boolean) options.get("enableTable"));
-                    }
-                    if (options.containsKey("enableFormula")) {
-                        mineruOcrModel.setEnableFormula((Boolean) options.get("enableFormula"));
-                    }
-                    if (options.containsKey("isOcr")) {
-                        mineruOcrModel.setIsOcr((Boolean) options.get("isOcr"));
-                    }
-                    if (options.containsKey("language")) {
-                        mineruOcrModel.setLanguage((String) options.get("language"));
-                    }
-                    if (options.containsKey("pageRanges")) {
-                        mineruOcrModel.setPageRanges((String) options.get("pageRanges"));
-                    }
-                }
-                return mineruOcrModel;
-            case "localmineru":
-                Map<String, Object> localOptions = getOptions();
-                LocalMineruOcrModel localMineruOcrModel;
-                if (localOptions != null && !localOptions.isEmpty()) {
-                    localMineruOcrModel = JSON.parseObject(JSON.toJSONString(localOptions), LocalMineruOcrModel.class);
-                } else {
-                    localMineruOcrModel = new LocalMineruOcrModel();
-                }
-                localMineruOcrModel.setApiKey(getApiKey());
-                localMineruOcrModel.setEndpoint(checkAndGetEndpoint());
-                if (StrUtil.isNotBlank(getRequestPath())) {
-                    localMineruOcrModel.setRequestPath(getRequestPath());
-                }
-                localMineruOcrModel.setModel(checkAndGetModelName());
-                localMineruOcrModel.setBackend(checkAndGetModelName());
-                return localMineruOcrModel;
-            case "aliyun":
-                AliBailianOcrModelConfig aliBailianOcrModelConfig = new AliBailianOcrModelConfig();
-                AliBailianOcrModel aliBailianOcrModel = new AliBailianOcrModel(aliBailianOcrModelConfig);
-                aliBailianOcrModel.setApiKey(checkAndGetApiKey());
-                if (StrUtil.isNotBlank(checkAndGetEndpoint())) {
-                    aliBailianOcrModel.setEndpoint(checkAndGetEndpoint());
-                }
-                // 从 options 中读取额外配置
-                Map<String, Object> aliOptions = getOptions();
-                if (aliOptions != null) {
-                    if (aliOptions.containsKey("workspaceId")) {
-                        aliBailianOcrModel.setWorkspaceId((String) aliOptions.get("workspaceId"));
-                    }
-                    if (aliOptions.containsKey("modelName")) {
-                        aliBailianOcrModel.setModelName((String) aliOptions.get("modelName"));
-                    }
-                    if (aliOptions.containsKey("ocrTask")) {
-                        aliBailianOcrModel.setOcrTask((String) aliOptions.get("ocrTask"));
-                    }
-                }
-                return aliBailianOcrModel;
         }
         return null;
     }
@@ -288,23 +197,5 @@ public class Model extends ModelBase {
         }
         return getModelName();
     }
-
-    /**
-     * 安全地判断多个 Boolean 值的 OR 结果（null 视为 false）
-     * @param values Boolean 值数组
-     * @return OR 运算结果
-     */
-    private static boolean isTrueOr(Boolean... values) {
-        if (values == null) {
-            return false;
-        }
-        for (Boolean value : values) {
-            if (value != null && value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
 }

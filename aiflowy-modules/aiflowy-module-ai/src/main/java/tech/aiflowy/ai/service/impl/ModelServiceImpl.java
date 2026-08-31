@@ -155,7 +155,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
 
     private void verifyChatLlm(Model llm) {
 
-        ChatModel chatModel = llm.toChatModel(null);
+        ChatModel chatModel = llm.toChatModel();
         if (chatModel == null) {
             throw new BusinessException("chatModel为空");
         }

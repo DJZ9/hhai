@@ -3,13 +3,10 @@ package tech.aiflowy.system.entity.base;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
-import com.mybatisflex.core.handler.FastjsonTypeHandler;
-import tech.aiflowy.common.entity.DateEntity;
-
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
-import java.util.Map;
+import tech.aiflowy.common.entity.DateEntity;
 
 
 public class SysAccountBase extends DateEntity implements Serializable {
@@ -111,12 +108,6 @@ public class SysAccountBase extends DateEntity implements Serializable {
      */
     @Column(comment = "备注")
     private String remark;
-
-    /**
-     * 用户元信息
-     */
-    @Column(typeHandler = FastjsonTypeHandler.class, comment = "用户元信息")
-    private Map<String, Object> metaData;
 
     public BigInteger getId() {
         return id;
@@ -244,14 +235,6 @@ public class SysAccountBase extends DateEntity implements Serializable {
 
     public void setRemark(String remark) {
         this.remark = remark;
-    }
-
-    public Map<String, Object> getMetaData() {
-        return metaData;
-    }
-
-    public void setMetaData(Map<String, Object> metaData) {
-        this.metaData = metaData;
     }
 
 }

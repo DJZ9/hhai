@@ -11,13 +11,6 @@ public interface FileStorageService {
 
     String save(MultipartFile file);
 
-    /**
-     * 保存临时文件到临时目录（用于定时清理）
-     * @param file 文件
-     * @return 文件url
-     */
-    String saveTemp(MultipartFile file);
-
 
     void delete(String path);
 

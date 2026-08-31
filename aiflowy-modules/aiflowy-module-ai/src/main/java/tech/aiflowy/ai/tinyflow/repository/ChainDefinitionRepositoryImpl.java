@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.entity.Workflow;
 import tech.aiflowy.ai.service.WorkflowService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 
 @Component
 public class ChainDefinitionRepositoryImpl implements ChainDefinitionRepository {

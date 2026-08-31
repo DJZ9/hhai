@@ -9,7 +9,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tech.aiflowy.ai.entity.Bot;
 import com.mybatisflex.core.service.IService;
 import tech.aiflowy.ai.service.impl.BotServiceImpl;
-import tech.aiflowy.core.chat.protocol.payload.FormInfo;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseEmitter;
 
 import java.math.BigInteger;

@@ -15,7 +15,7 @@ import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.web.controller.BaseCurdController;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;

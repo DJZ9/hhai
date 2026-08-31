@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.node.InputStreamFile;
 import tech.aiflowy.common.filestorage.FileStorageService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.io.InputStream;
 import java.util.Map;
 

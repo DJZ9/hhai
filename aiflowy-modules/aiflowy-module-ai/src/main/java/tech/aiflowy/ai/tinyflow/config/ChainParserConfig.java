@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tech.aiflowy.ai.tinyflow.service.TinyFlowConfigService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 
 @Configuration
 public class ChainParserConfig {

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.config.BochaaiProps;
 import tech.aiflowy.ai.node.*;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 
 @Component
 public class TinyFlowConfigService {

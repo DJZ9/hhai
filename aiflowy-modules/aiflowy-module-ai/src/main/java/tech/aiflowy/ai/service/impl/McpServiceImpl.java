@@ -160,10 +160,8 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
             List<McpSchema.Tool> tools = mcpClient.listTools().tools();
             for (McpSchema.Tool tool : tools) {
                 if (tool.name().equals(botMcp.getMcpToolName())) {
-                    Map<String, Object> inputSchema = tool.inputSchema();
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> properties = (Map<String, Object>) inputSchema.get("properties");
-//                    List<String> required = tool.inputSchema().required();
+                    Map<String, Object> properties = tool.inputSchema().properties();
+                    List<String> required = tool.inputSchema().required();
                     McpTool mcpTool = new McpTool();
                     mcpTool.setName(tool.name());
                     mcpTool.setDescription(tool.description());
@@ -186,11 +184,6 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
                         mcpTool.setParameters(parametersArr);
                     });
                     mcpTool.setMcpId(mcpInfo.getId());
-                    // 设置Bot自定义输出模板
-                    String customTemplate = botMcp.getOutputTemplate();
-                    if (customTemplate != null && !customTemplate.isEmpty()) {
-                        mcpTool.setBotOutputTemplate(customTemplate);
-                    }
                     return mcpTool;
                 }
             }

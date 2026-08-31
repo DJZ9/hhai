@@ -9,8 +9,8 @@ import tech.aiflowy.ai.entity.Mcp;
 import tech.aiflowy.ai.service.impl.McpServiceImpl;
 import tech.aiflowy.common.util.StringUtil;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Optional;
 

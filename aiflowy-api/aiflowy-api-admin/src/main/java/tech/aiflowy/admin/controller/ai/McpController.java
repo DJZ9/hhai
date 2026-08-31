@@ -16,7 +16,7 @@ import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.web.controller.BaseCurdController;
 import tech.aiflowy.common.web.jsonbody.JsonBody;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.io.Serializable;
 
 /**

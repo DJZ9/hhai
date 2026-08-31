@@ -23,12 +23,7 @@ public class FileStorageManager implements FileStorageService {
     public String save(MultipartFile file,String prePath) {
         return getService().save(file,prePath);
     }
-
-    @Override
-    public String saveTemp(MultipartFile file) {
-        return getService().saveTemp(file);
-    }
-
+	
 	@Override
     public void delete(String path) {
         getService().delete(path);

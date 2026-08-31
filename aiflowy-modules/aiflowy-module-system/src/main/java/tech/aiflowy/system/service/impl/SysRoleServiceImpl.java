@@ -16,7 +16,7 @@ import tech.aiflowy.system.mapper.SysRoleMenuMapper;
 import tech.aiflowy.system.service.SysAccountRoleService;
 import tech.aiflowy.system.service.SysRoleService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;

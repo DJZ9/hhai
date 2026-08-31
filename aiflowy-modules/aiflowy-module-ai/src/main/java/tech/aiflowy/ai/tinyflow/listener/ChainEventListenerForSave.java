@@ -18,7 +18,7 @@ import tech.aiflowy.ai.service.WorkflowExecStepService;
 import tech.aiflowy.ai.service.WorkflowService;
 import tech.aiflowy.ai.utils.WorkFlowUtil;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.EnumSet;
 

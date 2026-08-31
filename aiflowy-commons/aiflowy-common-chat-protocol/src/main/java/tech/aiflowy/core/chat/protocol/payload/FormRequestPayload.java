@@ -1,6 +1,5 @@
 package tech.aiflowy.core.chat.protocol.payload;
 
-import java.util.List;
 import java.util.Map;
 
 public class FormRequestPayload {
@@ -9,8 +8,6 @@ public class FormRequestPayload {
     private String description;
     private Map<String, Object> schema; // JSON Schema
     private Map<String, String> ui;
-    // 表单信息
-    private List<FormData> formData;
 
     public String getFormId() {
         return formId;
@@ -50,13 +47,5 @@ public class FormRequestPayload {
 
     public void setUi(Map<String, String> ui) {
         this.ui = ui;
-    }
-
-    public List<FormData> getFormData() {
-        return formData;
-    }
-
-    public void setFormData(List<FormData> formData) {
-        this.formData = formData;
     }
 }

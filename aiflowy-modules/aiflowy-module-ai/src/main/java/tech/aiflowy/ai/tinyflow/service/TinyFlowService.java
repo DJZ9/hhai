@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.tinyflow.entity.ChainInfo;
 import tech.aiflowy.ai.tinyflow.entity.NodeInfo;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 

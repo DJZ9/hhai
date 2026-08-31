@@ -76,13 +76,6 @@ public class ChatSseEmitter {
         }
     }
 
-    /**
-     * 发送消息ID给前端（用于关联后端保存的消息）
-     */
-    public void sendMessageId(ChatEnvelope<?> envelope) {
-        send("messageId", envelope);
-    }
-
     public void complete() {
         emitter.complete();
     }

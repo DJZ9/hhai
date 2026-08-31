@@ -12,7 +12,7 @@ import tech.aiflowy.system.service.SysApiKeyResourceMappingService;
 import tech.aiflowy.system.service.SysApiKeyResourceService;
 import tech.aiflowy.system.service.SysApiKeyService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;

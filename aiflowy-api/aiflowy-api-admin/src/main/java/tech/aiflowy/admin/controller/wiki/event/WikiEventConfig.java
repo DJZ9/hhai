@@ -55,7 +55,7 @@ public class WikiEventConfig {
         Wiki update = new Wiki();
         update.setId(event.getWikiId());
         try {
-            ChatModel chatModel = modelService.getSystemModel().toChatModel(null);
+            ChatModel chatModel = modelService.getSystemModel().toChatModel();
             SimplePrompt prompt = new SimplePrompt(PROMPT + content + "\n JSON 格式如下：\n" + WIKI_INFO);
 
             ChatOptions options = new ChatOptions.Builder()

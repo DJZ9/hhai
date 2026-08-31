@@ -95,7 +95,7 @@ public class WikiController extends BaseCurdController<WikiService, Wiki> {
 
         ChatSseEmitter sseEmitter = new ChatSseEmitter();
         Model model = modelService.getSystemModel();
-        ChatModel chatModel = model.toChatModel(null);
+        ChatModel chatModel = model.toChatModel();
         if (chatModel == null) {
             return ChatSseUtil.sendSystemError(null, "模型不存在");
         }
@@ -114,7 +114,7 @@ public class WikiController extends BaseCurdController<WikiService, Wiki> {
         if (isSave) {
             Integer recognitionMode = entity.getRecognitionMode();
             Integer type = entity.getType();
-            ChatModel chatModel = modelService.getSystemModel().toChatModel(null);
+            ChatModel chatModel = modelService.getSystemModel().toChatModel();
             if (EnumWikiType.CONTENT.getCode().equals(type)) {
                 Assert.notNull(recognitionMode, "识别模式不能为空");
                 Assert.notNull(chatModel, "请先配置系统模型");

@@ -11,7 +11,7 @@ import tech.aiflowy.common.dict.DictItem;
 import tech.aiflowy.common.dict.DictLoader;
 import tech.aiflowy.common.dict.DictManager;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

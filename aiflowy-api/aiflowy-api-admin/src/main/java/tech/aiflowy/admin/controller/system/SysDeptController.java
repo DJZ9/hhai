@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Collection;

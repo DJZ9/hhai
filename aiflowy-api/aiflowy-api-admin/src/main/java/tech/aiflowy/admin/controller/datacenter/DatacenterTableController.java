@@ -24,7 +24,7 @@ import tech.aiflowy.datacenter.excel.ReadResVo;
 import tech.aiflowy.datacenter.service.DatacenterTableFieldService;
 import tech.aiflowy.datacenter.service.DatacenterTableService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.URLEncoder;

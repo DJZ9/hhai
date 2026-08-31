@@ -3,7 +3,6 @@ package tech.aiflowy.ai.entity.base;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
-
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
@@ -102,12 +101,6 @@ public class WorkflowExecResultBase implements Serializable {
      */
     @Column(comment = "错误信息")
     private String errorInfo;
-
-    /**
-     * 预执行ID
-     */
-    @Column(comment = "预执行ID")
-    private BigInteger preId;
 
     public BigInteger getId() {
         return id;
@@ -227,14 +220,6 @@ public class WorkflowExecResultBase implements Serializable {
 
     public void setErrorInfo(String errorInfo) {
         this.errorInfo = errorInfo;
-    }
-
-    public BigInteger getPreId() {
-        return preId;
-    }
-
-    public void setPreId(BigInteger preId) {
-        this.preId = preId;
     }
 
 }

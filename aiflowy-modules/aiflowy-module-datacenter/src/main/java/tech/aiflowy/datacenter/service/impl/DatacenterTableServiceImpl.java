@@ -23,7 +23,7 @@ import tech.aiflowy.datacenter.mapper.DatacenterTableFieldMapper;
 import tech.aiflowy.datacenter.mapper.DatacenterTableMapper;
 import tech.aiflowy.datacenter.service.DatacenterTableService;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;

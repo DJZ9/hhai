@@ -2,7 +2,7 @@ package tech.aiflowy.ai.tinyflow.repository;
 
 import com.alicp.jetcache.Cache;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
 public class BaseRepository {

@@ -21,7 +21,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.tenant.TenantManager;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
