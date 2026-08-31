@@ -10,6 +10,7 @@
   "modified": "修改时间",
   "modifiedBy": "修改者ID",
   "status": "是否启用",
+  "mcpMarket": "mcp商店",
   "modal": {
     "config": "配置",
     "tool": "工具",

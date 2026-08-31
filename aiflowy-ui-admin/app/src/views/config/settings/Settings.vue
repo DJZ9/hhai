@@ -40,7 +40,7 @@ function getBrands() {
 function getOptions() {
   api
     .get(
-      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables',
+      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=skill_market_domain',
     )
     .then((res) => {
       if (res.errorCode === 0) {
@@ -73,6 +73,10 @@ const entity = ref({
   chatgpt_model_name: '',
 });
 
+// 技能功能配置
+const skillMarket = ref({
+  skill_market_domain: 'https://skill.aiflowy.tech',
+});
 function formatLlmList(data: any[]) {
   return data.map((item: any) => {
     const extra = new Map([
@@ -100,7 +104,7 @@ function handleSave(data?: Record<string, any>) {
 }
 
 // 用户中心设置
-const activeName = ref<'ai' | 'envvariables' | 'usercenter'>('ai');
+const activeName = ref<'ai' | 'envvariables' | 'usercenter' | 'skillmarket'>('ai');
 
 // 系统变量设置
 interface EnvVariable {
@@ -129,6 +133,11 @@ function handleEnvVariablesSave() {
 
   handleSave({ env_variables: JSON.stringify(envVariablesObj) });
 }
+
+function handleSkillMarketSave() {
+  handleSave(skillMarket.value);
+}
+
 const userCenterFormEl = useTemplateRef('userCenterForm');
 const userCenter = ref({
   user_center_domain: '',
@@ -265,6 +274,35 @@ async function handleUserCenterSave() {
           </ElForm>
           <div class="settings-button-container">
             <ElButton type="primary" @click="handleEnvVariablesSave">
+              {{ $t('button.save') }}
+            </ElButton>
+          </div>
+        </ElTabPane>
+         <ElTabPane
+          :label="$t('settingsConfig.skillMarketSettings')"
+          name="skillmarket"
+        >
+          <ElAlert
+            class="!mb-5"
+            :title="$t('settingsConfig.skillMarketNote')"
+            type="info"
+            :closable="false"
+          />
+          <ElForm
+            :model="skillMarket"
+            class="demo-form-inline"
+            label-width="150px"
+          >
+            <ElFormItem :label="$t('settingsConfig.skillMarketDomain')">
+              <ElInput
+                clearable
+                :placeholder="$t('settingsConfig.skillMarketDomainPlaceholder')"
+                v-model="skillMarket.skill_market_domain"
+              />
+            </ElFormItem>
+          </ElForm>
+          <div class="settings-button-container">
+            <ElButton type="primary" @click="handleSkillMarketSave">
               {{ $t('button.save') }}
             </ElButton>
           </div>

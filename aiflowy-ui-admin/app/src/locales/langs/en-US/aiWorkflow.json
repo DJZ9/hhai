@@ -47,6 +47,7 @@
   "subProcess": "SubProcess",
   "workflowSelect": "WorkflowSelect",
   "bochaSearch": "BochaSearch",
+  "download": "Download",
   "descriptions": {
     "fileContentExtraction": "Extract text content from PDF or Word documents, etc",
     "documentAddress": "Document URL address",

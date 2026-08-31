@@ -47,6 +47,7 @@
   "subProcess": "子流程",
   "workflowSelect": "工作流选择",
   "bochaSearch": "博查搜索",
+  "download": "下载",
   "descriptions": {
     "fileContentExtraction": "提取 PDF 或者 Word 等文件中的文字内容",
     "documentAddress": "文档的url地址",

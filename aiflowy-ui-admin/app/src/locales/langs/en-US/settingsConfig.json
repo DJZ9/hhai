@@ -9,6 +9,10 @@
   "note": "Note: This config only applies to system AI features, not [Bot].",
   "userCenterSettings": "User Center Settings",
   "userCenterDomain": "User Center Domain",
+  "skillMarketSettings": "Skill Settings",
+  "skillMarketDomain": "Skill Market Domain",
+  "skillMarketDomainPlaceholder": "Enter the skill market domain, e.g., http://skill.aiflowy.tech",
+  "skillMarketNote": "Configure the address of skill mall for quick installation of skill. If it is not configured, https://skill.aiflowy.tech will be used by default.",
   "message": {
     "userCenterDomain": "Please enter the user center domain",
     "userCenterDomainError": "Please enter a valid domain (e.g., aiflowy.tech or http://aiflowy.tech)"
