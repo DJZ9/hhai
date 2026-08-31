@@ -64,7 +64,7 @@ public class ChatStreamListener implements StreamResponseListener {
             if (aiMessage.isFinalDelta() && aiMessageResponse.hasToolCalls()) {
                 this.canStop = false; // 工具调用期间，禁止执行onStop
                 this.hasToolCall = true; // 标记已进入过工具调用
-                    memoryPrompt.addMessage(aiMessage);
+                memoryPrompt.addMessage(aiMessage);
                 List<ToolMessage> toolMessages = aiMessageResponse.executeToolCallsAndGetToolMessages();
                 for (ToolMessage toolMessage : toolMessages) {
                     memoryPrompt.addMessage(toolMessage);
@@ -72,6 +72,10 @@ public class ChatStreamListener implements StreamResponseListener {
                 // 工具调用次数增加
                 maxToolCallCount.incrementAndGet();
                 chatModel.chatStream(memoryPrompt, this, chatOptions);
+            } else if (aiMessage.isFinalDelta()) {
+                if (this.hasToolCall) {
+                    this.canStop = true;
+                }
             } else {
                 if (this.hasToolCall) {
                     this.canStop = true;
