@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormInstance } from 'element-plus';
 
-import { markRaw, ref } from 'vue';
+import { computed, markRaw, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Delete, MoreFilled, Plus, Refresh, ShoppingCart } from '@element-plus/icons-vue';
@@ -86,22 +86,38 @@ const handleUpdate = (row: any, isRefresh: boolean) => {
     pageDataRef.value.setQuery({});
   });
 };
-const headerButtons = [
-  {
-    key: 'market',
-    type: 'primary',
-    text: $t('mcp.mcpMarket'),
-    icon: markRaw(ShoppingCart),
-    data: { action: 'market' },
-  },
-  {
-    key: 'create',
-    type: 'primary',
-    text: $t('button.add'),
-    icon: markRaw(Plus),
-    data: { action: 'create' },
-  },
-];
+// 是否显示 MCP 市场入口，由系统设置 mcp_market_enabled 控制，默认不显示
+const marketVisible = ref(false);
+
+onMounted(() => {
+  api.get('/api/v1/sysOption/list?keys=mcp_market_enabled').then((res) => {
+    if (res.errorCode === 0) {
+      marketVisible.value = res.data?.mcp_market_enabled === 'true';
+    }
+  });
+});
+
+const headerButtons = computed(() => {
+  const buttons = [
+    {
+      key: 'market',
+      type: 'primary',
+      text: $t('mcp.mcpMarket'),
+      icon: markRaw(ShoppingCart),
+      data: { action: 'market' },
+    },
+    {
+      key: 'create',
+      type: 'primary',
+      text: $t('button.add'),
+      icon: markRaw(Plus),
+      data: { action: 'create' },
+    },
+  ];
+  return marketVisible.value
+    ? buttons
+    : buttons.filter((item) => item.key !== 'market');
+});
 const handleSearch = (params: string) => {
   pageDataRef.value.setQuery({ packageName: params, isQueryOr: true });
 };

@@ -13,6 +13,7 @@
   "skillMarketDomain": "技能商城域名",
   "skillMarketDomainPlaceholder": "请输入技能商城域名，如 http://skill.aiflowy.tech",
   "skillMarketNote": "配置技能商城地址，用于快捷安装skill使用。若未配置，默认使用 https://skill.aiflowy.tech。",
+  "mcpMarketEnabled": "显示 MCP 市场入口",
   "message": {
     "userCenterDomain": "请输入域名",
     "userCenterDomainError": "请输入有效的域名（如 aiflowy.tech 或 http://aiflowy.tech）"

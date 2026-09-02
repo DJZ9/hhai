@@ -16,6 +16,7 @@ import {
   ElMessage,
   ElOption,
   ElSelect,
+  ElSwitch,
   ElTabPane,
   ElTabs,
 } from 'element-plus';
@@ -40,13 +41,21 @@ function getBrands() {
 function getOptions() {
   api
     .get(
-      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=skill_market_domain',
+      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=skill_market_domain&keys=mcp_market_enabled',
     )
     .then((res) => {
       if (res.errorCode === 0) {
-        const { user_center_domain, env_variables, ...rest } = res.data;
+        const { 
+          user_center_domain, 
+          env_variables, 
+          skill_market_domain,
+          mcp_market_enabled, 
+          ...rest } = res.data;
         entity.value = rest;
         userCenter.value.user_center_domain = user_center_domain;
+         skillMarket.value.skill_market_domain = skill_market_domain || '';
+        // 未配置时默认显示入口
+        skillMarket.value.mcp_market_enabled = mcp_market_enabled !== 'false';
         // 解析env_variables，如果不存在或解析失败则使用空对象
         try {
           const parsed = env_variables ? JSON.parse(env_variables) : {};
@@ -76,6 +85,7 @@ const entity = ref({
 // 技能功能配置
 const skillMarket = ref({
   skill_market_domain: 'https://skill.aiflowy.tech',
+  mcp_market_enabled: false,
 });
 function formatLlmList(data: any[]) {
   return data.map((item: any) => {
@@ -292,6 +302,7 @@ async function handleUserCenterSave() {
             :model="skillMarket"
             class="demo-form-inline"
             label-width="150px"
+            label-position="left"
           >
             <ElFormItem :label="$t('settingsConfig.skillMarketDomain')">
               <ElInput
@@ -299,6 +310,9 @@ async function handleUserCenterSave() {
                 :placeholder="$t('settingsConfig.skillMarketDomainPlaceholder')"
                 v-model="skillMarket.skill_market_domain"
               />
+            </ElFormItem>
+            <ElFormItem :label="$t('settingsConfig.mcpMarketEnabled')">
+              <ElSwitch v-model="skillMarket.mcp_market_enabled" />
             </ElFormItem>
           </ElForm>
           <div class="settings-button-container">
