@@ -3,8 +3,12 @@ package tech.aiflowy.admin.controller.ai;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaIgnore;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.IdUtil;
 import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.alicp.jetcache.Cache;
 import com.mybatisflex.core.keygen.impl.SnowFlakeIDKeyGenerator;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -20,17 +24,24 @@ import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.service.impl.BotServiceImpl;
 import tech.aiflowy.common.audio.core.AudioServiceManager;
 import tech.aiflowy.common.domain.Result;
+import tech.aiflowy.common.entity.LoginAccount;
+import tech.aiflowy.common.satoken.util.SaTokenUtil;
 import tech.aiflowy.common.web.controller.BaseCurdController;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.common.web.jsonbody.JsonBody;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseEmitter;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
 import tech.aiflowy.wiki.entity.BotWiki;
+import tech.aiflowy.wiki.entity.Wiki;
 import tech.aiflowy.wiki.service.BotWikiService;
 
 import jakarta.annotation.Resource;
+import tech.aiflowy.wiki.service.WikiService;
+
+import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,6 +73,16 @@ public class BotController extends BaseCurdController<BotService, Bot> {
     private BotMcpService botMcpService;
     @Resource
     private BotWikiService botWikiService;
+    @Resource
+    private PluginService pluginService;
+    @Resource
+    private WorkflowService workflowService;
+    @Resource
+    private DocumentCollectionService documentCollectionService;
+    @Resource
+    private McpService mcpService;
+    @Resource
+    private WikiService wikiService;
 
     public BotController(BotService service, ModelService modelService, BotWorkflowService botWorkflowService,
                          BotDocumentCollectionService botDocumentCollectionService, BotMessageService botMessageService) {
@@ -167,6 +188,108 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         service.updateBotLlmId(aiBot);
         return Result.ok();
     }
+
+    /**
+     * 导入Bot
+     *
+     * @param bot Bot基本信息
+     * @param jsonFile JSON配置文件
+     * @return 操作结果
+     */
+    @PostMapping("/importBot")
+    @SaCheckPermission("/api/v1/bot/save")
+    public Result<Void> importBot(Bot bot, MultipartFile jsonFile) {
+        if (jsonFile == null || jsonFile.isEmpty()) {
+            throw new BusinessException("请上传JSON配置文件");
+        }
+
+        try {
+            InputStream is = jsonFile.getInputStream();
+            String content = IoUtil.read(is, StandardCharsets.UTF_8);
+            JSONObject json = JSON.parseObject(content);
+
+            // 从JSON中提取配置
+            if (json.containsKey("options")) {
+                bot.setOptions(json.getJSONObject("options").getInnerMap());
+            } else {
+                bot.setOptions(getDefaultOptions());
+            }
+
+            if (json.containsKey("modelOptions")) {
+                bot.setModelOptions(json.getJSONObject("modelOptions").getInnerMap());
+            } else {
+                bot.setModelOptions(getDefaultLlmOptions());
+            }
+
+            // 从JSON中提取modelId
+            if (json.containsKey("modelId") && json.getBigInteger("modelId") != null) {
+                BigInteger modelId = json.getBigInteger("modelId");
+                // 验证模型是否存在
+                Model model = modelService.getById(modelId);
+                if (model != null) {
+                    bot.setModelId(modelId);
+                }
+            }
+
+            // 生成新的别名，避免冲突
+            if (!StringUtils.hasLength(bot.getAlias())) {
+                bot.setAlias(IdUtil.fastSimpleUUID());
+            } else {
+                // 检查别名是否存在，存在则生成新的
+                Bot existBot = service.getByAlias(bot.getAlias());
+                if (existBot != null) {
+                    bot.setAlias(IdUtil.fastSimpleUUID());
+                }
+            }
+
+            // 设置公共字段（dept_id, tenant_id, created_by 等）
+            LoginAccount account = SaTokenUtil.getLoginAccount();
+            commonFiled(bot, account.getId(), account.getTenantId(), account.getDeptId());
+
+            // 保存Bot
+            service.save(bot);
+
+            // 导入技能模块关联数据
+            importSkillModules(bot.getId(), json);
+
+            return Result.ok();
+        } catch (Exception e) {
+            throw new BusinessException("导入失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 导出Bot
+     *
+     * @param id Bot ID
+     * @return Bot配置JSON
+     */
+    @GetMapping("/exportBot")
+    @SaCheckPermission("/api/v1/bot/save")
+    public Result<String> exportBot(@RequestParam BigInteger id) {
+        Bot bot = service.getById(id);
+        if (bot == null) {
+            throw new BusinessException("Bot不存在");
+        }
+
+        // 构建导出JSON
+        JSONObject json = new JSONObject();
+        json.put("title", bot.getTitle());
+        json.put("alias", bot.getAlias());
+        json.put("description", bot.getDescription());
+        json.put("icon", bot.getIcon());
+        json.put("categoryId", bot.getCategoryId());
+        json.put("status", bot.getStatus());
+        json.put("modelId", bot.getModelId());
+        json.put("options", bot.getOptions());
+        json.put("modelOptions", bot.getModelOptions());
+
+        // 导出技能模块关联数据
+        exportSkillModules(id, json);
+
+        return Result.ok("", json.toJSONString());
+    }
+
 
     @GetMapping("getDetail")
     @SaIgnore
@@ -386,4 +509,224 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         chatModel.chatStream(promptChore, promptChoreChatStreamListener);
         return sseEmitter.getEmitter();
     }
+
+    private Map<String, Object> getDefaultOptions() {
+        Map<String, Object> defaultOptions = new HashMap<>();
+        defaultOptions.put(Bot.KEY_EXPOSE_DEEP_THINKING, true);
+        // 默认开启附件功能
+        defaultOptions.put(Bot.KEY_ATTACHMENT_ENABLED, true);
+        // 默认使用当前对话模型作为VL模型
+        defaultOptions.put(Bot.KEY_VL_MODEL_ID, "current");
+        return defaultOptions;
+    }
+
+    /**
+     * 导入技能模块关联数据
+     */
+    private void importSkillModules(BigInteger botId, JSONObject json) {
+        // 导入插件关联
+        if (json.containsKey("plugins")) {
+            com.alibaba.fastjson.JSONArray plugins = json.getJSONArray("plugins");
+            if (plugins != null) {
+                for (int i = 0; i < plugins.size(); i++) {
+                    JSONObject pluginJson = plugins.getJSONObject(i);
+                    if (pluginJson.containsKey("pluginItemId")) {
+                        BigInteger pluginItemId = pluginJson.getBigInteger("pluginItemId");
+                        // 校验插件是否存在
+                        Plugin plugin = pluginService.getById(pluginItemId);
+                        if (plugin == null) {
+                            continue; // 插件不存在，跳过该条数据
+                        }
+                        BotPlugin botPlugin = new BotPlugin();
+                        botPlugin.setBotId(botId);
+                        botPlugin.setPluginItemId(pluginItemId);
+                        if (pluginJson.containsKey("options")) {
+                            botPlugin.setOptions(pluginJson.getJSONObject("options").getInnerMap());
+                        }
+                        botPluginService.save(botPlugin);
+                    }
+                }
+            }
+        }
+
+        // 导入工作流关联
+        if (json.containsKey("workflows")) {
+            com.alibaba.fastjson.JSONArray workflows = json.getJSONArray("workflows");
+            if (workflows != null) {
+                for (int i = 0; i < workflows.size(); i++) {
+                    JSONObject workflowJson = workflows.getJSONObject(i);
+                    if (workflowJson.containsKey("workflowId")) {
+                        BigInteger workflowId = workflowJson.getBigInteger("workflowId");
+                        // 校验工作流是否存在
+                        Workflow workflow = workflowService.getById(workflowId);
+                        if (workflow == null) {
+                            continue; // 工作流不存在，跳过该条数据
+                        }
+                        BotWorkflow botWorkflow = new BotWorkflow();
+                        botWorkflow.setBotId(botId);
+                        botWorkflow.setWorkflowId(workflowId);
+                        if (workflowJson.containsKey("options")) {
+                            botWorkflow.setOptions(workflowJson.getJSONObject("options").getInnerMap());
+                        }
+                        botWorkflowService.save(botWorkflow);
+                    }
+                }
+            }
+        }
+
+        // 导入知识库关联
+        if (json.containsKey("documentCollections")) {
+            com.alibaba.fastjson.JSONArray documentCollections = json.getJSONArray("documentCollections");
+            if (documentCollections != null) {
+                for (int i = 0; i < documentCollections.size(); i++) {
+                    JSONObject dcJson = documentCollections.getJSONObject(i);
+                    if (dcJson.containsKey("documentCollectionId")) {
+                        BigInteger documentCollectionId = dcJson.getBigInteger("documentCollectionId");
+                        // 校验知识库是否存在
+                        DocumentCollection documentCollection = documentCollectionService.getById(documentCollectionId);
+                        if (documentCollection == null) {
+                            continue; // 知识库不存在，跳过该条数据
+                        }
+                        BotDocumentCollection botDc = new BotDocumentCollection();
+                        botDc.setBotId(botId);
+                        botDc.setDocumentCollectionId(documentCollectionId);
+                        if (dcJson.containsKey("options")) {
+                            botDc.setOptions(dcJson.getJSONObject("options").getInnerMap());
+                        }
+                        botDocumentCollectionService.save(botDc);
+                    }
+                }
+            }
+        }
+
+        // 导入MCP关联
+        if (json.containsKey("mcps")) {
+            com.alibaba.fastjson.JSONArray mcps = json.getJSONArray("mcps");
+            if (mcps != null) {
+                for (int i = 0; i < mcps.size(); i++) {
+                    JSONObject mcpJson = mcps.getJSONObject(i);
+                    if (mcpJson.containsKey("mcpId")) {
+                        BigInteger mcpId = mcpJson.getBigInteger("mcpId");
+                        // 校验MCP是否存在
+                        Mcp mcp = mcpService.getById(mcpId);
+                        if (mcp == null) {
+                            continue; // MCP不存在，跳过该条数据
+                        }
+                        BotMcp botMcp = new BotMcp();
+                        botMcp.setBotId(botId);
+                        botMcp.setMcpId(mcpId);
+                        if (mcpJson.containsKey("mcpToolName")) {
+                            botMcp.setMcpToolName(mcpJson.getString("mcpToolName"));
+                        }
+                        if (mcpJson.containsKey("mcpToolDescription")) {
+                            botMcp.setMcpToolDescription(mcpJson.getString("mcpToolDescription"));
+                        }
+                        botMcpService.save(botMcp);
+                    }
+                }
+            }
+        }
+
+        // 导入Wiki关联
+        if (json.containsKey("wikis")) {
+            com.alibaba.fastjson.JSONArray wikis = json.getJSONArray("wikis");
+            if (wikis != null) {
+                for (int i = 0; i < wikis.size(); i++) {
+                    JSONObject wikiJson = wikis.getJSONObject(i);
+                    if (wikiJson.containsKey("wikiId")) {
+                        BigInteger wikiId = wikiJson.getBigInteger("wikiId");
+                        // 校验Wiki是否存在
+                        Wiki wiki = wikiService.getById(wikiId);
+                        if (wiki == null) {
+                            continue; // Wiki不存在，跳过该条数据
+                        }
+                        BotWiki botWiki = new BotWiki();
+                        botWiki.setBotId(botId);
+                        botWiki.setWikiId(wikiId);
+                        if (wikiJson.containsKey("options")) {
+                            botWiki.setOptions(wikiJson.getJSONObject("options").getInnerMap());
+                        }
+                        botWikiService.save(botWiki);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 导出技能模块关联数据
+     */
+    private void exportSkillModules(BigInteger botId, JSONObject json) {
+        // 导出插件关联
+        QueryWrapper pluginQuery = QueryWrapper.create().eq(BotPlugin::getBotId, botId);
+        List<BotPlugin> plugins = botPluginService.list(pluginQuery);
+        if (plugins != null && !plugins.isEmpty()) {
+            com.alibaba.fastjson.JSONArray pluginsArray = new com.alibaba.fastjson.JSONArray();
+            for (BotPlugin plugin : plugins) {
+                JSONObject pluginJson = new JSONObject();
+                pluginJson.put("pluginItemId", plugin.getPluginItemId());
+                pluginJson.put("options", plugin.getOptions());
+                pluginsArray.add(pluginJson);
+            }
+            json.put("plugins", pluginsArray);
+        }
+
+        // 导出工作流关联
+        QueryWrapper workflowQuery = QueryWrapper.create().eq(BotWorkflow::getBotId, botId);
+        List<BotWorkflow> workflows = botWorkflowService.list(workflowQuery);
+        if (workflows != null && !workflows.isEmpty()) {
+            com.alibaba.fastjson.JSONArray workflowsArray = new com.alibaba.fastjson.JSONArray();
+            for (BotWorkflow workflow : workflows) {
+                JSONObject workflowJson = new JSONObject();
+                workflowJson.put("workflowId", workflow.getWorkflowId());
+                workflowJson.put("options", workflow.getOptions());
+                workflowsArray.add(workflowJson);
+            }
+            json.put("workflows", workflowsArray);
+        }
+
+        // 导出知识库关联
+        QueryWrapper dcQuery = QueryWrapper.create().eq(BotDocumentCollection::getBotId, botId);
+        List<BotDocumentCollection> documentCollections = botDocumentCollectionService.list(dcQuery);
+        if (documentCollections != null && !documentCollections.isEmpty()) {
+            com.alibaba.fastjson.JSONArray dcArray = new com.alibaba.fastjson.JSONArray();
+            for (BotDocumentCollection dc : documentCollections) {
+                JSONObject dcJson = new JSONObject();
+                dcJson.put("documentCollectionId", dc.getDocumentCollectionId());
+                dcJson.put("options", dc.getOptions());
+                dcArray.add(dcJson);
+            }
+            json.put("documentCollections", dcArray);
+        }
+
+        // 导出MCP关联
+        QueryWrapper mcpQuery = QueryWrapper.create().eq(BotMcp::getBotId, botId);
+        List<BotMcp> mcps = botMcpService.list(mcpQuery);
+        if (mcps != null && !mcps.isEmpty()) {
+            com.alibaba.fastjson.JSONArray mcpsArray = new com.alibaba.fastjson.JSONArray();
+            for (BotMcp mcp : mcps) {
+                JSONObject mcpJson = new JSONObject();
+                mcpJson.put("mcpId", mcp.getMcpId());
+                mcpJson.put("mcpToolName", mcp.getMcpToolName());
+                mcpJson.put("mcpToolDescription", mcp.getMcpToolDescription());
+                mcpsArray.add(mcpJson);
+            }
+            json.put("mcps", mcpsArray);
+        }
+
+        // 导出Wiki关联
+        QueryWrapper wikiQuery = QueryWrapper.create().eq(BotWiki::getBotId, botId);
+        List<BotWiki> wikis = botWikiService.list(wikiQuery);
+        if (wikis != null && !wikis.isEmpty()) {
+            com.alibaba.fastjson.JSONArray wikisArray = new com.alibaba.fastjson.JSONArray();
+            for (BotWiki wiki : wikis) {
+                JSONObject wikiJson = new JSONObject();
+                wikiJson.put("wikiId", wiki.getWikiId());
+                wikiJson.put("options", wiki.getOptions());
+                wikisArray.add(wikiJson);
+            }
+            json.put("wikis", wikisArray);
+        }
+    }
+
 }

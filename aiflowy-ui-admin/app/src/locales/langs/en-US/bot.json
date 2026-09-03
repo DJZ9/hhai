@@ -23,6 +23,9 @@
   "postToWeChatOfficialAccount": "PostToWeChatOfficialAccount",
   "configured": "Configured",
   "notConfigured": "NotConfigured",
+  "jsonFile": "JSON File",
+  "dragJsonFile": "Drag json file here, or ",
+  "clickUpload": "click to upload",
   "placeholder": {
     "welcome": "Please enter welcome message",
     "prompt": "You are an AI assistant. Please provide clear and accurate answers based on the user's questions.",

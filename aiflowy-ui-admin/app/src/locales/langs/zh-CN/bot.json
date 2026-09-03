@@ -23,6 +23,9 @@
   "postToWeChatOfficialAccount": "发布到微信公众号",
   "configured": "已配置",
   "notConfigured": "未配置",
+  "jsonFile": "JSON文件",
+  "dragJsonFile": "将 json 文件拖到此处，或",
+  "clickUpload": "点击上传",
   "placeholder": {
     "welcome": "请输入欢迎语",
     "prompt": "你是一个AI助手，请根据用户的问题给出清晰、准确的回答。",

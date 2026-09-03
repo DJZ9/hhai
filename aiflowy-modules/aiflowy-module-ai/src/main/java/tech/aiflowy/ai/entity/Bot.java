@@ -18,6 +18,11 @@ public class Bot extends BotBase {
     public static final String KEY_SYSTEM_PROMPT = "systemPrompt";
     public static final String KEY_MAX_MESSAGE_COUNT = "maxMessageCount";
     public static final String KEY_ENABLE_DEEP_THINKING = "enableDeepThinking";
+    public static final String KEY_EXPOSE_DEEP_THINKING = "exposeDeepThinking";
+
+    // 附件功能配置相关常量
+    public static final String KEY_ATTACHMENT_ENABLED = "attachmentEnabled";
+    public static final String KEY_VL_MODEL_ID = "vlModelId";
 
     public boolean isAnonymousEnabled() {
         Map<String, Object> options = getOptions();

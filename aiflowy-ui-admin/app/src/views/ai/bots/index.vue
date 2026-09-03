@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router';
 import { IconifyIcon } from '@aiflowy/icons';
 import { $t } from '@aiflowy/locales';
 
-import { Delete, Edit, Plus, Setting } from '@element-plus/icons-vue';
+import { Delete, Edit, Plus, Setting, Upload,Download } from '@element-plus/icons-vue';  
 import {
   ElButton,
   ElDialog,
@@ -32,6 +32,7 @@ import CardList from '#/components/page/CardList.vue';
 import PageData from '#/components/page/PageData.vue';
 import PageSide from '#/components/page/PageSide.vue';
 import { useDictStore } from '#/store';
+import ImportBotModal from './ImportBotModal.vue';
 
 import Modal from './modal.vue';
 
@@ -57,6 +58,7 @@ onMounted(() => {
 const router = useRouter();
 const pageDataRef = ref();
 const modalRef = ref<InstanceType<typeof Modal>>();
+const importBotModalRef = ref<InstanceType<typeof ImportBotModal>>();
 const dictStore = useDictStore();
 
 // 操作按钮配置
@@ -68,6 +70,14 @@ const headerButtons = [
     type: 'primary',
     data: { action: 'create' },
     permission: '/api/v1/documentCollection/save',
+  },
+  {
+    key: 'import',
+    text: $t('button.import'),
+    icon: markRaw(Upload),
+    type: 'default',
+    data: { action: 'import' },
+    permission: '/api/v1/bot/save',
   },
 ];
 const userCenterDomain = ref('');
@@ -89,6 +99,15 @@ const actions: ActionButton[] = [
     onClick(row: BotInfo) {
       router.push({ path: `/ai/bots/setting/${row.id}` });
     },
+  },
+  {
+      icon: Download,
+      text: $t('button.export'),
+      className: '',
+      permission: '/api/v1/bot/save',
+      onClick(row: BotInfo) {
+        exportJson(row);
+      },
   },
   {
     icon: h(IconifyIcon, { icon: 'svg:target' }),
@@ -145,11 +164,39 @@ const removeBot = async (bot: BotInfo) => {
   }
 };
 
+// 导出Bot配置
+function exportJson(row: BotInfo) {
+  api
+    .get('/api/v1/bot/exportBot', {
+      params: {
+        id: row.id,
+      },
+    })
+    .then((res) => {
+      const text = res.data;
+      const element = document.createElement('a');
+      element.setAttribute(
+        'href',
+        `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`,
+      );
+      element.setAttribute('download', `${row.title}.json`);
+      element.style.display = 'none';
+      document.body.append(element);
+      element.click();
+      element.remove();
+      ElMessage.success($t('message.downloadSuccess'));
+    });
+}
+
 const handleSearch = (params: string) => {
   pageDataRef.value.setQuery({ title: params, isQueryOr: true });
 };
-const handleButtonClick = () => {
-  modalRef.value?.open('create');
+const handleButtonClick = (data: any) => {
+   if (data.data.action === 'import') {
+    importBotModalRef.value?.open();
+  } else {
+    modalRef.value?.open('create');
+  }
 };
 
 const fieldDefinitions = ref<FieldDefinition[]>([
@@ -367,5 +414,11 @@ const getSideList = async () => {
         </ElButton>
       </template>
     </ElDialog>
+
+     <!-- 导入Bot弹窗 -->
+    <ImportBotModal
+      ref="importBotModalRef"
+      @success="pageDataRef.setQuery({})"
+    />
   </div>
 </template>
