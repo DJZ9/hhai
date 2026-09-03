@@ -58,6 +58,7 @@ const route = useRoute();
 const router = useRouter();
 const botId = ref<string>((route.params.id as string) || '');
 const options = ref<AiLlm[]>([]);
+const vlModelOptions = ref<AiLlm[]>([]);
 const selectedId = ref<string>('');
 const llmConfig = ref({
   maxMessageCount: 0,
@@ -71,6 +72,9 @@ const llmConfig = ref({
 const dialogueSettings = ref({
   welcomeMessage: '',
   enableDeepThinking: false,
+  // 附件功能配置
+  attachmentEnabled: true,
+  vlModelId: 'current',
 });
 watch(
   props,
@@ -82,7 +86,10 @@ watch(
     }
 
     if (newValue.bot) {
-      llmConfig.value = newValue.bot.modelOptions;
+       llmConfig.value = {
+        ...llmConfig.value,
+        ...newValue.bot.modelOptions,
+      };
     }
   },
   { immediate: true },
@@ -158,6 +165,8 @@ const getBotDetail = async () => {
         botInfo.value = res.data;
         if (res.data.options) {
           dialogueSettings.value = res.data.options;
+           // 设置botOptions到store，实现实时更新
+          botStore.setBotOptions(botId.value, res.data.options);
           // 加载其他技能配置
           if (res.data.options.otherSkills) {
             otherSkills.value = {
@@ -183,12 +192,30 @@ const getLlmListData = async () => {
     }
   });
 };
+// 获取VL模型列表（多模态模型）
+const getVlModelListData = async () => {
+  const url = `/api/v1/model/list?modelType=chatModel&added=true`;
+  api.get(url, {}).then((res) => {
+    if (res.errorCode === 0) {
+      // 过滤多模态模型作为VL模型选项
+      const vlModels = res.data.filter(
+        (model: any) => model.supportImage === true,
+      );
+      // 添加"使用当前对话模型"选项（值为'current'）
+      vlModelOptions.value = [
+        { id: 'current', title: $t('bot.useCurrentModel') },
+        ...vlModels,
+      ];
+    }
+  });
+};
 onMounted(async () => {
   getAiBotPluginToolList();
   getAiBotKnowledgeList();
   getAiBotWorkflowList();
   getAiBotMcpToolList();
   getBotDetail();
+  getVlModelListData();
   getLlmListData();
   getAiBotWikiList();
   getUserCenterDomain();
@@ -226,6 +253,8 @@ const handleDialogOptionsStrChange = useDebounceFn(
     key: keyof typeof dialogueSettings.value,
     value: boolean | number | string,
   ) => {
+     // 更新botStore，实现实时更新
+    botStore.updateBotOption(botId.value, key, value);
     updateBotOptions({
       id: props.bot?.id || '',
       options: {
@@ -1189,6 +1218,45 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
               />
             </div>
           </ElCollapseItem>
+          <!-- 附件功能配置 -->
+          <ElCollapseItem :title="$t('bot.attachmentConfig')">
+            <div class="enable-think-container">
+              <div>{{ $t('bot.attachmentEnabled') }}</div>
+              <ElSwitch
+                v-model="dialogueSettings.attachmentEnabled"
+                @change="
+                  (value: string | number | boolean) =>
+                    handleDialogOptionsStrChange('attachmentEnabled', value)
+                "
+              />
+            </div>
+            <div class="compression-config">
+              <div class="compression-config-item">
+                <span class="config-label">
+                  {{ $t('bot.vlModel') }}
+                  <ElTooltip
+                    :content="$t('bot.vlModelTooltip')"
+                    placement="top"
+                    effect="dark"
+                    class="label-tooltip"
+                  >
+                    <InfoFilled class="info-icon" />
+                  </ElTooltip>
+                </span>
+                <ElSelect
+                  v-model="dialogueSettings.vlModelId"
+                  :options="vlModelOptions"
+                  :props="{ value: 'id', label: 'title' }"
+                  :disabled="!hasSavePermission"
+                  :placeholder="$t('bot.selectVlModel')"
+                  @change="
+                    (value: string) =>
+                      handleDialogOptionsStrChange('vlModelId', value)
+                  "
+                />
+              </div>
+            </div>
+          </ElCollapseItem>
         </ElCollapse>
       </div>
     </div>
@@ -1523,6 +1591,50 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
   justify-content: space-between;
   padding: 0 12px 12px;
   background-color: var(--bot-collapse-itme-back);
+}
+.label-tooltip {
+  display: inline-block;
+  cursor: help;
+}
+
+.info-icon {
+  flex: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  color: #909399;
+  cursor: help;
+}
+
+.compression-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--bot-collapse-itme-back);
+}
+
+.compression-config-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--el-bg-color);
+  border-radius: 8px;
+}
+
+.compression-config-item .config-label {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.compression-config-item .el-select,
+.compression-config-item .dict-select {
+  width: 200px;
 }
 
 .publish-wx-container {

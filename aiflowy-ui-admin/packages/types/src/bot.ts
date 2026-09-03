@@ -31,6 +31,8 @@ interface BotInfo {
     weChatMpSecret: string;
     weChatMpToken: string;
     welcomeMessage?: string;
+    attachmentEnabled?: boolean;
+    vlModelId?: string;
   };
   tenantId: number;
   title: string;
@@ -62,7 +64,8 @@ interface ChatMessage {
   placement: 'end' | 'start';
   loading?: boolean;
   typing?: boolean;
-  fileList?: File[];
+  fileList?: File[] | string[];
+  isAttachment?: boolean;
   isFog?: boolean;
 }
 

@@ -36,6 +36,14 @@ import SendEnableIcon from '#/components/icons/SendEnableIcon.vue';
 import SendIcon from '#/components/icons/SendIcon.vue';
 import ShowJson from '#/components/json/ShowJson.vue';
 import ChatFileUploader from '#/components/upload/ChatFileUploader.vue';
+import {
+  getFileExt,
+  getFileIcon,
+  getFileIconColor,
+  getFileName,
+  isImageFile,
+  previewImage,
+} from '#/utils/file';
 
 import BotAvatar from '../botAvatar/botAvatar.vue';
 import SendingIcon from '../icons/SendingIcon.vue';
@@ -94,6 +102,15 @@ const showQuestions = computed(() => {
   );
   return list.length === 0;
 });
+
+// 附件功能是否启用
+const attachmentEnabled = computed(() => {
+  const storeOptions = botStore.getBotOptions(botId.value);
+  if (storeOptions && storeOptions.attachmentEnabled !== undefined) {
+    return storeOptions.attachmentEnabled;
+  }
+  return props.bot?.options?.attachmentEnabled !== false;
+});
 defineExpose({
   clear() {
     bubbleItems.value = [];
@@ -108,6 +125,10 @@ const getPresetQuestions = () => {
       },
     })
     .then((res) => {
+      // 同步 options 到 botStore，供附件开关等配置实时读取
+      if (res.data.options) {
+        botStore.setBotOptions(botId.value, res.data.options);
+      }
       if (res.data.options?.presetQuestions) {
         presetQuestions.value = res.data.options?.presetQuestions
           .filter(
@@ -193,7 +214,8 @@ const handleSubmit = async (refreshContent: string) => {
   };
   clearSenderFiles();
   messages.value.pop();
-  const mockMessages = generateMockMessages(refreshContent);
+  const fileList = attachments || [];
+  const mockMessages = generateMockMessages(refreshContent, fileList);
   bubbleItems.value.push(...mockMessages);
   senderRef.value?.clear();
   sseClient.post('/api/v1/bot/chat', data, {
@@ -356,7 +378,21 @@ const handleComplete = (_: TypewriterInstance, index: number) => {
   }
 };
 
-const generateMockMessages = (refreshContent: string) => {
+const generateMockMessages = (refreshContent: string, fileList: string[] = []) => {
+  const messages: MessageItem[] = [];
+  // 附件单独一个气泡显示在文字上方
+  if (fileList.length > 0) {
+    messages.push({
+      role: 'user',
+      id: `${Date.now()}-att`,
+      isAttachment: true,
+      fileList: fileList as any,
+      content: '',
+      created: Date.now(),
+      updateAt: Date.now(),
+      placement: 'end',
+    });
+  }
   const userMessage: MessageItem = {
     role: 'user',
     id: Date.now().toString(),
@@ -377,7 +413,9 @@ const generateMockMessages = (refreshContent: string) => {
     placement: 'start',
   };
 
-  return [userMessage, assistantMessage];
+  messages.push(userMessage);
+  messages.push(assistantMessage);
+  return messages;
 };
 
 const handleCopy = (content: string) => {
@@ -402,7 +440,44 @@ function openCloseHeader() {
 }
 const attachmentsRef = ref();
 const files = ref<any[]>([]);
+const isDragOver = ref(false);
+
+function handleDragOver(e: DragEvent) {
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy';
+  }
+}
+
+function handleDragEnter(e: DragEvent) {
+  e.preventDefault();
+  if (attachmentEnabled.value) {
+    isDragOver.value = true;
+  }
+}
+
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault();
+  isDragOver.value = false;
+}
+
+function handleDrop(e: DragEvent) {
+  e.preventDefault();
+  isDragOver.value = false;
+
+  if (!attachmentEnabled.value) return;
+
+  const fileList = e.dataTransfer?.files;
+  if (!fileList || fileList.length === 0) return;
+
+  showHeaderFlog.value = true;
+  senderRef.value?.openHeader();
+  files.value = [...fileList];
+}
+
 function handlePasteFile(_: any, fileList: FileList) {
+  // 附件功能未启用时不处理
+  if (!attachmentEnabled.value) return;
   showHeaderFlog.value = true;
   senderRef.value?.openHeader();
   files.value = [...fileList];
@@ -541,7 +616,33 @@ function handlePasteFile(_: any, fileList: FileList) {
             />
           </template>
           <template #content="{ item }">
-            <ElXMarkdown :markdown="item.content" />
+            <!-- 附件独立气泡：图片缩略图 / 文件卡片 -->
+            <div v-if="item.isAttachment" class="flex flex-wrap gap-2">
+              <template v-for="(url, idx) in item.fileList" :key="idx">
+                <img
+                  v-if="isImageFile(url)"
+                  :src="url"
+                  class="h-20 w-20 cursor-pointer rounded-lg border border-gray-200 object-cover"
+                  @click="previewImage(url)"
+                />
+                <a
+                  v-else
+                  :href="url"
+                  target="_blank"
+                  class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 hover:shadow"
+                >
+                  <ElIcon :size="32" :color="getFileIconColor(url)">
+                    <IconifyIcon :icon="getFileIcon(url)" />
+                  </ElIcon>
+                  <div class="flex flex-col">
+                    <span class="max-w-[200px] truncate font-medium">{{ getFileName(url) }}</span>
+                    <span v-if="getFileExt(url)" class="text-xs text-gray-400">{{ getFileExt(url) }}</span>
+                  </div>
+                </a>
+              </template>
+            </div>
+            <!-- 普通消息内容 -->
+            <ElXMarkdown v-else :markdown="item.content" />
           </template>
           <!-- 自定义底部 -->
           <template #footer="{ item }">
@@ -594,8 +695,13 @@ function handlePasteFile(_: any, fileList: FileList) {
         variant="updown"
         :auto-size="{ minRows: 3, maxRows: 6 }"
         allow-speech
+        :class="{ 'drag-over': isDragOver }"
         @submit="handleSubmit"
         @paste-file="handlePasteFile"
+        @dragover.prevent="handleDragOver"
+        @dragenter="handleDragEnter"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
       >
         <!-- 自定义头部内容 -->
         <template #header>
@@ -603,21 +709,15 @@ function handlePasteFile(_: any, fileList: FileList) {
             ref="attachmentsRef"
             :external-files="files"
             :max-size="10"
+            @delete-all="openCloseHeader"
           />
         </template>
 
         <template #action-list>
           <ElSpace>
-            <ElButton circle @click="openCloseHeader">
+            <ElButton v-if="attachmentEnabled" circle @click="openCloseHeader">
               <ElIcon><Paperclip /></ElIcon>
             </ElButton>
-            <!--<ElButton circle @click="uploadRef.triggerFileSelect()">
-              <ElIcon><Paperclip /></ElIcon>
-            </ElButton>
-            <ElButton circle>
-              <ElIcon><Microphone /></ElIcon>
-              &lt;!&ndash; <ElIcon color="#0066FF"><RecordingIcon /></ElIcon> &ndash;&gt;
-            </ElButton>-->
             <ElButton v-if="sending" circle @click="stopSse">
               <ElIcon size="30" color="#409eff"><SendingIcon /></ElIcon>
             </ElButton>
@@ -725,5 +825,12 @@ function handlePasteFile(_: any, fileList: FileList) {
 
 :deep(.el-collapse-item__content) {
   padding-bottom: 0;
+}
+
+/* 拖拽上传时的高亮样式 */
+.drag-over {
+  outline: 2px dashed var(--el-color-primary);
+  outline-offset: -2px;
+  border-radius: 8px;
 }
 </style>
