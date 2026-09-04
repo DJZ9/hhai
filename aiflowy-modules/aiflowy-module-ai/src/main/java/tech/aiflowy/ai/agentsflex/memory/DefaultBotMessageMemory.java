@@ -49,6 +49,11 @@ public class DefaultBotMessageMemory extends DefaultChatMemory {
     }
 
     @Override
+    public List<Message> getModelMessages(int count) {
+        return getMessages(count);
+    }
+
+    @Override
     public void addMessage(Message message) {
         BotMessage dbMessage = new BotMessage();
         ChatEnvelope<Map<String, String>> chatEnvelope = new ChatEnvelope<>();

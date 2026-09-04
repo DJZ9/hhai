@@ -25,6 +25,11 @@ public class PublicBotMessageMemory extends DefaultChatMemory {
     }
 
     @Override
+    public List<Message> getModelMessages(int count) {
+        return getMessages(count);
+    }
+
+    @Override
     public void addMessage(Message message) {
         this.messages.add(message);
     }
