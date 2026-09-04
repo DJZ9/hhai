@@ -12,5 +12,7 @@
   "rerankModel": "RerankModel",
   "ocrModel": "OcrModel",
   "model": "Model",
-  "apiType": "ApiType"
+  "apiType": "ApiType",
+  "providerWebsite": "Provider Website",
+  "apiKeyObtainAddress": "Token Address"
 }

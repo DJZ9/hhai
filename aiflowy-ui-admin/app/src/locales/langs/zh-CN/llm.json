@@ -61,6 +61,8 @@
   "all": "全部",
   "verifyLlmTitle": "请选择要检测的模型",
   "testSuccess": "检测成功",
+  "verifySuccess": "模型验证成功，配置有效",
+  "verifyFailed": "模型验证失败，请检查配置",
   "searchTextPlaceholder": "搜索模型名称或名称",
   "modelAbility": {
     "supportThinking": "推理",
@@ -73,6 +75,22 @@
     "supportToolMessage": "支持Tool消息"
   },
   "requestPath": "请求路径",
-  "modelToBeTested": "待检测模型"
-
+  "modelToBeTested": "待检测模型",
+  "testFile": "测试文件",
+  "testFileTip": "请上传小的测试文件（PDF、Word、PPT、Excel、图片或 HTML，建议小于 10MB）用于验证 OCR 模型配置",
+  "uploadButton": "上传测试文件",
+  "uploadFileTypeError": "不支持的文件格式，请上传 PDF、Word、PPT、Excel、图片或 HTML 文件",
+  "uploadFileSizeError": "文件大小不能超过 10MB！",
+  "testFileRequired": "请先上传测试文件",
+  "publishCount": "发布数量",
+  "batchPublish": "批量发布",
+  "noModelInGroup": "该分组暂无模型",
+  "publishAllSuccess": "全部发布成功",
+  "publishPartFail": "部分发布失败",
+  "published": "已发布",
+  "unPublished": "未发布",
+  "publish": "发布",
+  "offline": "下架",
+  "publishSuccess": "发布成功",
+  "offlineSuccess": "下架成功"
 }

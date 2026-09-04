@@ -157,6 +157,9 @@ public class ModelBase implements Serializable {
     @Column(comment = "是否支持tool消息")
     private Boolean supportToolMessage;
 
+    @Column(comment = "发布状态：0-未发布，1-已发布")
+    private Integer publishStatus;
+
     public BigInteger getId() {
         return id;
     }
@@ -349,4 +352,11 @@ public class ModelBase implements Serializable {
         this.supportToolMessage = supportToolMessage;
     }
 
+    public Integer getPublishStatus() {
+        return publishStatus;
+    }
+
+    public void setPublishStatus(Integer publishStatus) {
+        this.publishStatus = publishStatus;
+    }
 }

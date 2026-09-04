@@ -14,6 +14,12 @@ import com.mybatisflex.annotation.Table;
 @Table("tb_bot_document_collection")
 public class BotDocumentCollection extends BotDocumentCollectionBase {
 
+    public static final String KEY_GENERAL_CONFIG = "generalConfig";
+    public static final String KEY_SHOW_REFERENCES = "showReferences";
+    public static final String KEY_SHOW_OPEN_FILE = "showOpenFile";
+    public static final boolean DEFAULT_SHOW_REFERENCES = true;
+    public static final boolean DEFAULT_SHOW_OPEN_FILE = true;
+
     @RelationOneToOne(selfField = "documentCollectionId", targetField = "id")
     private DocumentCollection knowledge;
 

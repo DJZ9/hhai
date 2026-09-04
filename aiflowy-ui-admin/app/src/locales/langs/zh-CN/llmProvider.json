@@ -12,5 +12,7 @@
   "rerankModel": "重排模型",
   "ocrModel": "OCR模型",
   "model": "模型",
-  "apiType": "API类型"
+  "apiType": "API类型",
+  "providerWebsite": "供应商官网",
+  "apiKeyObtainAddress": "密钥获取地址"
 }

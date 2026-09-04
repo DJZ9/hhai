@@ -32,4 +32,13 @@ public interface ModelService extends IService<Model> {
      * 获取系统配置的大模型
      */
     Model getSystemModel();
+
+    /**
+     * 验证 OCR 模型配置
+     *
+     * @param model 模型实体
+     * @param fileUrl 测试文件URL
+     * @return 验证结果
+     */
+    Map<String, Object> verifyOcrModelConfig(Model model, String fileUrl);
 }

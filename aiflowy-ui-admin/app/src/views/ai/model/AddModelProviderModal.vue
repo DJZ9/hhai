@@ -23,13 +23,39 @@ const formDataRef = ref();
 
 defineExpose({
   openAddDialog() {
-    formDataRef.value?.resetFields();
+    // 重置所有字段
+    Object.assign(formData, {
+      id: '',
+      icon: '',
+      providerName: '',
+      providerType: '',
+      apiKey: '',
+      endpoint: '',
+      chatPath: '',
+      embedPath: '',
+      rerankPath: '',
+      providerWebsite: '',
+      apiKeyObtainAddress: '',
+    });
     dialogVisible.value = true;
   },
   openEditDialog(item: any) {
     dialogVisible.value = true;
     isAdd.value = false;
-    Object.assign(formData, item);
+    // 先重置所有字段，再赋值，避免残留上次编辑的数据
+    Object.assign(formData, {
+      id: '',
+      icon: '',
+      providerName: '',
+      providerType: '',
+      apiKey: '',
+      endpoint: '',
+      chatPath: '',
+      embedPath: '',
+      rerankPath: '',
+      providerWebsite: '',
+      apiKeyObtainAddress: '',
+    }, item);
   },
 });
 const providerOptions =
@@ -46,6 +72,8 @@ const formData = reactive({
   chatPath: '',
   embedPath: '',
   rerankPath: '',
+  providerWebsite: '',
+  apiKeyObtainAddress: '',
 });
 const closeDialog = () => {
   dialogVisible.value = false;
@@ -133,6 +161,18 @@ const handleChangeProvider = (val: string) => {
         :label="$t('llmProvider.icon')"
       >
         <UploadAvatar v-model="formData.icon" />
+      </ElFormItem>
+      <ElFormItem
+        prop="providerWebsite"
+        :label="$t('llmProvider.providerWebsite')"
+      >
+        <ElInput v-model.trim="formData.providerWebsite" />
+      </ElFormItem>
+      <ElFormItem
+        prop="apiKeyObtainAddress"
+        :label="$t('llmProvider.apiKeyObtainAddress')"
+      >
+        <ElInput v-model.trim="formData.apiKeyObtainAddress" />
       </ElFormItem>
       <ElFormItem prop="providerName" :label="$t('llmProvider.providerName')">
         <ElInput v-model.trim="formData.providerName" />

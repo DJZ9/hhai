@@ -1,11 +1,13 @@
 
 package tech.aiflowy.ai.service.impl;
 
+import org.springframework.core.io.ClassPathResource;
 import cn.hutool.core.util.StrUtil;
 import com.agentsflex.core.document.Document;
 import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
 import com.agentsflex.core.model.embedding.EmbeddingModel;
+import com.agentsflex.core.model.ocr.OcrResponse;
 import com.agentsflex.core.model.rerank.RerankModel;
 import com.agentsflex.core.store.VectorData;
 import com.alicp.jetcache.Cache;
@@ -17,17 +19,30 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import tech.aiflowy.ai.asynctask.OcrTaskService;
 import tech.aiflowy.ai.entity.Model;
 import tech.aiflowy.ai.entity.ModelProvider;
 import tech.aiflowy.ai.mapper.ModelMapper;
 import tech.aiflowy.ai.service.ModelProviderService;
 import tech.aiflowy.ai.service.ModelService;
+import tech.aiflowy.common.filestorage.CustomMultipartFile;
+import tech.aiflowy.common.filestorage.FileStorageService;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.system.entity.SysOption;
 import tech.aiflowy.system.service.SysOptionService;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +63,11 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
     private SysOptionService sysOptionService;
     @Resource
     private Cache<String, Object> cache;
+    @Resource
+    private OcrTaskService ocrTaskService;
+
+    @Resource(name = "default")
+    private FileStorageService fileStorageService;
 
 
     @Override
@@ -249,5 +269,129 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
         model.setModelName(modelName.getValue());
         model.setModelProvider(modelProvider);
         return model;
+    }
+
+    @Override
+    public Map<String, Object> verifyOcrModelConfig(Model model, String fileUrl) {
+        if (model == null) {
+            throw new BusinessException("模型不存在");
+        }
+        // 如果文件地址为空，生成测试图并上传到临时文件系统，得到可被 OCR 供应商拉取的 URL
+        if (StrUtil.isBlank(fileUrl)) {
+            fileUrl = resolveTestImageAsUrl();
+        }
+
+        try {
+            String taskId = ocrTaskService.submit(model.getId(), fileUrl, null, 600_000L);
+            OcrResponse ocrResponse = ocrTaskService.awaitResult(taskId, 600_000L, 3_000L);
+            String result = StrUtil.isNotBlank(ocrResponse.getMarkdown()) ? ocrResponse.getMarkdown() : ocrResponse.getText();
+
+            if (result == null || result.trim().isEmpty()) {
+                throw new BusinessException("OCR 模型验证失败：解析结果为空");
+            }
+
+            Map<String, Object> resultMap = new HashMap<>();
+            resultMap.put("contentLength", result.length());
+            resultMap.put("preview", result.substring(0, Math.min(500, result.length())));
+            return resultMap;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException("OCR 模型验证失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成/定位本地测试图后，上传到临时文件系统，返回可被 OCR 供应商拉取的 URL。
+     */
+    private String resolveTestImageAsUrl() {
+        String localPath = resolveTestImagePath();
+        try {
+            byte[] bytes = Files.readAllBytes(new File(localPath).toPath());
+            CustomMultipartFile mf = new CustomMultipartFile(
+                    bytes, "ocr_test", "ocr_test.png", "image/png");
+            return fileStorageService.saveTemp(mf);
+        } catch (Exception e) {
+            throw new BusinessException("上传测试图片到临时文件系统失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 解析测试图片路径：
+     * 1. 本地运行：直接使用 classpath 下 static/ocr_test.png 物理文件
+     * 2. 打包 jar 运行：内置图片复制到临时文件
+     * 3. 不存在：动态生成含文字的测试图片，并写回 static 目录同名文件，下次启动直接复用
+     */
+    private String resolveTestImagePath() {
+        Path staticImagePath = locateStaticTestImage();
+        // 1. 直接使用 static 目录下的物理文件，无需复制
+        if (staticImagePath != null && Files.exists(staticImagePath)) {
+            return staticImagePath.toAbsolutePath().toString();
+        }
+        // 2. jar 内运行且内置图片存在：复制到临时文件
+        ClassPathResource resource = new ClassPathResource("static/ocr_test.png");
+        try {
+            if (resource.exists()) {
+                Path tempFile = Files.createTempFile("aiflowy_ocr_test_", ".png");
+                try (InputStream in = resource.getInputStream()) {
+                    Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+                return tempFile.toAbsolutePath().toString();
+            }
+        } catch (Exception e) {
+            log.warn("复制内置测试图片失败，改用动态生成: {}", e.getMessage());
+        }
+        // 3. 生成测试图片，写回 static 目录同名文件
+        return generateTestImage(staticImagePath);
+    }
+
+    /**
+     * 定位 classpath 下 static/ocr_test.png 的物理文件路径。
+     * 本地运行（classpath 为文件系统目录）时可定位；打包 jar 内运行返回 null。
+     */
+    private Path locateStaticTestImage() {
+        try {
+            File staticDir = new ClassPathResource("static").getFile();
+            return new File(staticDir, "ocr_test.png").toPath();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 生成含文字的测试图片，返回本地文件路径。
+     * 优先写回 static 目录同名文件（下次启动直接复用），无法写回时退回临时文件。
+     * 用于 OCR 模型校验，不依赖外网资源，纯内网环境可用。
+     */
+    private String generateTestImage(Path preferredPath) {
+        try {
+            int width = 420;
+            int height = 120;
+            BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = image.createGraphics();
+            try {
+                graphics.setColor(Color.WHITE);
+                graphics.fillRect(0, 0, width, height);
+                graphics.setColor(Color.BLACK);
+                graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 34));
+                graphics.drawString("AIFlowy OCR TEST 123", 20, 75);
+            } finally {
+                graphics.dispose();
+            }
+
+            Path target;
+            if (preferredPath != null) {
+                Files.createDirectories(preferredPath.getParent());
+                target = preferredPath;
+            } else {
+                target = Files.createTempFile("aiflowy_ocr_test_", ".png");
+            }
+            ImageIO.write(image, "png", target.toFile());
+            log.info("OCR 校验测试图片已生成: {}", target.toAbsolutePath());
+            return target.toAbsolutePath().toString();
+        } catch (Exception e) {
+            throw new BusinessException("生成测试图片失败：" + e.getMessage());
+        }
     }
 }

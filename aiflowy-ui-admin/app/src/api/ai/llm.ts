@@ -41,4 +41,5 @@ export interface llmType {
   groupName: string;
   added: boolean;
   aiLlmProvider: any;
+  publishStatus?: number;
 }

@@ -65,6 +65,8 @@
   "verifyLlmTitle": "Verify Large Model",
   "searchTextPlaceholder": "Search for model name or name",
   "testSuccess": "TestSuccess",
+  "verifySuccess": "Model verification successful, configuration is valid",
+  "verifyFailed": "Model verification failed, please check configuration",
   "modelAbility": {
     "supportThinking": "Thinking",
     "supportTool": "Tool",
@@ -76,5 +78,22 @@
     "supportToolMessage": "SupportToolMessage"
   },
   "requestPath": "RequestPath",
-  "modelToBeTested": "ModelToBeTested"
+  "modelToBeTested": "ModelToBeTested",
+  "testFile": "Test File",
+  "testFileTip": "Please upload a small test file (PDF, Word, PPT, Excel, image or HTML, recommended less than 10MB) to verify the OCR model configuration",
+  "uploadButton": "Upload Test File",
+  "uploadFileTypeError": "Unsupported file format. Please upload PDF, Word, PPT, Excel, image or HTML files",
+  "uploadFileSizeError": "File size cannot exceed 10MB!",
+  "testFileRequired": "Please upload a test file first",
+  "publishCount": "Published",
+  "batchPublish": "Batch Publish",
+  "noModelInGroup": "No model in this group",
+  "publishAllSuccess": "All published successfully",
+  "publishPartFail": "Partially failed to publish",
+  "published": "Published",
+  "unPublished": "Unpublished",
+  "publish": "Publish",
+  "offline": "Offline",
+  "publishSuccess": "Published successfully",
+  "offlineSuccess": "Offline successfully"
 }

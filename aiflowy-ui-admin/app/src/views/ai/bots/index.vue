@@ -130,18 +130,6 @@ const actions: ActionButton[] = [
         });
       },
     },
-    {
-      icon: h(IconifyIcon, { icon: 'mdi:history' }),
-      text: $t('button.historicalReleaseRecords'),
-      className: '',
-      permission: '',
-      onClick(row: BotInfo) {
-        router.push({
-          path: '/ai/historicalReleaseRecords',
-          query: { botId: row.id },
-        });
-      },
-    },
   {
     icon: h(IconifyIcon, { icon: 'svg:target' }),
     text: $t('bot.openUserCenter'),

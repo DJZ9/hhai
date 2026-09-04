@@ -91,6 +91,18 @@ public class ModelProviderBase extends DateEntity implements Serializable {
     @Column(comment = "修改者")
     private BigInteger modifiedBy;
 
+    /**
+     * 供应商官网
+     */
+    @Column(comment = "供应商官网")
+    private String providerWebsite;
+
+    /**
+     * 密钥获取地址
+     */
+    @Column(comment = "密钥获取地址")
+    private String apiKeyObtainAddress;
+
     public BigInteger getId() {
         return id;
     }
@@ -193,6 +205,22 @@ public class ModelProviderBase extends DateEntity implements Serializable {
 
     public void setModifiedBy(BigInteger modifiedBy) {
         this.modifiedBy = modifiedBy;
+    }
+
+    public String getProviderWebsite() {
+        return providerWebsite;
+    }
+
+    public void setProviderWebsite(String providerWebsite) {
+        this.providerWebsite = providerWebsite;
+    }
+
+    public String getApiKeyObtainAddress() {
+        return apiKeyObtainAddress;
+    }
+
+    public void setApiKeyObtainAddress(String apiKeyObtainAddress) {
+        this.apiKeyObtainAddress = apiKeyObtainAddress;
     }
 
 }

@@ -35,6 +35,7 @@ const brandListData = ref([]);
 const defaultSelectProviderId = ref('');
 const defaultIcon = ref('');
 const modelListData = ref([]);
+const providerLoading = ref(true);
 onMounted(() => {
   getLlmProviderListData();
 });
@@ -46,6 +47,50 @@ const checkAndFillDefaultIcon = (list) => {
       item.icon = getIconByValue(item.providerType);
     }
   });
+};
+// 统计组内 publishStatus=1 的模型数量
+const countPublishedModels = (llmList) => {
+  if (!Array.isArray(llmList)) return 0;
+  return llmList.filter((item) => Number(item?.publishStatus) === 1).length;
+};
+// 正在批量发布的分组key集合，用于防止重复提交
+const batchPublishingKeys = ref(new Set());
+// 批量发布当前分组的所有模型
+const handleBatchPublish = (group, modelType) => {
+  const key = `${modelType}:${group.groupName}`;
+  if (batchPublishingKeys.value.has(key)) return;
+  const ids = (group.llmList || []).map((item) => item.id);
+  if (!ids.length) {
+    ElMessage.warning($t('llm.noModelInGroup'));
+    return;
+  }
+  batchPublishingKeys.value = new Set(batchPublishingKeys.value).add(key);
+  api
+    .post('/api/v1/model/batchPublish', null, {
+      params: {
+        ids: ids.join(','),
+        modelType,
+      },
+    })
+    .then((res) => {
+      if (res.errorCode === 0) {
+        const data = res.data || {};
+        const failCount = (data.fail || []).length;
+        if (data.allSuccess) {
+          ElMessage.success(data.message || $t('llm.publishAllSuccess'));
+        } else {
+          ElMessage.warning(
+            `${data.message || $t('llm.publishPartFail')}（失败 ${failCount} 个）`,
+          );
+        }
+        getLlmDetailList(defaultSelectProviderId.value);
+      }
+    })
+    .finally(() => {
+      const next = new Set(batchPublishingKeys.value);
+      next.delete(key);
+      batchPublishingKeys.value = next;
+    });
 };
 const chatModelListData = ref([]);
 const embeddingModelListData = ref([]);
@@ -102,18 +147,52 @@ const getLlmDetailList = (providerId) => {
 };
 
 const getLlmProviderListData = () => {
-  getLlmProviderList().then((res) => {
-    brandListData.value = res.data;
-    checkAndFillDefaultIcon(brandListData.value);
-    if (!defaultSelectProviderId.value) {
-      defaultSelectProviderId.value = res.data[0].id;
-      defaultIcon.value = res.data[0].icon;
-    }
-    llmProviderForm.value = {
-      ...res.data[0],
-    };
-    getLlmDetailList(defaultSelectProviderId.value);
-  });
+  providerLoading.value = true;
+  getLlmProviderList()
+    .then((res) => {
+      brandListData.value = res.data;
+      checkAndFillDefaultIcon(brandListData.value);
+      if (defaultSelectProviderId.value) {
+        // 保持当前选中的供应商配置，只更新列表数据
+        const currentProvider = res.data.find(
+          (item) => item.id === defaultSelectProviderId.value,
+        );
+        if (currentProvider) {
+          // 只更新列表中的基础信息，保留用户正在编辑的表单值
+          const {
+            apiKey,
+            endpoint,
+            chatPath,
+            embedPath,
+            rerankPath,
+            providerWebsite,
+            apiKeyObtainAddress,
+          } = llmProviderForm.value;
+          llmProviderForm.value = {
+            ...currentProvider,
+            // 如果表单中有值，保留表单值；否则使用服务器返回的值
+            apiKey: apiKey || currentProvider.apiKey,
+            endpoint: endpoint || currentProvider.endpoint,
+            chatPath: chatPath || currentProvider.chatPath,
+            embedPath: embedPath || currentProvider.embedPath,
+            rerankPath: rerankPath || currentProvider.rerankPath,
+            providerWebsite: providerWebsite || currentProvider.providerWebsite,
+            apiKeyObtainAddress:
+              apiKeyObtainAddress || currentProvider.apiKeyObtainAddress,
+          };
+        }
+      } else {
+        defaultSelectProviderId.value = res.data[0].id;
+        defaultIcon.value = res.data[0].icon;
+        llmProviderForm.value = {
+          ...res.data[0],
+        };
+      }
+      getLlmDetailList(defaultSelectProviderId.value);
+    })
+    .finally(() => {
+      providerLoading.value = false;
+    });
 };
 const selectCategory = ref({
   providerName: '',
@@ -281,6 +360,14 @@ const handleUpdateLlm = (id) => {
     }
   });
 };
+
+const handlePublishChange = () => {
+  getLlmDetailList(defaultSelectProviderId.value);
+};
+
+const isBatchPublishing = (modelType, groupName) => {
+  return batchPublishingKeys.value.has(`${modelType}:${groupName}`);
+};
 </script>
 
 <template>
@@ -293,6 +380,7 @@ const handleUpdateLlm = (id) => {
         :menus="brandListData"
         :control-btns="controlBtns"
         :footer-button="footerButton"
+        :loading="providerLoading"
         @change="handleCategoryClick"
         :default-selected="defaultSelectProviderId"
         :icon-size="21"
@@ -301,6 +389,36 @@ const handleUpdateLlm = (id) => {
     <div class="llm-table-container">
       <div class="llm-form-container">
         <div class="title">{{ selectCategory.providerName }}</div>
+        <div
+          v-if="llmProviderForm.providerWebsite?.trim()"
+          class="provider-link-row website-top-row"
+        >
+          <span class="provider-link-label">{{
+            $t('llmProvider.providerWebsite')
+          }}</span>
+          <a
+            :href="llmProviderForm.providerWebsite"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ llmProviderForm.providerWebsite }}
+          </a>
+        </div>
+        <div
+          v-if="llmProviderForm.apiKeyObtainAddress?.trim()"
+          class="provider-link-row"
+        >
+          <span class="provider-link-label">{{
+            $t('llmProvider.apiKeyObtainAddress')
+          }}</span>
+          <a
+            :href="llmProviderForm.apiKeyObtainAddress"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ llmProviderForm.apiKeyObtainAddress }}
+          </a>
+        </div>
         <ElForm
           ref="llmProviderFormRef"
           :model="llmProviderForm"
@@ -380,8 +498,24 @@ const handleUpdateLlm = (id) => {
                 >
                   <template #title>
                     <div class="flex items-center justify-between pr-2">
-                      <span>{{ group.groupName }}</span>
-                      <span>
+                      <span class="flex items-center gap-1.5">
+                        <span>{{ group.groupName }}</span>
+                        <span class="publish-count">
+                          {{ $t('llm.publishCount') }}
+                          {{ countPublishedModels(group.llmList) }}
+                        </span>
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <ElButton
+                          link
+                          type="primary"
+                          size="small"
+                          :loading="isBatchPublishing(model.value, group.groupName)"
+                          :disabled="isBatchPublishing(model.value, group.groupName)"
+                          @click.stop="handleBatchPublish(group, model.value)"
+                        >
+                          {{ $t('llm.batchPublish') }}
+                        </ElButton>
                         <ElIcon
                           @click.stop="
                             handleGroupNameUpdateModel(group.groupName)
@@ -398,6 +532,7 @@ const handleUpdateLlm = (id) => {
                     @delete-llm="handleDeleteLlm"
                     @edit-llm="handleEditLlm"
                     @update-with-used="handleUpdateLlm"
+                    @publish-change="handlePublishChange"
                   />
                 </ElCollapseItem>
               </ElCollapse>
@@ -419,13 +554,29 @@ const handleUpdateLlm = (id) => {
                 >
                   <template #title>
                     <div class="flex items-center justify-between pr-2">
-                      <span>{{ group.groupName }}</span>
-                      <span
-                        @click.stop="
-                          handleGroupNameUpdateModel(group.groupName)
-                        "
-                      >
-                        <ElIcon>
+                      <span class="flex items-center gap-1.5">
+                        <span>{{ group.groupName }}</span>
+                        <span class="publish-count">
+                          {{ $t('llm.publishCount') }}
+                          {{ countPublishedModels(group.llmList) }}
+                        </span>
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <ElButton
+                          link
+                          type="primary"
+                          size="small"
+                          :loading="isBatchPublishing(model.value, group.groupName)"
+                          :disabled="isBatchPublishing(model.value, group.groupName)"
+                          @click.stop="handleBatchPublish(group, model.value)"
+                        >
+                          {{ $t('llm.batchPublish') }}
+                        </ElButton>
+                        <ElIcon
+                          @click.stop="
+                            handleGroupNameUpdateModel(group.groupName)
+                          "
+                        >
                           <Minus />
                         </ElIcon>
                       </span>
@@ -437,6 +588,7 @@ const handleUpdateLlm = (id) => {
                     @delete-llm="handleDeleteLlm"
                     @edit-llm="handleEditLlm"
                     @update-with-used="handleUpdateLlm"
+                    @publish-change="handlePublishChange"
                   />
                 </ElCollapseItem>
               </ElCollapse>
@@ -445,8 +597,7 @@ const handleUpdateLlm = (id) => {
             <!-- 重排模型（rerankModel）遍历-->
             <div
               v-if="
-                model.value === 'rerankModel' &&
-                embeddingModelListData.length > 0
+                model.value === 'rerankModel' && rerankModelListData.length > 0
               "
             >
               <ElCollapse expand-icon-position="left">
@@ -458,13 +609,29 @@ const handleUpdateLlm = (id) => {
                 >
                   <template #title>
                     <div class="flex items-center justify-between pr-2">
-                      <span>{{ group.groupName }}</span>
-                      <span
-                        @click.stop="
-                          handleGroupNameUpdateModel(group.groupName)
-                        "
-                      >
-                        <ElIcon>
+                      <span class="flex items-center gap-1.5">
+                        <span>{{ group.groupName }}</span>
+                        <span class="publish-count">
+                          {{ $t('llm.publishCount') }}
+                          {{ countPublishedModels(group.llmList) }}
+                        </span>
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <ElButton
+                          link
+                          type="primary"
+                          size="small"
+                          :loading="isBatchPublishing(model.value, group.groupName)"
+                          :disabled="isBatchPublishing(model.value, group.groupName)"
+                          @click.stop="handleBatchPublish(group, model.value)"
+                        >
+                          {{ $t('llm.batchPublish') }}
+                        </ElButton>
+                        <ElIcon
+                          @click.stop="
+                            handleGroupNameUpdateModel(group.groupName)
+                          "
+                        >
                           <Minus />
                         </ElIcon>
                       </span>
@@ -476,6 +643,7 @@ const handleUpdateLlm = (id) => {
                     @delete-llm="handleDeleteLlm"
                     @edit-llm="handleEditLlm"
                     @update-with-used="handleUpdateLlm"
+                    @publish-change="handlePublishChange"
                   />
                 </ElCollapseItem>
               </ElCollapse>
@@ -494,13 +662,29 @@ const handleUpdateLlm = (id) => {
                 >
                   <template #title>
                     <div class="flex items-center justify-between pr-2">
-                      <span>{{ group.groupName }}</span>
-                      <span
-                        @click.stop="
-                          handleGroupNameUpdateModel(group.groupName)
-                        "
-                      >
-                        <ElIcon>
+                      <span class="flex items-center gap-1.5">
+                        <span>{{ group.groupName }}</span>
+                        <span class="publish-count">
+                          {{ $t('llm.publishCount') }}
+                          {{ countPublishedModels(group.llmList) }}
+                        </span>
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <ElButton
+                          link
+                          type="primary"
+                          size="small"
+                          :loading="isBatchPublishing(model.value, group.groupName)"
+                          :disabled="isBatchPublishing(model.value, group.groupName)"
+                          @click.stop="handleBatchPublish(group, model.value)"
+                        >
+                          {{ $t('llm.batchPublish') }}
+                        </ElButton>
+                        <ElIcon
+                          @click.stop="
+                            handleGroupNameUpdateModel(group.groupName)
+                          "
+                        >
                           <Minus />
                         </ElIcon>
                       </span>
@@ -512,6 +696,7 @@ const handleUpdateLlm = (id) => {
                     @delete-llm="handleDeleteLlm"
                     @edit-llm="handleEditLlm"
                     @update-with-used="handleUpdateLlm"
+                    @publish-change="handlePublishChange"
                   />
                 </ElCollapseItem>
               </ElCollapse>
@@ -586,6 +771,40 @@ const handleUpdateLlm = (id) => {
   flex-direction: column;
   gap: 10px;
   width: 100%;
+}
+
+.provider-link-row {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #333333;
+  line-height: 22px;
+}
+
+.website-top-row {
+  margin-bottom: 8px;
+}
+
+.provider-link-label {
+  color: #606266;
+  margin-right: 8px;
+}
+
+.provider-link-label::after {
+  content: ':';
+}
+
+.provider-link-row a {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+
+.provider-link-row a:hover {
+  text-decoration: underline;
+}
+
+.provider-link-placeholder {
+  color: #999999;
 }
 
 .model-common-title {
@@ -664,5 +883,18 @@ const handleUpdateLlm = (id) => {
 .flex.items-center.justify-between.pr-2 {
   height: 100%;
   width: 100%;
+}
+
+.publish-count {
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 18px;
+  /* color: var(--el-color-primary); */
+  color: var(--el-text-color-regular); /* #606266 深灰色 */
+  background-color: var(--el-color-primary-light-9);
+  border-radius: 10px;
+  vertical-align: bottom;
+  position: relative;
+  top: 4px; /* 正数向下，负数向上，按需调 1px~3px */
 }
 </style>

@@ -43,19 +43,6 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    name: 'HistoricalReleaseRecords',
-    path: '/ai/historicalReleaseRecords',
-    component: () => import('#/views/ai/historicalReleaseRecords/history.vue'),
-    meta: {
-      title: $t('button.historicalReleaseRecords'),
-      openInNewWindow: true,
-      hideInMenu: true,
-      hideInBreadcrumb: true,
-      hideInTab: true,
-      activePath: '/ai/bots',
-    },
-  },
-  {
     name: 'BotToolCallRecords',
     path: '/ai/bots/toolRecords/:botId',
     component: () => import('#/views/ai/bots/pages/toolRecords/index.vue'),

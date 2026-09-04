@@ -33,6 +33,7 @@ import tech.aiflowy.ai.mapper.BotMapper;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.utils.CustomBeanUtils;
 import tech.aiflowy.ai.utils.RegexUtils;
+import tech.aiflowy.common.entity.LoginAccount;
 import tech.aiflowy.common.filestorage.FileStorageService;
 import tech.aiflowy.common.filestorage.utils.PathGeneratorUtil;
 import tech.aiflowy.common.satoken.util.SaTokenUtil;
@@ -200,21 +201,33 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         ChatOptions chatOptions = getChatOptions(modelOptions);
         Boolean enableDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_ENABLE_DEEP_THINKING, false);
         chatOptions.setThinkingEnabled(enableDeepThinking);
+        Boolean exposeDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_EXPOSE_DEEP_THINKING, false);
+        LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
         ChatSseEmitter chatSseEmitter = new ChatSseEmitter();
         SseEmitter emitter = chatSseEmitter.getEmitter();
         if (messages != null && !messages.isEmpty()) {
             ChatMemory defaultChatMemory = new DefaultBotMessageMemory(conversationId, chatSseEmitter, messages);
             memoryPrompt.setMemory(defaultChatMemory);
         } else {
-            BotMessageMemory memory = new BotMessageMemory(botId, SaTokenUtil.getLoginAccount().getId(), conversationId, botMessageService);
+            BotMessageMemory memory = new BotMessageMemory(botId, loginAccount.getId(), conversationId, botMessageService);
             memoryPrompt.setMemory(memory);
         }
         memoryPrompt.addMessage(userMessage);
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        final boolean finalExposeDeepThinking = exposeDeepThinking;
         threadPoolTaskExecutor.execute(() -> {
             ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
             RequestContextHolder.setRequestAttributes(sra, true);
-            StreamResponseListener streamResponseListener = new ChatStreamListener(conversationId.toString(), chatModel, memoryPrompt, chatSseEmitter, chatOptions);
+            StreamResponseListener streamResponseListener = new ChatStreamListener(
+                    botId.toString(),
+                    loginAccount.getId().toString(),
+                    conversationId.toString(),
+                    chatModel,
+                    memoryPrompt,
+                    chatSseEmitter,
+                    chatOptions,
+                    finalExposeDeepThinking,
+                    loginAccount);
             chatModel.chatStream(memoryPrompt, streamResponseListener, chatOptions);
         });
 
@@ -246,7 +259,16 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
         threadPoolTaskExecutor.execute(() -> {
             RequestContextHolder.setRequestAttributes(sra, true);
-            StreamResponseListener streamResponseListener = new ChatStreamListener(chatCheckResult.getConversationIdStr(), chatModel, memoryPrompt, chatSseEmitter, chatOptions);
+            StreamResponseListener streamResponseListener = new ChatStreamListener(
+                    botId.toString(),
+                    null,
+                    chatCheckResult.getConversationIdStr(),
+                    chatModel,
+                    memoryPrompt,
+                    chatSseEmitter,
+                    chatOptions,
+                    false,
+                    null);
             chatModel.chatStream(memoryPrompt, streamResponseListener, chatOptions);
         });
 
