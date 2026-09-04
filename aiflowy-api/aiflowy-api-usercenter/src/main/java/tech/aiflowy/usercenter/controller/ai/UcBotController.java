@@ -6,6 +6,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import com.alicp.jetcache.Cache;
 import com.mybatisflex.core.keygen.impl.SnowFlakeIDKeyGenerator;
 import com.mybatisflex.core.query.QueryWrapper;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.StringUtils;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tech.aiflowy.ai.entity.*;
+import tech.aiflowy.ai.mapper.BotMapper;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.service.impl.BotServiceImpl;
 import tech.aiflowy.common.annotation.UsePermission;
@@ -23,7 +25,6 @@ import tech.aiflowy.common.web.controller.BaseCurdController;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.common.web.jsonbody.JsonBody;
 
-import jakarta.annotation.Resource;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -47,6 +48,8 @@ public class UcBotController extends BaseCurdController<BotService, Bot> {
     private final BotDocumentCollectionService botDocumentCollectionService;
     @Resource
     private BotService botService;
+    @Resource
+    private BotMapper botMapper;
     @Autowired
     @Qualifier("defaultCache") // 指定 Bean 名称
     private Cache<String, Object> cache;
@@ -273,4 +276,23 @@ public class UcBotController extends BaseCurdController<BotService, Bot> {
         return super.onRemoveBefore(ids);
     }
 
+  /**
+     * 重写 list：只查 version=1 的根节点（用户中心显示的是初始版本，发布版本在历史记录中查看）
+     * 同时关联查询关系数据，并兼容旧数据 authType 为 null 默认所有人可见
+     */
+    @Override
+    @SaIgnore
+    @GetMapping("list")
+    public Result<List<Bot>> list(Bot entity, Boolean asTree, String sortKey, String sortType) {
+        QueryWrapper queryWrapper = QueryWrapper.create(entity, buildOperators(entity));
+        queryWrapper.orderBy(buildOrderBy(sortKey, sortType, getDefaultOrderBy()));
+        // 核心过滤：version=1（初始版本） + parent_id IS NULL（根节点，过滤发布产生的子节点）
+        queryWrapper.eq(Bot::getVersion, 1);
+        queryWrapper.isNull("parent_id");
+
+        // 使用关联查询加载关系数据
+        List<Bot> allBots = botMapper.selectListWithRelationsByQuery(queryWrapper);
+
+        return Result.ok(allBots);
+    }
 }
