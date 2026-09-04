@@ -14,15 +14,12 @@ import com.agentsflex.core.model.client.StreamContext;
 import com.agentsflex.core.prompt.MemoryPrompt;
 import com.agentsflex.core.util.CollectionUtil;
 import com.alibaba.fastjson2.JSON;
-import com.mybatisflex.core.query.QueryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import tech.aiflowy.ai.agentsflex.tool.DocumentCollectionTool;
 import tech.aiflowy.ai.entity.Bot;
-import tech.aiflowy.ai.entity.BotDocumentCollection;
 import tech.aiflowy.ai.entity.BotToolCallRecord;
-import tech.aiflowy.ai.service.BotDocumentCollectionService;
 import tech.aiflowy.ai.service.BotService;
 import tech.aiflowy.ai.service.BotToolCallRecordService;
 import tech.aiflowy.common.entity.LoginAccount;
@@ -66,8 +63,6 @@ public class ChatStreamListener implements StreamResponseListener {
 
     private final StringBuffer deltaMessageBuffer = new StringBuffer();
 
-    // 收集知识库引用的列表
-    private final List<Map<String, Object>> knowledgeReferences = new ArrayList<>();
 
     public ChatStreamListener(String botId, String accountId, String conversationId, ChatModel chatModel, MemoryPrompt memoryPrompt, ChatSseEmitter sseEmitter,
                               ChatOptions chatOptions, boolean exposeDeepThinking, LoginAccount loginAccount) {
@@ -157,9 +152,6 @@ public class ChatStreamListener implements StreamResponseListener {
                             log.error("工具执行异常", e);
                         }
 
-                        // 提取知识库引用信息
-                        extractKnowledgeReferences(result, toolExecutor);
-
                         if (result != null && !(result instanceof CharSequence) && !(result instanceof Number)) {
                             toolMessage.setContent(JSON.toJSONString(result));
                         } else if (result != null){
@@ -233,9 +225,6 @@ public class ChatStreamListener implements StreamResponseListener {
                     }
                     memoryPrompt.addMessage(context.getFullMessage());
 
-                    // 发送知识库引用事件
-                    sendKnowledgeReferences();
-
                     ChatEnvelope<Map<String, String>> chatEnvelope = new ChatEnvelope<>();
                     chatEnvelope.setDomain(ChatDomain.SYSTEM);
                     sseEmitter.sendDone(chatEnvelope);
@@ -305,178 +294,6 @@ public class ChatStreamListener implements StreamResponseListener {
         sseEmitter.complete();
     }
 
-    /**
-     * 从工具执行结果中提取知识库引用信息
-     * 相同path的分段content会合并到一起
-     *
-     * @param result 工具执行结果（List<Document>）
-     * @param toolExecutor 工具执行器
-     */
-    @SuppressWarnings("unchecked")
-    private void extractKnowledgeReferences(Object result, ToolExecutor toolExecutor) {
-        if (result == null) {
-            return;
-        }
-        Tool tool = toolExecutor.getTool();
-        // 检查是否是知识库工具（DocumentCollectionTool）
-        if (!(tool instanceof DocumentCollectionTool)) {
-            return;
-        }
-
-        try {
-            // 直接处理 List<Document>
-            List<Document> documents = null;
-
-            if (result instanceof List) {
-                documents = (List<Document>) result;
-            }
-
-            if (documents != null && !documents.isEmpty()) {
-                // 使用Map来合并相同path的分段
-                Map<String, Map<String, Object>> pathReferenceMap = new HashMap<>();
-                // 记录每个path的分段计数
-                Map<String, Integer> pathSegmentCount = new HashMap<>();
-
-                for (Document document : documents) {
-                    // 从 metadata 中获取来源信息
-                    Map<String, Object> metadata = document.getMetadataMap();
-                    if (metadata != null) {
-                        String docId = (String) metadata.get("sourceDocumentId");
-                        String docTitle = (String) metadata.get("sourceDocumentTitle");
-                        String docPath = (String) metadata.get("sourceDocumentPath");
-                        String content = document.getContent() != null ? document.getContent() : "";
-
-                        if (docId == null || docPath == null) {
-                            continue;
-                        }
-
-                        // 使用path作为key进行合并
-                        if (pathReferenceMap.containsKey(docPath)) {
-                            // 已存在相同path，追加content
-                            Map<String, Object> existingRef = pathReferenceMap.get(docPath);
-                            String existingContent = (String) existingRef.get("content");
-                            StringBuilder sb = new StringBuilder(existingContent);
-
-                            // 增加分段计数
-                            int segmentNum = pathSegmentCount.getOrDefault(docPath, 1) + 1;
-                            pathSegmentCount.put(docPath, segmentNum);
-
-                            if (StringUtil.hasText(content)) {
-                                if (sb.length() > 0) {
-                                    sb.append("\n\n");
-                                    sb.append("═").append("═".repeat(40)).append("\n");
-                                    sb.append("  【分段 ").append(segmentNum).append("】\n");
-                                    sb.append("═").append("═".repeat(40)).append("\n\n");
-                                }
-                                sb.append(content);
-                            }
-                            existingRef.put("content", sb.toString());
-                        } else {
-                            // 新的path，创建新的引用
-                            Map<String, Object> reference = new HashMap<>();
-                            reference.put("path", docPath);
-                            reference.put("type", "document_collection");
-                            reference.put("title", docTitle != null ? docTitle : "未知文档");
-
-                            // 第一个分段添加标识
-                            StringBuilder sb = new StringBuilder();
-                            if (StringUtil.hasText(content)) {
-                                sb.append("═").append("═".repeat(40)).append("\n");
-                                sb.append("  【分段 1】\n");
-                                sb.append("═").append("═".repeat(40)).append("\n\n");
-                                sb.append(content);
-                            }
-                            reference.put("content", sb.toString());
-                            reference.put("documentId", docId);
-                            reference.put("collectionId", ((DocumentCollectionTool) tool).getKnowledgeId().toString());
-                            pathReferenceMap.put(docPath, reference);
-                            pathSegmentCount.put(docPath, 1);
-                        }
-                    }
-                }
-
-                // 将合并后的引用添加到knowledgeReferences
-                // 去重：检查是否已存在相同的文档引用（基于documentId）
-                for (Map<String, Object> reference : pathReferenceMap.values()) {
-                    String docId = (String) reference.get("documentId");
-                    boolean exists = knowledgeReferences.stream()
-                        .anyMatch(ref -> docId != null && docId.equals(ref.get("documentId")));
-
-                    if (!exists) {
-                        knowledgeReferences.add(reference);
-                        System.out.println("Added knowledge reference: " + reference);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("提取知识库引用信息失败: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * 发送知识库引用事件
-     */
-    private void sendKnowledgeReferences() {
-        if (knowledgeReferences.isEmpty()) {
-            return;
-        }
-
-        try {
-            // 为每个引用查询 BotDocumentCollection 配置，添加 showReferences 和 showOpenFile
-            BotDocumentCollectionService botDocumentCollectionService = SpringContextUtil.getBean(BotDocumentCollectionService.class);
-            for (Map<String, Object> reference : knowledgeReferences) {
-                try {
-                    String collectionIdStr = (String) reference.get("collectionId");
-                    if (collectionIdStr != null && !collectionIdStr.isEmpty() && this.botId != null) {
-                        BigInteger documentCollectionId = new BigInteger(collectionIdStr);
-                        BotDocumentCollection botDocumentCollection = botDocumentCollectionService.getMapper()
-                            .selectOneByQuery(QueryWrapper.create()
-                                .where(BotDocumentCollection::getDocumentCollectionId).eq(documentCollectionId)
-                                .and(BotDocumentCollection::getBotId).eq(new BigInteger(this.botId)));
-                        boolean showReferences = BotDocumentCollection.DEFAULT_SHOW_REFERENCES;
-                        boolean showOpenFile = BotDocumentCollection.DEFAULT_SHOW_OPEN_FILE;
-                        if (botDocumentCollection != null) {
-                            Map<String, Object> options = botDocumentCollection.getOptions();
-                            if (options != null) {
-                                Map<String, Object> generalConfig = (Map<String, Object>) options.get(BotDocumentCollection.KEY_GENERAL_CONFIG);
-                                if (generalConfig != null) {
-                                    if (generalConfig.containsKey(BotDocumentCollection.KEY_SHOW_REFERENCES)) {
-                                        showReferences = Boolean.TRUE.equals(generalConfig.get(BotDocumentCollection.KEY_SHOW_REFERENCES));
-                                    }
-                                    if (generalConfig.containsKey(BotDocumentCollection.KEY_SHOW_OPEN_FILE)) {
-                                        showOpenFile = Boolean.TRUE.equals(generalConfig.get(BotDocumentCollection.KEY_SHOW_OPEN_FILE));
-                                    }
-                                }
-                            }
-                        }
-                        reference.put(BotDocumentCollection.KEY_SHOW_REFERENCES, showReferences);
-                        reference.put(BotDocumentCollection.KEY_SHOW_OPEN_FILE, showOpenFile);
-                    } else {
-                        reference.put(BotDocumentCollection.KEY_SHOW_REFERENCES, BotDocumentCollection.DEFAULT_SHOW_REFERENCES);
-                        reference.put(BotDocumentCollection.KEY_SHOW_OPEN_FILE, BotDocumentCollection.DEFAULT_SHOW_OPEN_FILE);
-                    }
-                } catch (Exception e) {
-                    log.warn("查询知识库引用配置失败: {}", e.getMessage());
-                    reference.put(BotDocumentCollection.KEY_SHOW_REFERENCES, BotDocumentCollection.DEFAULT_SHOW_REFERENCES);
-                    reference.put(BotDocumentCollection.KEY_SHOW_OPEN_FILE, BotDocumentCollection.DEFAULT_SHOW_OPEN_FILE);
-                }
-            }
-
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("referenceList", knowledgeReferences);
-
-            ChatEnvelope<Map<String, Object>> referenceEnvelope = new ChatEnvelope<>();
-            referenceEnvelope.setDomain(ChatDomain.LLM);
-            referenceEnvelope.setType(ChatType.REFERENCES);
-            referenceEnvelope.setPayload(payload);
-            referenceEnvelope.setConversationId(this.conversationId);
-
-            sseEmitter.send(referenceEnvelope);
-            log.debug("发送知识库引用事件，共 {} 条引用", knowledgeReferences.size());
-        } catch (Exception e) {
-            log.error("发送知识库引用事件失败: {}", e.getMessage(), e);
-        }
-    }
 
     /**
      * 保存工具调用记录到数据库
