@@ -4,11 +4,12 @@ import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.core.handler.FastjsonTypeHandler;
+import tech.aiflowy.common.entity.DateEntity;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
-import tech.aiflowy.common.entity.DateEntity;
 
 
 public class BotMessageBase extends DateEntity implements Serializable {
@@ -74,6 +75,18 @@ public class BotMessageBase extends DateEntity implements Serializable {
      */
     @Column(comment = "更新时间")
     private Date modified;
+
+    /**
+     * 对话历史摘要
+     */
+    @Column(comment = "对话历史摘要")
+    private String summary;
+
+    /**
+     * 对话轮数
+     */
+    @Column(comment = "对话轮数")
+    private Integer roundNumber;
 
     public BigInteger getId() {
         return id;
@@ -153,6 +166,22 @@ public class BotMessageBase extends DateEntity implements Serializable {
 
     public void setModified(Date modified) {
         this.modified = modified;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
+    }
+
+    public Integer getRoundNumber() {
+        return roundNumber;
+    }
+
+    public void setRoundNumber(Integer roundNumber) {
+        this.roundNumber = roundNumber;
     }
 
 }

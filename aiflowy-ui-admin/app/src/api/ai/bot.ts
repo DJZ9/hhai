@@ -48,6 +48,11 @@ export const updateBotApi = (params: UpdateBotParams) => {
   return api.post<RequestResult>('/api/v1/bot/update', { ...params });
 };
 
+/** 发布Bot */
+export const publishBotApi = (params: UpdateBotParams) => {
+  return api.post<RequestResult>('/api/v1/bot/publish', { ...params });
+};
+
 /** 删除Bot */
 export const removeBotFromId = (id: string) => {
   return api.post<RequestResult>('/api/v1/bot/remove', { id });

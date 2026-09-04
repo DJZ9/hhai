@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { FormInstance } from 'element-plus';
 
 import type { BotInfo } from '@aiflowy/types';
@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router';
 import { IconifyIcon } from '@aiflowy/icons';
 import { $t } from '@aiflowy/locales';
 
-import { Delete, Edit, Plus, Setting, Upload,Download } from '@element-plus/icons-vue';  
+import { Delete, Edit, Plus, Setting, Upload,Download,Operation,Tickets } from '@element-plus/icons-vue';  
 import {
   ElButton,
   ElDialog,
@@ -109,6 +109,39 @@ const actions: ActionButton[] = [
         exportJson(row);
       },
   },
+   {
+      icon: Operation,
+      text: $t('bot.toolCallRecord'),
+      className: '',
+      permission: '',
+      onClick(row: BotInfo) {
+        router.push({ path: `/ai/bots/toolRecords/${row.id}` });
+      },
+    },
+    {
+      icon: Tickets,
+      text: $t('bot.conversationRecord'),
+      className: '',
+      permission: '',
+      onClick(row: BotInfo) {
+        router.push({
+          path: '/ai/conversationAnalysis',
+          query: { botId: row.id },
+        });
+      },
+    },
+    {
+      icon: h(IconifyIcon, { icon: 'mdi:history' }),
+      text: $t('button.historicalReleaseRecords'),
+      className: '',
+      permission: '',
+      onClick(row: BotInfo) {
+        router.push({
+          path: '/ai/historicalReleaseRecords',
+          query: { botId: row.id },
+        });
+      },
+    },
   {
     icon: h(IconifyIcon, { icon: 'svg:target' }),
     text: $t('bot.openUserCenter'),

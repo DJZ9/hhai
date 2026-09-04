@@ -3,6 +3,7 @@
   "reset": "Reset",
   "add": "Add",
   "edit": "Edit",
+  "publish": "Publish",
   "delete": "Delete",
   "export": "Export",
   "import": "Import",
@@ -44,5 +45,6 @@
   "hide": "Hide",
   "more": "Mode",
   "viewSegmentation": "ViewSegmentation",
-  "close": "Close"
+  "close": "Close",
+  "historicalReleaseRecords": "Release History"
 }

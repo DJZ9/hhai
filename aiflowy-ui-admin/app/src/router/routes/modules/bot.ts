@@ -29,6 +29,45 @@ const routes: RouteRecordRaw[] = [
       activePath: '/ai/bots',
     },
   },
+  {
+    name: 'ConversationHistory',
+    path: '/ai/conversationAnalysis/:id',
+    component: () => import('#/views/ai/conversationAnalysis/history.vue'),
+    meta: {
+      title: $t('conversationAnalysis.conversationRecord'),
+      openInNewWindow: true,
+      hideInMenu: true,
+      hideInBreadcrumb: true,
+      hideInTab: true,
+      activePath: '/ai/conversationAnalysis',
+    },
+  },
+  {
+    name: 'HistoricalReleaseRecords',
+    path: '/ai/historicalReleaseRecords',
+    component: () => import('#/views/ai/historicalReleaseRecords/history.vue'),
+    meta: {
+      title: $t('button.historicalReleaseRecords'),
+      openInNewWindow: true,
+      hideInMenu: true,
+      hideInBreadcrumb: true,
+      hideInTab: true,
+      activePath: '/ai/bots',
+    },
+  },
+  {
+    name: 'BotToolCallRecords',
+    path: '/ai/bots/toolRecords/:botId',
+    component: () => import('#/views/ai/bots/pages/toolRecords/index.vue'),
+    meta: {
+      title: $t('toolCallRecord.title'),
+      openInNewWindow: true,
+      hideInMenu: true,
+      hideInBreadcrumb: true,
+      hideInTab: true,
+      activePath: '/ai/bots',
+    },
+  },
 ];
 
 export default routes;

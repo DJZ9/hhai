@@ -1,0 +1,13 @@
+{
+  "return": "返回",
+  "title": "工具调用记录",
+  "conversationId": "会话ID",
+  "creator": "创建人",
+  "botName": "智能体名称",
+  "toolName": "工具名称",
+  "inputParams": "入参",
+  "outputParams": "输出",
+  "view": "查看",
+  "callTime": "调用时间",
+  "detail": "详情"
+}

@@ -1,0 +1,13 @@
+{
+  "return": "Back",
+  "title": "Tool Call Records",
+  "conversationId": "Conversation ID",
+  "creator": "Creator",
+  "botName": "Bot Name",
+  "toolName": "Tool Name",
+  "inputParams": "Input",
+  "outputParams": "Output",
+  "view": "View",
+  "callTime": "Call Time",
+  "detail": "Detail"
+}

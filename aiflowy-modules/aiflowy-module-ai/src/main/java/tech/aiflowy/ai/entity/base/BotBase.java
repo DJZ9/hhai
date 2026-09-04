@@ -4,11 +4,12 @@ import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
 import com.mybatisflex.core.handler.FastjsonTypeHandler;
+import tech.aiflowy.common.entity.DateEntity;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
-import tech.aiflowy.common.entity.DateEntity;
 
 
 public class BotBase extends DateEntity implements Serializable {
@@ -110,6 +111,24 @@ public class BotBase extends DateEntity implements Serializable {
      */
     @Column(comment = "修改者ID")
     private BigInteger modifiedBy;
+
+    /**
+     * 父记录ID，发布后指向原始记录，首版为null
+     */
+    @Column(comment = "父记录ID，发布后指向原始记录")
+    private BigInteger parentId;
+
+    /**
+     * 祖级ID列表，逗号分隔，如 "100,101,102"，记录完整版本链
+     */
+    @Column(comment = "祖级ID列表，逗号分隔")
+    private String ancestors;
+
+    @Column(comment = "版本号")
+    private Integer version;
+
+    @Column(comment = "发布状态：0-未发布，1-已发布")
+    private Integer publishStatus;
 
     public BigInteger getId() {
         return id;
@@ -239,4 +258,35 @@ public class BotBase extends DateEntity implements Serializable {
         this.modifiedBy = modifiedBy;
     }
 
+    public BigInteger getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(BigInteger parentId) {
+        this.parentId = parentId;
+    }
+
+    public String getAncestors() {
+        return ancestors;
+    }
+
+    public void setAncestors(String ancestors) {
+        this.ancestors = ancestors;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public Integer getPublishStatus() {
+        return publishStatus;
+    }
+
+    public void setPublishStatus(Integer publishStatus) {
+        this.publishStatus = publishStatus;
+    }
 }

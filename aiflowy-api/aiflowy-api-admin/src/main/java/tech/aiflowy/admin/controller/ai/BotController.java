@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alicp.jetcache.Cache;
 import com.mybatisflex.core.keygen.impl.SnowFlakeIDKeyGenerator;
 import com.mybatisflex.core.query.QueryWrapper;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.StringUtils;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tech.aiflowy.ai.agentsflex.listener.PromptChoreChatStreamListener;
+import tech.aiflowy.ai.dto.BotMountedModulesDTO;
 import tech.aiflowy.ai.entity.*;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.service.impl.BotServiceImpl;
@@ -34,8 +36,6 @@ import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
 import tech.aiflowy.wiki.entity.BotWiki;
 import tech.aiflowy.wiki.entity.Wiki;
 import tech.aiflowy.wiki.service.BotWikiService;
-
-import jakarta.annotation.Resource;
 import tech.aiflowy.wiki.service.WikiService;
 
 import java.io.InputStream;
@@ -43,6 +43,7 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -83,6 +84,10 @@ public class BotController extends BaseCurdController<BotService, Bot> {
     private McpService mcpService;
     @Resource
     private WikiService wikiService;
+    @Resource
+    private PluginItemService pluginItemService;
+    @Resource
+    private BotModelService botModelService;
 
     public BotController(BotService service, ModelService modelService, BotWorkflowService botWorkflowService,
                          BotDocumentCollectionService botDocumentCollectionService, BotMessageService botMessageService) {
@@ -290,7 +295,59 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         return Result.ok("", json.toJSONString());
     }
 
+    /**
+     * 根据botId获取最新发布的数据
+     *
+     * @param botId 智能体ID，传根节点ID或任意发布版本ID均可
+     * @return 最新已发布版本的智能体数据；若从未发布过则返回 null
+     */
+    @GetMapping("latestPublished")
+    public Result<Bot> latestPublished(@RequestParam BigInteger botId) {
+        Bot bot = service.getById(botId);
+        if (bot == null) {
+            throw new BusinessException("智能体不存在");
+        }
 
+        // 统一换算为版本树根节点ID
+        BigInteger rootId = bot.getParentId() == null ? bot.getId() : bot.getParentId();
+
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq("parent_id", rootId)
+                .eq("publish_status", 1)
+                .orderBy("version", false)
+                .limit(1);
+        Bot published = service.getOne(queryWrapper);
+        return Result.ok(published != null ? published : bot);
+    }
+
+    /**
+     * 查询智能体挂载模块摘要（仅 id 和名称），便于多个智能体之间对比。
+     *
+     * @param ids 智能体ID列表，多个用逗号分隔，例如 ids=1,2,3
+     * @return 每个智能体挂载的工作流、知识库、插件、MCP、Skill、Wiki、子智能体、模型摘要
+     */
+    @GetMapping("mountedModules")
+    public Result<List<BotMountedModulesDTO>> mountedModules(@RequestParam List<BigInteger> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException("ids不能为空");
+        }
+        List<BotMountedModulesDTO> result = new ArrayList<>();
+        for (BigInteger botId : ids) {
+            Bot bot = service.getById(botId);
+            BotMountedModulesDTO dto = new BotMountedModulesDTO();
+            dto.setBotId(botId);
+            dto.setBotTitle(bot != null ? bot.getTitle() : null);
+            dto.setWorkflows(mountWorkflows(botId));
+            dto.setKnowledges(mountKnowledges(botId));
+            dto.setPlugins(mountPlugins(botId));
+            dto.setMcps(mountMcps(botId));
+            dto.setWikis(mountWikis(botId));
+            dto.setModels(mountModels(botId, bot));
+            result.add(dto);
+        }
+        return Result.ok(result);
+    }
+    
     @GetMapping("getDetail")
     @SaIgnore
     public Result<Bot> getDetail(String id) {
@@ -728,5 +785,106 @@ public class BotController extends BaseCurdController<BotService, Bot> {
             json.put("wikis", wikisArray);
         }
     }
+
+
+    private List<BotMountedModulesDTO.Module> mountWorkflows(BigInteger botId) {
+        List<BotWorkflow> rows = botWorkflowService.list(QueryWrapper.create().eq(BotWorkflow::getBotId, botId));
+        Map<BigInteger, String> nameMap = fetchNameMap(workflowService,
+                rows.stream().map(BotWorkflow::getWorkflowId).filter(Objects::nonNull).distinct().toList(),
+                Workflow::getId, Workflow::getTitle);
+        return toModules(rows, BotWorkflow::getWorkflowId, r -> nameMap.get(r.getWorkflowId()));
+    }
+
+    private List<BotMountedModulesDTO.Module> mountKnowledges(BigInteger botId) {
+        List<BotDocumentCollection> rows = botDocumentCollectionService.list(QueryWrapper.create().eq(BotDocumentCollection::getBotId, botId));
+        Map<BigInteger, String> nameMap = fetchNameMap(documentCollectionService,
+                rows.stream().map(BotDocumentCollection::getDocumentCollectionId).filter(Objects::nonNull).distinct().toList(),
+                DocumentCollection::getId, DocumentCollection::getTitle);
+        return toModules(rows, BotDocumentCollection::getDocumentCollectionId,
+                r -> nameMap.get(r.getDocumentCollectionId()));
+    }
+
+    private List<BotMountedModulesDTO.Module> mountPlugins(BigInteger botId) {
+        List<BotPlugin> rows = botPluginService.list(QueryWrapper.create().eq(BotPlugin::getBotId, botId));
+        Map<BigInteger, String> nameMap = fetchNameMap(pluginItemService,
+                rows.stream().map(BotPlugin::getPluginItemId).filter(Objects::nonNull).distinct().toList(),
+                PluginItem::getId, PluginItem::getName);
+        return toModules(rows, BotPlugin::getPluginItemId, r -> nameMap.get(r.getPluginItemId()));
+    }
+
+    private List<BotMountedModulesDTO.Module> mountMcps(BigInteger botId) {
+        List<BotMcp> rows = botMcpService.list(QueryWrapper.create().eq(BotMcp::getBotId, botId));
+        Map<BigInteger, String> nameMap = fetchNameMap(mcpService,
+                rows.stream().map(BotMcp::getMcpId).filter(Objects::nonNull).distinct().toList(),
+                Mcp::getId, Mcp::getTitle);
+        return toModules(rows, BotMcp::getMcpId,
+                r -> r.getMcpToolName() != null ? r.getMcpToolName() : nameMap.get(r.getMcpId()));
+    }
+
+
+    private List<BotMountedModulesDTO.Module> mountWikis(BigInteger botId) {
+        List<BotWiki> rows = botWikiService.list(QueryWrapper.create().eq(BotWiki::getBotId, botId));
+        Map<BigInteger, String> nameMap = fetchNameMap(wikiService,
+                rows.stream().map(BotWiki::getWikiId).filter(Objects::nonNull).distinct().toList(),
+                Wiki::getId, Wiki::getTitle);
+        return toModules(rows, BotWiki::getWikiId, r -> nameMap.get(r.getWikiId()));
+    }
+
+    private List<BotMountedModulesDTO.Module> mountModels(BigInteger botId, Bot bot) {
+        List<BotModel> rows = botModelService.list(QueryWrapper.create().eq(BotModel::getBotId, botId));
+        List<BigInteger> modelIds = new ArrayList<>();
+        if (bot != null && bot.getModelId() != null) {
+            modelIds.add(bot.getModelId());
+        }
+        rows.stream().map(BotModel::getModelId).filter(Objects::nonNull).forEach(modelIds::add);
+        Map<BigInteger, String> nameMap = fetchNameMap(modelService,
+                modelIds.stream().distinct().toList(), Model::getId, Model::getTitle);
+        List<BotMountedModulesDTO.Module> modules =
+                toModules(rows, BotModel::getModelId, r -> nameMap.get(r.getModelId()));
+        if (bot != null && bot.getModelId() != null
+                && rows.stream().noneMatch(r -> bot.getModelId().equals(r.getModelId()))) {
+            modules.add(new BotMountedModulesDTO.Module(bot.getModelId(), nameMap.get(bot.getModelId())));
+        }
+        return modules;
+    }
+
+    private <T> Map<BigInteger, String> fetchNameMap(com.mybatisflex.core.service.IService<T> targetService, List<BigInteger> ids,
+                                                     Function<T, BigInteger> idGetter, Function<T, String> nameGetter) {
+        if (ids == null || ids.isEmpty()) {
+            return new HashMap<>();
+        }
+        return buildNameMap(targetService.listByIds(ids), idGetter, nameGetter);
+    }
+
+    private <T> Map<BigInteger, String> buildNameMap(List<T> records, Function<T, BigInteger> idGetter,
+                                                     Function<T, String> nameGetter) {
+        Map<BigInteger, String> map = new HashMap<>();
+        for (T record : records) {
+            map.put(idGetter.apply(record), nameGetter.apply(record));
+        }
+        return map;
+    }
+
+    private <T> List<BotMountedModulesDTO.Module> toModules(List<T> rows, Function<T, BigInteger> idGetter,
+                                                            Function<T, String> nameGetter) {
+        List<BotMountedModulesDTO.Module> modules = new ArrayList<>();
+        for (T row : rows) {
+            BigInteger id = idGetter.apply(row);
+            if (id == null) {
+                continue;
+            }
+            modules.add(new BotMountedModulesDTO.Module(id, nameGetter.apply(row)));
+        }
+        return modules;
+    }
+
+    /**
+     * 分页查询前钩子：只查询根节点（未发布的原始记录），过滤掉发布产生的版本子节点
+     */
+    @Override
+    protected void onPageQueryBefore(QueryWrapper queryWrapper) {
+        queryWrapper.isNull("parent_id");
+    }
+
 
 }

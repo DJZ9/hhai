@@ -30,5 +30,8 @@
     "title": "系统配置",
     "settingsConfig": "系统设置",
     "apiKey": "访问令牌"
+  },
+  "account": {
+    "conversationLog": "对话记录"
   }
 }

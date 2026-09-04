@@ -85,7 +85,7 @@ catalog:
   defu: ^6.1.4
   depcheck: ^1.4.7
   dotenv: ^16.6.1
-  echarts: ^6.0.0
+  echarts: 6.1.0
   element-plus: ^2.10.2
   es-toolkit: ^1.41.0
   eslint: ^9.30.1

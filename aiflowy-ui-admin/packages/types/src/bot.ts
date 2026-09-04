@@ -38,6 +38,11 @@ interface BotInfo {
   title: string;
   categoryId: any;
   status: number;
+  // 发布版本相关
+  parentId?: string;
+  ancestors?: string;
+  version?: number;
+  publishStatus?: number;
 }
 
 interface Session {

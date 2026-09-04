@@ -24,6 +24,8 @@ public class Bot extends BotBase {
     public static final String KEY_ATTACHMENT_ENABLED = "attachmentEnabled";
     public static final String KEY_VL_MODEL_ID = "vlModelId";
 
+    public static final String KEY_MODEL_OPTIONS_SYSTEM_PROMPT = "systemPrompt";
+
     public boolean isAnonymousEnabled() {
         Map<String, Object> options = getOptions();
         if (options == null) {
