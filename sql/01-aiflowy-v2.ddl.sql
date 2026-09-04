@@ -365,7 +365,6 @@ CREATE TABLE `tb_model_provider`
     `modified` datetime NOT NULL COMMENT '修改时间',
     `modified_by` bigint UNSIGNED NOT NULL COMMENT '修改者',
     `dept_id` bigint UNSIGNED NOT NULL COMMENT '部门ID',
-    `tenant_id` bigint UNSIGNED NOT NULL COMMENT '租户ID',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '大模型供应商，比如 Aliyun/Gitee/火山引擎 等' ROW_FORMAT = DYNAMIC;
 
