@@ -16,7 +16,7 @@ const props = defineProps({
   },
   action: {
     type: String,
-    default: '/api/v1/commons/upload',
+    default: '/userCenter/commons/uploadTemp',
   },
   externalFiles: {
     type: Array as () => File[],
@@ -156,4 +156,30 @@ defineExpose({
   </div>
 </template>
 
-<style scoped lang="less"></style>
+<style scoped lang="css">
+:deep() .elx-attachments-wrapper > div > .elx-attachments-upload-btn {
+  margin: 6px;
+}
+
+:deep() .el-upload-dragger {
+  border: none;
+}
+
+:deep() .elx-files-card__image-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep() .elx-files-card__image-preview .elx-files-card-img {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+:deep() .elx-files-card__image-preview .el-image__inner {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  display: block;
+}
+</style>

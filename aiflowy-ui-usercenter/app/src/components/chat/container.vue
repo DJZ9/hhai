@@ -2,7 +2,7 @@
 import { nextTick, provide, ref, watch } from 'vue';
 
 import { IconifyIcon } from '@aiflowy/icons';
-import { cn } from '@aiflowy/utils';
+import { cn, uuid } from '@aiflowy/utils';
 
 import { Delete, Edit, MoreFilled } from '@element-plus/icons-vue';
 import {
@@ -126,7 +126,32 @@ function getMessageList() {
     })
     .then((res) => {
       if (res.errorCode === 0) {
-        props.onMessageList?.(res.data);
+        props.onMessageList?.(
+          res.data.flatMap((item: any) => {
+            const items: any[] = [];
+            // 附件单独一个气泡显示在文字上方
+            if (
+              item.role === 'user' &&
+              item.fileList &&
+              item.fileList.length > 0
+            ) {
+              items.push({
+                ...item,
+                key: `${item.key || item.messageId || uuid()}-att`,
+                role: 'user',
+                placement: 'end',
+                isAttachment: true,
+                fileList: item.fileList,
+                content: '',
+              });
+            }
+            items.push({
+              ...item,
+              role: item.role === 'user' ? 'user' : 'assistant',
+            });
+            return items;
+          }),
+        );
       }
     });
 }

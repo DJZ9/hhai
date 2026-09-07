@@ -71,7 +71,9 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         private Bot aiBot;
         private Map<String, Object> modelOptions;
         private ChatModel chatModel;
+        private ChatModel vlChatModel;
         private String conversationIdStr;
+        private boolean hasImageAttachment;
 
         public Bot getAiBot() {return aiBot;}
 
@@ -85,9 +87,17 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
 
         public void setChatModel(ChatModel chatModel) {this.chatModel = chatModel;}
 
+        public ChatModel getVlChatModel() {return vlChatModel;}
+
+        public void setVlChatModel(ChatModel vlChatModel) {this.vlChatModel = vlChatModel;}
+
         public String getConversationIdStr() {return conversationIdStr;}
 
         public void setConversationIdStr(String conversationIdStr) {this.conversationIdStr = conversationIdStr;}
+
+        public boolean hasImageAttachment() {return hasImageAttachment;}
+
+        public void setHasImageAttachment(boolean hasImageAttachment) {this.hasImageAttachment = hasImageAttachment;}
     }
 
     @Resource
@@ -143,7 +153,7 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         return getOne(queryWrapper);
     }
 
-    public SseEmitter checkChatBeforeStart(BigInteger botId, String prompt, String conversationId, ChatCheckResult chatCheckResult) {
+    public SseEmitter checkChatBeforeStart(BigInteger botId, String prompt, String conversationId, ChatCheckResult chatCheckResult, List<String> attachments) {
         if (!StringUtils.hasLength(prompt)) {
             return ChatSseUtil.sendSystemError(conversationId, "提示词不能为空");
         }
@@ -171,6 +181,50 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
             return ChatSseUtil.sendSystemError(conversationId, "对话模型获取失败，请检查配置");
         }
 
+        // 检查附件功能是否开启
+        boolean attachmentEnabled = aiBot.isAttachmentEnabled();
+
+        // 如果附件功能未开启，忽略所有附件
+        if (!attachmentEnabled && attachments != null && !attachments.isEmpty()) {
+            attachments = null;
+        }
+
+        // 检测attachments中是否有图片
+        boolean hasImageAttachment = hasImageInAttachments(attachments);
+        chatCheckResult.setHasImageAttachment(hasImageAttachment);
+
+        // 如果有图片，获取VL模型
+        if (hasImageAttachment) {
+            BigInteger vlModelId = aiBot.getVlModelId();
+            ChatModel vlChatModel = null;
+
+            // 如果选择了"使用当前对话模型"
+            if (aiBot.isUseCurrentModelAsVl()) {
+                Boolean supportImage = model.getSupportImage();
+                if (supportImage == null || !supportImage) {
+                    return ChatSseUtil.sendSystemError(conversationId, "当前对话模型不支持图片处理，请配置VL模型!");
+                }
+                vlChatModel = chatModel;
+            }
+            // 如果配置了具体的VL模型
+            else if (vlModelId != null) {
+                Model vlModel = modelService.getModelInstance(vlModelId);
+                if (vlModel == null) {
+                    return ChatSseUtil.sendSystemError(conversationId, "VL模型不存在，请检查配置!");
+                }
+                vlChatModel = vlModel.toChatModel(null);
+                if (vlChatModel == null) {
+                    return ChatSseUtil.sendSystemError(conversationId, "VL模型获取失败，请检查配置!");
+                }
+            }
+            // 如果未配置VL模型
+            else {
+                return ChatSseUtil.sendSystemError(conversationId, "检测到图片附件，请先配置VL模型!");
+            }
+
+            chatCheckResult.setVlChatModel(vlChatModel);
+        }
+
         chatCheckResult.setAiBot(aiBot);
         chatCheckResult.setModelOptions(modelOptions);
         chatCheckResult.setChatModel(chatModel);
@@ -178,11 +232,41 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         return null;
     }
 
+    /**
+     * 检测attachments中是否有图片
+     * 图片格式包括：jpg, jpeg, png, gif, bmp, webp, svg
+     */
+    private boolean hasImageInAttachments(List<String> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return false;
+        }
+        String[] imageExtensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"};
+        for (String attachment : attachments) {
+            if (attachment == null) {
+                continue;
+            }
+            String lowerCaseUrl = attachment.toLowerCase();
+            for (String ext : imageExtensions) {
+                if (lowerCaseUrl.endsWith(ext)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public SseEmitter startChat(BigInteger botId, String prompt, BigInteger conversationId, List<Map<String, String>> messages,
                                 BotServiceImpl.ChatCheckResult chatCheckResult, List<String> attachments) {
         Map<String, Object> modelOptions = chatCheckResult.getModelOptions();
-        ChatModel chatModel = chatCheckResult.getChatModel();
+        // 如果有图片附件且配置了VL模型，使用VL模型
+        ChatModel chatModel;
+        if (chatCheckResult.hasImageAttachment() && chatCheckResult.getVlChatModel() != null) {
+            chatModel = chatCheckResult.getVlChatModel();
+            log.info("使用VL模型处理图片对话");
+        } else {
+            chatModel = chatCheckResult.getChatModel();
+        }
         final MemoryPrompt memoryPrompt = new MemoryPrompt();
         String systemPrompt = MapUtil.getString(modelOptions, Bot.KEY_SYSTEM_PROMPT);
         Integer maxMessageCount = MapUtil.getInteger(modelOptions, Bot.KEY_MAX_MESSAGE_COUNT);
@@ -192,11 +276,64 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         if (StringUtils.hasLength(systemPrompt)) {
             memoryPrompt.setSystemMessage(SystemMessage.of(systemPrompt));
         }
-        String attachmentsToString = attachmentsToString(attachments);
-        if (StringUtils.hasLength(attachmentsToString)) {
-            prompt = "【用户问题】：\n" + prompt + "\n\n请基于用户上传的附件内容回答用户问题： \n" +  "【用户上传的附件内容】：\n" + attachmentsToString ;
+
+        // 分离图片附件和非图片附件
+        List<String> imageAttachments = new ArrayList<>();
+        List<String> nonImageAttachments = new ArrayList<>();
+        if (attachments != null && !attachments.isEmpty()) {
+            String[] imageExtensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"};
+            for (String attachment : attachments) {
+                if (attachment == null) {
+                    continue;
+                }
+                String lowerCaseUrl = attachment.toLowerCase();
+                boolean isImage = false;
+                for (String ext : imageExtensions) {
+                    if (lowerCaseUrl.endsWith(ext)) {
+                        isImage = true;
+                        break;
+                    }
+                }
+                if (isImage) {
+                    imageAttachments.add(attachment);
+                } else {
+                    nonImageAttachments.add(attachment);
+                }
+            }
         }
+
+        // 处理非图片附件（转换为文本）
+        String nonImageAttachmentsText = attachmentsToString(nonImageAttachments);
+        if (StringUtils.hasLength(nonImageAttachmentsText)) {
+            prompt = "【用户问题】：\n" + prompt + "\n请基于用户上传的附件内容回答用户问题： \n\n" + "【用户上传的附件内容】：\n" + nonImageAttachmentsText;
+        }
+
+        // 处理图片附件（构造图片访问地址信息）
+        if (!imageAttachments.isEmpty()) {
+            StringBuilder imageInfoBuilder = new StringBuilder();
+            for (int i = 0; i < imageAttachments.size(); i++) {
+                String imageUrl = imageAttachments.get(i);
+                if (i > 0) {
+                    imageInfoBuilder.append("\n\n");
+                }
+                imageInfoBuilder.append("图片").append(i + 1).append("，文件名为：").append(PathGeneratorUtil.getPureFileName(imageUrl)).append("，访问地址为：").append(imageUrl);
+            }
+            if (StringUtils.hasLength(nonImageAttachmentsText)) {
+                prompt = prompt + "\n\n" + "【用户上传的图片信息】：\n" + imageInfoBuilder.toString();
+            } else {
+                prompt = "【用户问题】：\n" + prompt + "\n\n" + "【用户上传的图片信息】：\n" + imageInfoBuilder.toString();
+            }
+        }
+
         UserMessage userMessage = new UserMessage(prompt);
+
+        // 处理图片附件（添加图片URL）
+        if (!imageAttachments.isEmpty()) {
+            for (String imageUrl : imageAttachments) {
+                userMessage.addImageUrl(imageUrl);
+                log.info("添加图片URL到消息: {}", imageUrl);
+            }
+        }
         memoryPrompt.addTools(buildFunctionList(Maps.of("botId", botId).set("needEnglishName", false)));
         ChatOptions chatOptions = getChatOptions(modelOptions);
         Boolean enableDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_ENABLE_DEEP_THINKING, false);

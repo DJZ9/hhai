@@ -29,7 +29,7 @@ public interface BotService extends IService<Bot> {
 
     Bot getByAlias(String alias);
 
-    SseEmitter checkChatBeforeStart(BigInteger botId, String prompt, String conversationId, BotServiceImpl.ChatCheckResult chatCheckResult);
+    SseEmitter checkChatBeforeStart(BigInteger botId, String prompt, String conversationId, BotServiceImpl.ChatCheckResult chatCheckResult, List<String> attachments);
 
     SseEmitter startChat(BigInteger botId, String prompt,  BigInteger conversationId, List<Map<String, String>> messages, BotServiceImpl.ChatCheckResult chatCheckResult, List<String> attachments);
 

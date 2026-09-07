@@ -13,6 +13,14 @@ import defaultAssistantAvatar from '#/assets/defaultAssistantAvatar.svg';
 import defaultUserAvatar from '#/assets/defaultUserAvatar.png';
 import ShowJson from '#/components/json/ShowJson.vue';
 import { $t } from '#/locales';
+import {
+  getFileExt,
+  getFileIcon,
+  getFileIconColor,
+  getFileName,
+  isImageFile,
+  previewImage,
+} from '#/utils/file';
 
 interface Props {
   bot: any;
@@ -40,6 +48,7 @@ defineExpose({ scrollBottom });
   <ElBubbleList
     ref="bubbleListRef"
     :list="messages"
+    :auto-scroll="true"
     :max-height="maxHeight || 'calc(100% - 180px)'"
   >
     <!-- 自定义头像 -->
@@ -153,7 +162,33 @@ defineExpose({ scrollBottom });
 
     <!-- 自定义气泡内容 -->
     <template #content="{ item }">
-      <ElXMarkdown :markdown="item.content" />
+      <!-- 附件独立气泡 -->
+      <div v-if="item.isAttachment" class="flex flex-wrap gap-2">
+        <template v-for="(url, idx) in item.fileList" :key="idx">
+          <img
+            v-if="isImageFile(url)"
+            :src="url"
+            class="h-20 w-20 cursor-pointer rounded-lg border border-gray-200 object-cover"
+            @click="previewImage(url)"
+          />
+          <a
+            v-else
+            :href="url"
+            target="_blank"
+            class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 hover:shadow"
+          >
+            <ElIcon :size="32" :color="getFileIconColor(url)">
+              <IconifyIcon :icon="getFileIcon(url)" />
+            </ElIcon>
+            <div class="flex flex-col">
+              <span class="max-w-[200px] truncate font-medium">{{ getFileName(url) }}</span>
+              <span v-if="getFileExt(url)" class="text-xs text-gray-400">{{ getFileExt(url) }}</span>
+            </div>
+          </a>
+        </template>
+      </div>
+      <!-- 普通消息内容 -->
+      <ElXMarkdown v-else :markdown="item.content" />
     </template>
 
     <!-- 自定义底部 -->
@@ -173,24 +208,47 @@ defineExpose({ scrollBottom });
 </template>
 
 <style lang="css" scoped>
-:deep(.el-bubble-header) {
-  width: calc(100% - 48px);
+:deep(.elx-bubble__content-wrapper) {
+  flex: none;
+  max-width: calc(100% - 104px);
 }
 
-:deep(.el-bubble-end .el-bubble-header) {
+:deep(.elx-bubble__header),
+:deep(.elx-bubble__footer) {
+  width: 100%;
+}
+
+:deep(.elx-bubble--end .elx-bubble__header) {
   width: fit-content;
 }
 
-:deep(.el-bubble-content-wrapper .el-bubble-content) {
-  --bubble-content-max-width: calc(100% - 48px);
+:deep(.elx-bubble__content-wrapper .elx-bubble__content) {
+  --elx-bubble-content-max-width: 100%;
 }
 
-:deep(.el-thinking) {
-  margin: 0;
+:deep(.elx-bubble__content) {
+  --elx-bubble-bg: #f7f7f7;
+  --elx-bubble-padding-y: 5px;
+  --elx-bubble-padding-x: 10px;
 }
 
-:deep(.el-thinking .content-wrapper) {
-  --el-thinking-content-wrapper-width: 100%;
+:deep(.x-md-renderer) {
+  background-color: #f7f7f7 !important;
+  padding: 12px !important;
+}
+
+:deep(.mermaid-content) {
+  min-height: 300px;
+}
+
+:deep(.elx-thinking) {
+  margin: 0 !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+:deep(.elx-thinking .elx-thinking__content-wrapper) {
+  --elx-thinking-content-wrapper-width: 100%;
 
   margin-bottom: 8px;
 }
@@ -203,5 +261,40 @@ defineExpose({ scrollBottom });
 
 :deep(.el-collapse-item__content) {
   padding-bottom: 0;
+}
+
+/* ========== 手机端适配 ========== */
+@media (width <= 768px) {
+  :deep(.el-avatar) {
+    display: none !important;
+  }
+
+  :deep(.elx-bubble) {
+    column-gap: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  :deep(.elx-bubble__content-wrapper) {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+  }
+
+  :deep(.elx-bubble--end .elx-bubble__content-wrapper) {
+    max-width: 80% !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    margin-left: auto !important;
+  }
+
+  :deep(.elx-bubble__content) {
+    padding: 12px !important;
+  }
+
+  :deep(.elx-bubble__content img) {
+    max-width: 100%;
+    height: auto;
+  }
 }
 </style>

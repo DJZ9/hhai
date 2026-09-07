@@ -2,7 +2,7 @@
 import type { BubbleProps } from 'vue-element-plus-x/types/Bubble';
 import type { ThinkingStatus } from 'vue-element-plus-x/types/Thinking';
 
-import { inject, nextTick, ref, watch } from 'vue';
+import { computed, inject, nextTick, ref, watch } from 'vue';
 
 import { cloneDeep, uuid } from '@aiflowy/utils';
 
@@ -31,6 +31,8 @@ type Tool = {
 
 type MessageItem = BubbleProps & {
   chains?: (Think | Tool)[];
+  fileList?: string[];
+  isAttachment?: boolean;
   key: string;
   role: 'assistant' | 'user';
 };
@@ -52,8 +54,9 @@ const getSessionList = inject<any>('getSessionList');
 const addSession = inject<any>('addSession');
 const clearSenderFiles = () => {
   files.value = [];
-  senderRef.value?.closeHeader();
   attachmentsRef.value?.clearFiles();
+  showHeaderFlog.value = false;
+  senderRef.value?.closeHeader();
 };
 async function sendMessage() {
   let conversationId = props.conversationId;
@@ -67,8 +70,22 @@ async function sendMessage() {
     botId: props.bot.id,
     attachments: attachmentsRef.value?.getFileList(),
   };
+  // 获取附件列表
+  const fileList = attachmentsRef.value?.getFileList() || [];
   clearSenderFiles();
   btnLoading.value = true;
+  // 附件单独一个气泡显示在文字上方
+  if (fileList.length > 0) {
+    props.addMessage({
+      key: uuid(),
+      role: 'user',
+      placement: 'end',
+      isAttachment: true,
+      fileList,
+      content: '',
+      typing: true,
+    });
+  }
   props.addMessage({
     key: uuid(),
     role: 'user',
@@ -203,7 +220,13 @@ const showHeaderFlog = ref(false);
 const attachmentsRef = ref();
 const senderRef = ref();
 const files = ref<any[]>([]);
+const isDragOver = ref(false);
+
 function handlePasteFile(_: any, fileList: FileList) {
+  // 检查附件功能是否启用
+  if (!attachmentEnabled.value) {
+    return;
+  }
   showHeaderFlog.value = true;
   senderRef.value?.openHeader();
   files.value = [...fileList];
@@ -217,6 +240,41 @@ function openCloseHeader() {
   }
   showHeaderFlog.value = !showHeaderFlog.value;
 }
+
+// 附件功能是否启用
+const attachmentEnabled = computed(() => {
+  // 默认启用，只有明确设置为false时才禁用
+  return props.bot?.options?.attachmentEnabled !== false;
+});
+
+// 拖拽上传支持
+function handleDragOver(e: DragEvent) {
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy';
+  }
+}
+function handleDragEnter(e: DragEvent) {
+  e.preventDefault();
+  if (attachmentEnabled.value) {
+    isDragOver.value = true;
+  }
+}
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault();
+  isDragOver.value = false;
+}
+function handleDrop(e: DragEvent) {
+  e.preventDefault();
+  isDragOver.value = false;
+  if (!attachmentEnabled.value) return;
+  const fileList = e.dataTransfer?.files;
+  if (!fileList || fileList.length === 0) return;
+  showHeaderFlog.value = true;
+  senderRef.value?.openHeader();
+  files.value = [...fileList];
+}
+
 watch(
   () => props.externalSendTrigger,
   () => {
@@ -240,8 +298,13 @@ watch(
     clearable
     allow-speech
     :placeholder="$t('bot.sendMessage')"
+    :class="{ 'drag-over': isDragOver }"
     @keyup.enter="sendMessage"
     @paste-file="handlePasteFile"
+    @dragover.prevent="handleDragOver"
+    @dragenter="handleDragEnter"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
   >
     <!-- 自定义 prefix 前缀 -->
     <!-- <template #prefix>
@@ -257,10 +320,11 @@ watch(
     </template>
     <template #action-list>
       <div class="flex items-center gap-2">
-        <ElButton circle @click="openCloseHeader">
-          <ElIcon><Paperclip /></ElIcon>
+        <ElButton v-if="attachmentEnabled" link @click="openCloseHeader">
+          <ElIcon size="18">
+            <Paperclip />
+          </ElIcon>
         </ElButton>
-        <!-- <ElButton :icon="PaperclipIcon" link /> -->
         <ElButton v-if="btnLoading" circle @click="stopSse">
           <ElIcon size="30" color="#409eff"><SendingIcon /></ElIcon>
         </ElButton>
@@ -276,3 +340,31 @@ watch(
     </template>
   </ElSender>
 </template>
+
+<style lang="css" scoped>
+/* ========== 拖拽上传视觉反馈 ========== */
+:deep(.elx-x-sender).drag-over {
+  outline: 2px dashed var(--el-color-primary);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+/* ========== 手机端适配 ========== */
+@media (width <= 768px) {
+  :deep(.elx-x-sender) {
+    padding: 0 !important;
+  }
+
+  :deep(.elx-x-sender__content) {
+    padding: 10px 14px !important;
+    font-size: 15px;
+    min-height: 22px !important;
+    line-height: 1.5 !important;
+  }
+
+  :deep(.elx-x-sender__action-list) {
+    gap: 2px !important;
+    padding: 0 4px 4px !important;
+  }
+}
+</style>
