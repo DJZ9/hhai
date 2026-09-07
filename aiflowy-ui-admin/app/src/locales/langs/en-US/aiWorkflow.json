@@ -1,4 +1,4 @@
-{
+﻿{
   "id": "Id",
   "alias": "Alias",
   "deptId": "DeptId",
@@ -35,6 +35,7 @@
   "fileSettings": "FileSettings",
   "fileDownloadURL": "FileDownloadURL",
   "pluginSelect": "PluginSelect",
+  "mcpSelect": "McpSelect",
   "saveData": "SaveData",
   "dataToBeSaved": "DataToBeSaved",
   "successInsertedRecords": "SuccessInsertedRecords",
@@ -47,6 +48,9 @@
   "subProcess": "SubProcess",
   "workflowSelect": "WorkflowSelect",
   "bochaSearch": "BochaSearch",
+  "ocrContentExtraction": "OCRContentExtraction",
+  "ocrRecognizeContent": "OCRRecognizeContent",
+  "model": "Model",
   "download": "Download",
   "descriptions": {
     "fileContentExtraction": "Extract text content from PDF or Word documents, etc",
@@ -59,6 +63,7 @@
     "fileType": "Please select the type of file to generate",
     "fileDownloadURL": "Generated file URL",
     "plugin": "Select a predefined plugin",
+    "mcp": "Select a predefined MCP",
     "saveData": "Save data to data hub",
     "dataToBeSaved": "List of data to be saved",
     "dataTable": "Please select a data table",
@@ -66,6 +71,7 @@
     "sqlQuery": "Query the database via SQL",
     "enterSQL": "Please enter the SQL statement",
     "queryResultJson": "Query result (JSON object)",
-    "subProcess": "Select a predefined process"
+    "subProcess": "Select a predefined process",
+    "ocrFileAddress": "file address"
   }
 }

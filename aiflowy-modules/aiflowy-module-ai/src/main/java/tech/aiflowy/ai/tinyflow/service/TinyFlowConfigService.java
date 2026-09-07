@@ -59,6 +59,10 @@ public class TinyFlowConfigService {
         SearchDatacenterNodeParser searchDatacenterNodeParser = new SearchDatacenterNodeParser();
         // 工作流节点
         WorkflowNodeParser workflowNodeParser = new WorkflowNodeParser();
+        // OCR内容提取节点
+        OcrContentRecognizeNodeParser ocrNodeParser = new OcrContentRecognizeNodeParser();
+        // Mcp 节点
+        McpToolNodeParser mcpToolNodeParser = new McpToolNodeParser();
 
         chainParser.addNodeParser(docNodeParser.getNodeName(), docNodeParser);
         chainParser.addNodeParser(makeFileNodeParser.getNodeName(), makeFileNodeParser);
@@ -68,6 +72,8 @@ public class TinyFlowConfigService {
         chainParser.addNodeParser(saveDaveParser.getNodeName(), saveDaveParser);
         chainParser.addNodeParser(searchDatacenterNodeParser.getNodeName(), searchDatacenterNodeParser);
         chainParser.addNodeParser(workflowNodeParser.getNodeName(), workflowNodeParser);
+        chainParser.addNodeParser(ocrNodeParser.getNodeName(), ocrNodeParser);
+        chainParser.addNodeParser(mcpToolNodeParser.getNodeName(), mcpToolNodeParser);
     }
 
     public void setSearchEngineProvider() {

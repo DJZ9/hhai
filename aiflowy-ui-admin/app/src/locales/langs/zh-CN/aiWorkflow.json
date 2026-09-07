@@ -1,4 +1,4 @@
-{
+﻿{
   "id": "ID 主键",
   "alias": "别名",
   "deptId": "部门ID",
@@ -35,6 +35,7 @@
   "fileSettings": "文件设置",
   "fileDownloadURL": "文件下载地址",
   "pluginSelect": "插件选择",
+  "mcpSelect": "MCP选择",
   "saveData": "保存数据",
   "dataToBeSaved": "待保存的数据",
   "successInsertedRecords": "成功插入条数",
@@ -47,6 +48,9 @@
   "subProcess": "子流程",
   "workflowSelect": "工作流选择",
   "bochaSearch": "博查搜索",
+  "ocrContentExtraction": "OCR内容提取",
+  "model": "大模型",
+  "ocrRecognizeContent": "OCR识别文件返回的内容",
   "download": "下载",
   "descriptions": {
     "fileContentExtraction": "提取 PDF 或者 Word 等文件中的文字内容",
@@ -59,6 +63,7 @@
     "fileType": "请选择生成的文件类型",
     "fileDownloadURL": "生成后的文件地址",
     "plugin": "选择定义好的插件",
+    "mcp": "选择定义好的MCP",
     "saveData": "保存数据到数据中枢",
     "dataToBeSaved": "待保存的数据列表",
     "dataTable": "请选择数据表",
@@ -66,6 +71,7 @@
     "sqlQuery": "通过 SQL 查询数据库",
     "enterSQL": "请输入SQL语句",
     "queryResultJson": "查询结果(json对象)",
-    "subProcess": "选择定义好的流程"
+    "subProcess": "选择定义好的流程",
+    "ocrFileAddress": "待识别内容的文件地址"
   }
 }

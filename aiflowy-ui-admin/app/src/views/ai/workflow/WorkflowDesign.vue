@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -77,12 +77,19 @@ const workflowSelectRef = ref();
 const updateWorkflowNode = ref<any>(null);
 const pluginSelectRef = ref();
 const updatePluginNode = ref<any>(null);
+const mcpSelectRef = ref();
+const updateMcpNode = ref<any>(null);
 const pageLoading = ref(false);
 const chainInfo = ref<any>(null);
 // functions
 async function loadCustomNode() {
   customNode.value = await getCustomNode({
-    handleChosen: (nodeName: string, updateNodeData: any, value: string) => {
+    handleChosen: (
+      nodeName: string,
+      updateNodeData: any,
+      value: string,
+      label?: string,
+    ) => {
       const v = [];
       if (value) {
         v.push(value);
@@ -94,6 +101,14 @@ async function loadCustomNode() {
       if (nodeName === nodeNames.pluginNode) {
         pluginSelectRef.value.openDialog(v);
         updatePluginNode.value = updateNodeData;
+      }
+      if (nodeName === nodeNames.mcpNode) {
+        const selectMcpMap: Record<string, any[]> = {};
+        if (value && label) {
+          selectMcpMap[value] = [{ name: label, description: '' }];
+        }
+        mcpSelectRef.value.openMcpDialog(selectMcpMap);
+        updateMcpNode.value = updateNodeData;
       }
     },
   });
@@ -170,6 +185,15 @@ function handleChoose(nodeName: string, value: any) {
   if (nodeName === nodeNames.pluginNode) {
     handlePluginNodeUpdate(value[0]);
   }
+  if (nodeName === nodeNames.mcpNode && value && value.length > 0) {
+    const entry = value[0];
+    const mcpId = Object.keys(entry)[0] as any;
+    const tools = entry[mcpId];
+    if (tools && tools.length > 0) {
+      const toolName = tools[0][0];
+      handleMcpNodeUpdate(mcpId, toolName);
+    }
+  }
 }
 function handleWorkflowNodeUpdate(chooseId: any) {
   pageLoading.value = true;
@@ -196,6 +220,20 @@ function handlePluginNodeUpdate(chooseId: any) {
     .then((res) => {
       pageLoading.value = false;
       updatePluginNode.value(res.data);
+    });
+}
+function handleMcpNodeUpdate(mcpId: any, toolName: string) {
+  pageLoading.value = true;
+  api
+    .get('/api/v1/mcp/getTinyFlowData', {
+      params: {
+        mcpId,
+        toolName,
+      },
+    })
+    .then((res) => {
+      pageLoading.value = false;
+      updateMcpNode.value(res.data);
     });
 }
 function onAsyncExecute(info: any) {
@@ -228,6 +266,16 @@ watchEffect(() => {
       :has-parent="true"
       single-select
       @get-data="(v) => handleChoose(nodeNames.pluginNode, v)"
+    />
+    <CommonSelectDataModal
+      :title="$t('menus.ai.mcp')"
+      width="730"
+      ref="mcpSelectRef"
+      page-url="/api/v1/mcp/pageTools"
+      single-select
+      :has-parent="true"
+      :is-select-mcp="true"
+      @get-data="(v) => handleChoose(nodeNames.mcpNode, v)"
     />
     <ElDrawer
       v-model="singleRunVisible"
