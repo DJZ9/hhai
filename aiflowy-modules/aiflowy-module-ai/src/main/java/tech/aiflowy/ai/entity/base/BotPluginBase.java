@@ -23,6 +23,12 @@ public class BotPluginBase implements Serializable {
     @Column(typeHandler = FastjsonTypeHandler.class)
     private Map<String, Object> options;
 
+    /**
+     * 自定义输出模板内容
+     */
+    @Column(comment = "自定义输出模板内容")
+    private String outputTemplate;
+
     public BigInteger getId() {
         return id;
     }
@@ -53,6 +59,14 @@ public class BotPluginBase implements Serializable {
 
     public void setOptions(Map<String, Object> options) {
         this.options = options;
+    }
+
+    public String getOutputTemplate() {
+        return outputTemplate;
+    }
+
+    public void setOutputTemplate(String outputTemplate) {
+        this.outputTemplate = outputTemplate;
     }
 
 }

@@ -1,4 +1,4 @@
-<!-- eslint-disable no-useless-escape -->
+﻿<!-- eslint-disable no-useless-escape -->
 <script setup lang="ts">
 import type { AiLlm, BotInfo } from '@aiflowy/types';
 
@@ -44,6 +44,7 @@ import PublishWxOfficalAccount from '#/components/chat/PublishWxOfficalAccount.v
 import CollapseViewItem from '#/components/collapseViewItem/CollapseViewItem.vue';
 import CommonSelectDataModal from '#/components/commonSelectModal/CommonSelectDataModal.vue';
 import WikiSelectModal from '#/components/wikiSelectModal/WikiSelectModal.vue';
+import ToolTemplateConfigModal from '#/views/ai/bots/components/ToolTemplateConfigModal.vue';
 
 interface SelectedMcpTool {
   name: string;
@@ -146,6 +147,7 @@ const getAiBotWorkflowList = async () => {
       workflowData.value = res.data.map((item: any) => {
         return {
           recordId: item.id,
+          outputTemplate: item.outputTemplate,
           ...item.workflow,
         };
       });
@@ -537,6 +539,56 @@ const formatSelectedMcpData = () => {
   });
 
   return formattedData;
+};
+
+// 工具模板配置
+const templateConfigVisible = ref(false);
+const currentToolConfig = ref<any>({
+  type: '',
+  toolId: '',
+  recordId: '',
+  name: '',
+  outputTemplate: '',
+});
+const toolTemplateConfigRef = ref();
+
+const handleConfigWorkflow = (item: any) => {
+  currentToolConfig.value = {
+    type: 'workflow',
+    toolId: item.id,
+    recordId: item.recordId,
+    name: item.title,
+    outputTemplate: item.outputTemplate,
+  };
+  templateConfigVisible.value = true;
+};
+
+const handleConfigPlugin = (item: any) => {
+  currentToolConfig.value = {
+    type: 'plugin',
+    toolId: item.id,
+    recordId: item.recordId,
+    name: item.name,
+    outputTemplate: item.outputTemplate,
+  };
+  templateConfigVisible.value = true;
+};
+
+const handleConfigMcp = (item: any) => {
+  currentToolConfig.value = {
+    type: 'mcp',
+    toolId: item.mcpId,
+    recordId: item.id,
+    name: item.mcpToolName,
+    outputTemplate: item.outputTemplate,
+  };
+  templateConfigVisible.value = true;
+};
+
+const handleTemplateConfigSuccess = () => {
+  getAiBotWorkflowList();
+  getAiBotPluginToolList();
+  getAiBotMcpToolList();
 };
 // Wiki - start
 const wikiData = ref<any[]>([]);
@@ -978,7 +1030,12 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
                 </div>
               </div>
             </template>
-            <CollapseViewItem :data="workflowData" @delete="deleteWorkflow" />
+            <CollapseViewItem
+              :data="workflowData"
+              show-config
+              @delete="deleteWorkflow"
+              @config="handleConfigWorkflow"
+            />
           </ElCollapseItem>
           <ElCollapseItem>
             <template #title>
@@ -1017,7 +1074,9 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
             <CollapseViewItem
               :data="pluginToolData"
               title-key="name"
+              show-config
               @delete="deletePluginTool"
+              @config="handleConfigPlugin"
             />
           </ElCollapseItem>
           <ElCollapseItem title="MCP">
@@ -1040,7 +1099,9 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
               :data="mcpToolData"
               title-key="mcpToolName"
               description-key="mcpToolDescription"
+              show-config
               @delete="deleteBotMcpTool"
+              @config="handleConfigMcp"
             />
           </ElCollapseItem>
           <ElCollapseItem title="Wiki">
@@ -1485,6 +1546,19 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
       @success="handleProblemPresuppositionSuccess"
     />
     <PublishWxOfficalAccount ref="publishWxRef" @reload="getBotDetail()" />
+
+    <!--工具模板配置-->
+    <ToolTemplateConfigModal
+      ref="toolTemplateConfigRef"
+      v-model:visible="templateConfigVisible"
+      :bot-id="botId"
+      :tool-type="currentToolConfig.type"
+      :tool-id="currentToolConfig.toolId"
+      :record-id="currentToolConfig.recordId"
+      :tool-name="currentToolConfig.name"
+      :output-template="currentToolConfig.outputTemplate"
+      @success="handleTemplateConfigSuccess"
+    />
   </div>
 </template>
 

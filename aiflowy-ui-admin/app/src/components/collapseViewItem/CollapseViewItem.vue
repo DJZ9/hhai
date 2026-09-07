@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { $t } from '@aiflowy/locales';
 
-import { Delete } from '@element-plus/icons-vue';
+import { Delete, Setting } from '@element-plus/icons-vue';
 import { ElAvatar, ElIcon, ElMessageBox } from 'element-plus';
 
 const props = defineProps({
@@ -17,8 +17,12 @@ const props = defineProps({
     type: String,
     default: 'description',
   },
+  showConfig: {
+    type: Boolean,
+    default: false,
+  },
 });
-const emits = defineEmits(['delete']);
+const emits = defineEmits(['delete', 'config']);
 const handleDelete = (item: any) => {
   ElMessageBox.confirm($t('message.deleteAlert'), $t('message.noticeTitle'), {
     confirmButtonText: $t('button.confirm'),
@@ -27,6 +31,9 @@ const handleDelete = (item: any) => {
   }).then(() => {
     emits('delete', item);
   });
+};
+const handleConfig = (item: any) => {
+  emits('config', item);
 };
 </script>
 
@@ -47,14 +54,25 @@ const handleDelete = (item: any) => {
           <div class="description">{{ item[descriptionKey] }}</div>
         </div>
       </div>
-      <ElIcon
-        color="var(--el-color-danger)"
-        size="20px"
-        @click="handleDelete(item)"
-        class="el-list-item-delete-container"
-      >
-        <Delete />
-      </ElIcon>
+      <div class="el-list-item-actions">
+        <ElIcon
+          v-if="showConfig"
+          color="var(--el-color-primary)"
+          size="20px"
+          @click="handleConfig(item)"
+          class="el-list-item-config-container"
+        >
+          <Setting />
+        </ElIcon>
+        <ElIcon
+          color="var(--el-color-danger)"
+          size="20px"
+          @click="handleDelete(item)"
+          class="el-list-item-delete-container"
+        >
+          <Delete />
+        </ElIcon>
+      </div>
     </div>
   </div>
 </template>
@@ -89,6 +107,16 @@ const handleDelete = (item: any) => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+.el-list-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.el-list-item-config-container {
+  cursor: pointer;
 }
 
 .el-list-item-delete-container {

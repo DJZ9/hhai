@@ -46,5 +46,6 @@
   "more": "Mode",
   "viewSegmentation": "ViewSegmentation",
   "close": "Close",
-  "historicalReleaseRecords": "Release History"
+  "historicalReleaseRecords": "Release History",
+  "clear": "Clear"
 }

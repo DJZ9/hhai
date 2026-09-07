@@ -130,6 +130,7 @@ CREATE TABLE `tb_bot_plugin`
     `bot_id`         bigint UNSIGNED NULL DEFAULT NULL,
     `plugin_item_id` bigint UNSIGNED NULL DEFAULT NULL,
     `options`        text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+    `output_template` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '自定义输出模板内容',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot绑定的插件' ROW_FORMAT = DYNAMIC;
 
@@ -157,6 +158,7 @@ CREATE TABLE `tb_bot_workflow`
     `bot_id`      bigint UNSIGNED NULL DEFAULT NULL,
     `workflow_id` bigint UNSIGNED NULL DEFAULT NULL,
     `options`     text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+    `output_template` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '自定义输出模板内容',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'bot绑定的工作流' ROW_FORMAT = DYNAMIC;
 
@@ -1156,6 +1158,7 @@ CREATE TABLE `tb_bot_mcp`
     `mcp_id`               bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT 'mcpId',
     `mcp_tool_name`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'mcp工具名称',
     `mcp_tool_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT 'mcp工具描述',
+    `output_template`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '自定义输出模板内容',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
