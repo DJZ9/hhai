@@ -215,7 +215,13 @@ public class AliBailianOcrModel extends BaseOcrModel<AliBailianOcrModelConfig> {
      * 解析响应
      */
     private String parseResponse(String response) {
+        if (response == null || response.trim().isEmpty()) {
+            throw new BusinessException("阿里百炼 OCR API 返回空响应，请检查网络连接或 API Key 是否正确");
+        }
         JSONObject resObj = JSON.parseObject(response);
+        if (resObj == null) {
+            throw new BusinessException("阿里百炼 OCR API 响应解析失败: " + response);
+        }
 
         // 检查错误
         String errorCode = resObj.getString("code");

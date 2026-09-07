@@ -188,6 +188,11 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
                         mcpTool.setParameters(parametersArr);
                     });
                     mcpTool.setMcpId(mcpInfo.getId());
+                    // 设置Bot自定义输出模板
+                    String customTemplate = botMcp.getOutputTemplate();
+                    if (customTemplate != null && !customTemplate.isEmpty()) {
+                        mcpTool.setBotOutputTemplate(customTemplate);
+                    }
                     return mcpTool;
                 }
             }

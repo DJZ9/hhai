@@ -28,6 +28,8 @@ import tech.aiflowy.ai.agentsflex.listener.ChatStreamListener;
 import tech.aiflowy.ai.agentsflex.memory.BotMessageMemory;
 import tech.aiflowy.ai.agentsflex.memory.DefaultBotMessageMemory;
 import tech.aiflowy.ai.agentsflex.memory.PublicBotMessageMemory;
+import tech.aiflowy.ai.agentsflex.tool.PluginTool;
+import tech.aiflowy.ai.agentsflex.tool.WorkflowTool;
 import tech.aiflowy.ai.entity.*;
 import tech.aiflowy.ai.mapper.BotMapper;
 import tech.aiflowy.ai.service.*;
@@ -53,8 +55,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static tech.aiflowy.ai.entity.table.BotPluginTableDef.BOT_PLUGIN;
-import static tech.aiflowy.ai.entity.table.PluginItemTableDef.PLUGIN_ITEM;
 
 /**
  *  服务层实现。
@@ -499,7 +499,12 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
                 .selectListWithRelationsByQuery(queryWrapper);
         if (botWorkflows != null && !botWorkflows.isEmpty()) {
             for (BotWorkflow botWorkflow : botWorkflows) {
-                Tool function = botWorkflow.getWorkflow().toFunction(needEnglishName);
+                WorkflowTool function = (WorkflowTool) botWorkflow.getWorkflow().toFunction(needEnglishName);
+                // 设置Bot自定义输出模板
+                String customTemplate = botWorkflow.getOutputTemplate();
+                if (customTemplate != null && !customTemplate.isEmpty()) {
+                    function.setBotOutputTemplate(customTemplate);
+                }
                 functionList.add(function);
             }
         }
@@ -518,18 +523,20 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
 
         // 插件 function 集合
         queryWrapper = QueryWrapper.create();
-        queryWrapper.select(BOT_PLUGIN.PLUGIN_ITEM_ID).eq(BotPlugin::getBotId, botId);
-        List<BigInteger> pluginToolIds = botPluginService.getMapper()
-                .selectListWithRelationsByQueryAs(queryWrapper, BigInteger.class);
-        if (pluginToolIds != null && !pluginToolIds.isEmpty()) {
-            QueryWrapper queryTool = QueryWrapper.create()
-                    .select(PLUGIN_ITEM.ALL_COLUMNS)
-                    .from(PLUGIN_ITEM)
-                    .where(PLUGIN_ITEM.ID.in(pluginToolIds));
-            List<PluginItem> pluginItems = pluginItemService.getMapper().selectListWithRelationsByQuery(queryTool);
-            if (pluginItems != null && !pluginItems.isEmpty()) {
-                for (PluginItem pluginItem : pluginItems) {
-                    functionList.add(pluginItem.toFunction());
+        queryWrapper.eq(BotPlugin::getBotId, botId);
+        List<BotPlugin> botPlugins = botPluginService.getMapper()
+                .selectListWithRelationsByQuery(queryWrapper);
+        if (botPlugins != null && !botPlugins.isEmpty()) {
+            for (BotPlugin botPlugin : botPlugins) {
+                PluginItem pluginItem = pluginItemService.getById(botPlugin.getPluginItemId());
+                if (pluginItem != null) {
+                    PluginTool function = (PluginTool) pluginItem.toFunction();
+                    // 设置Bot自定义输出模板
+                    String customTemplate = botPlugin.getOutputTemplate();
+                    if (customTemplate != null && !customTemplate.isEmpty()) {
+                        function.setBotOutputTemplate(customTemplate);
+                    }
+                    functionList.add(function);
                 }
             }
         }

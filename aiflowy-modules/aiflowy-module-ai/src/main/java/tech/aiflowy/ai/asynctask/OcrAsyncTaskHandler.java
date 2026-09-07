@@ -15,6 +15,7 @@ import com.mybatisflex.core.tenant.TenantManager;
 import org.springframework.stereotype.Component;
 import tech.aiflowy.ai.entity.Model;
 import tech.aiflowy.ai.service.ModelService;
+import tech.aiflowy.ai.service.userProfileService.DataScopeManager;
 import tech.aiflowy.common.util.SpringContextUtil;
 
 import java.math.BigInteger;
@@ -90,6 +91,7 @@ public class OcrAsyncTaskHandler implements AsyncTaskHandler<OcrTaskParams> {
             throw new IllegalStateException("ModelService 未就绪，无法解析 OCR 模型");
         }
         TenantManager.ignoreTenantCondition();
+        DataScopeManager.ignoreDataScopeCondition();
         try {
             Model model = modelService.getModelInstance(modelId);
             if (model == null) {
@@ -98,6 +100,7 @@ public class OcrAsyncTaskHandler implements AsyncTaskHandler<OcrTaskParams> {
             return model.toOcrModel();
         } finally {
             TenantManager.restoreTenantCondition();
+            DataScopeManager.restoreDataScopeCondition();
         }
     }
 

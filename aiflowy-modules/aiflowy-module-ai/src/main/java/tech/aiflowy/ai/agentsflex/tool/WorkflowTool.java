@@ -2,6 +2,7 @@ package tech.aiflowy.ai.agentsflex.tool;
 
 import com.agentsflex.core.model.chat.tool.BaseTool;
 import com.agentsflex.core.model.chat.tool.Parameter;
+import com.agentsflex.core.prompt.PromptTemplate;
 import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.chain.DataType;
 import dev.tinyflow.core.chain.runtime.ChainExecutor;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class WorkflowTool extends BaseTool {
 
     private BigInteger workflowId;
+    private String botOutputTemplate;
 
     public WorkflowTool() {
     }
@@ -63,10 +65,26 @@ public class WorkflowTool extends BaseTool {
         this.workflowId = workflowId;
     }
 
+    public String getBotOutputTemplate() {
+        return botOutputTemplate;
+    }
+
+    public void setBotOutputTemplate(String botOutputTemplate) {
+        this.botOutputTemplate = botOutputTemplate;
+    }
+
     @Override
     public Object invoke(Map<String, Object> argsMap) {
         ChainExecutor executor = SpringContextUtil.getBean(ChainExecutor.class);
-        return executor.execute(workflowId.toString(), argsMap);
+        Object result = executor.execute(workflowId.toString(), argsMap);
+        // 应用Bot自定义输出模板
+        if (botOutputTemplate != null && !botOutputTemplate.isEmpty() && result != null) {
+            PromptTemplate promptTemplate = PromptTemplate.of(botOutputTemplate);
+            promptTemplate.setKeepExpressionOnMissingVariable(true);
+            String formattedOutput = promptTemplate.format((Map<String, Object>) result);
+            return formattedOutput;
+        }
+        return result;
     }
 
     @Override

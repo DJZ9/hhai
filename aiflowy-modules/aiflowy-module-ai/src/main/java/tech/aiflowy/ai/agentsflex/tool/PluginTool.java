@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.agentsflex.core.model.chat.tool.BaseTool;
 import com.agentsflex.core.model.chat.tool.Parameter;
+import com.agentsflex.core.prompt.PromptTemplate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +37,8 @@ public class PluginTool extends BaseTool {
     private String name;
     private String description;
     private Parameter[] parameters;
+    // Bot自定义输出模板
+    private String botOutputTemplate;
     private static final Logger logger = LoggerFactory.getLogger(PluginTool.class);
 
     public PluginTool() {
@@ -67,6 +70,14 @@ public class PluginTool extends BaseTool {
 
     public void setParameters(Parameter[] parameters) {
         this.parameters = parameters;
+    }
+
+    public String getBotOutputTemplate() {
+        return botOutputTemplate;
+    }
+
+    public void setBotOutputTemplate(String botOutputTemplate) {
+        this.botOutputTemplate = botOutputTemplate;
     }
 
     private Plugin getAiPlugin(BigInteger pluginId) {
@@ -281,6 +292,13 @@ public class PluginTool extends BaseTool {
         if (result.get("error") != null){
             logger.error("插件调用失败");
             logger.error(result.get("error").toString());
+        }
+        // 应用Bot自定义输出模板
+        if (botOutputTemplate != null && !botOutputTemplate.isEmpty()) {
+            PromptTemplate promptTemplate = PromptTemplate.of(botOutputTemplate);
+            promptTemplate.setKeepExpressionOnMissingVariable(true);
+            Map<String, Object> resultMap = result.toBean(Map.class);
+            return promptTemplate.format(resultMap);
         }
         return result;
     }
