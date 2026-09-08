@@ -14,14 +14,14 @@ import tech.aiflowy.ai.entity.base.BotPluginBase;
 @Table("tb_bot_plugin")
 public class BotPlugin extends BotPluginBase {
 
-    @RelationOneToOne(selfField = "pluginId", targetField = "id")
-    private Plugin plugin;
+    @RelationOneToOne(selfField = "pluginItemId", targetField = "id")
+    private PluginItem pluginItem;
 
-    public Plugin getAiPlugin() {
-        return plugin;
+    public PluginItem getPluginItem() {
+        return pluginItem;
     }
 
-    public void setAiPlugin(Plugin plugin) {
-        this.plugin = plugin;
+    public void setPluginItem(PluginItem pluginItem) {
+        this.pluginItem = pluginItem;
     }
 }

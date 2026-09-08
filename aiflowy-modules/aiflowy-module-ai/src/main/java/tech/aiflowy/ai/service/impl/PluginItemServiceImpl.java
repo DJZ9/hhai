@@ -17,6 +17,7 @@ import tech.aiflowy.common.web.exceptions.BusinessException;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static tech.aiflowy.ai.entity.table.BotPluginTableDef.BOT_PLUGIN;
 
@@ -99,16 +100,40 @@ public class PluginItemServiceImpl extends ServiceImpl<PluginItemMapper, PluginI
 
     @Override
     public List<PluginItem> getPluginToolList(BigInteger botId) {
-        QueryWrapper queryAiPluginToolWrapper = QueryWrapper.create()
-                .select(BOT_PLUGIN.PLUGIN_ITEM_ID)
+        // 先查询 BotPlugin 获取 pluginItemId 和对应的 BotPlugin.id (作为 recordId)
+        QueryWrapper queryBotPluginWrapper = QueryWrapper.create()
+                .select(BOT_PLUGIN.ID, BOT_PLUGIN.PLUGIN_ITEM_ID, BOT_PLUGIN.OUTPUT_TEMPLATE)
                 .from(BOT_PLUGIN)
                 .where(BOT_PLUGIN.BOT_ID.eq(botId));
-        List<BigInteger> pluginToolIds = botPluginMapper.selectListByQueryAs(queryAiPluginToolWrapper, BigInteger.class);
-        if (pluginToolIds == null || pluginToolIds.isEmpty()) {
+        List<BotPlugin> botPlugins = botPluginMapper.selectListByQuery(queryBotPluginWrapper);
+
+        if (botPlugins == null || botPlugins.isEmpty()) {
             return Collections.emptyList();
         }
-        // 查询当前bots对应的有哪些pluginTool
-        return pluginItemMapper.selectListByIds(pluginToolIds);
+
+        // 获取所有 pluginItemId
+        List<BigInteger> pluginToolIds = botPlugins.stream()
+                .map(BotPlugin::getPluginItemId)
+                .collect(Collectors.toList());
+
+        // 查询 PluginItem
+        List<PluginItem> pluginItems = pluginItemMapper.selectListByIds(pluginToolIds);
+
+        // 将 BotPlugin 的 ID 作为 recordId 设置到 PluginItem 中
+        Map<BigInteger, BotPlugin> botPluginMap = botPlugins.stream()
+                .collect(Collectors.toMap(BotPlugin::getPluginItemId, bp -> bp));
+
+        if (pluginItems != null) {
+            for (PluginItem item : pluginItems) {
+                BotPlugin botPlugin = botPluginMap.get(item.getId());
+                if (botPlugin != null) {
+                    item.setRecordId(botPlugin.getId());
+                    item.setOutputTemplate(botPlugin.getOutputTemplate());
+                }
+            }
+        }
+
+        return pluginItems;
     }
 
     @Override
