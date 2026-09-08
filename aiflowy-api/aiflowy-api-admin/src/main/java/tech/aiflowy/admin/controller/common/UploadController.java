@@ -36,4 +36,15 @@ public class UploadController {
         return Result.ok(resVo);
     }
 
+    /**
+     * 临时文件上传（用于定时清理）
+     */
+    @PostMapping(value = "/uploadTemp", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result<UploadResVo> uploadTemp(MultipartFile file) {
+        String path = storageService.saveTemp(file);
+        UploadResVo resVo = new UploadResVo();
+        resVo.setPath(path);
+        return Result.ok(resVo);
+    }
+
 }
