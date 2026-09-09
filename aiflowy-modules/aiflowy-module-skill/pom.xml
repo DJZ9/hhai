@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>tech.aiflowy</groupId>
+        <artifactId>aiflowy-modules</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <name>aiflowy-module-skill</name>
+    <artifactId>aiflowy-module-skill</artifactId>
+
+    <dependencies>
+        <!-- aiflowy common dependencies -->
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-common-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-common-base</artifactId>
+        </dependency>
+
+        <!-- agents-flex-skills dependencies -->
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-skills</artifactId>
+            <version>${agents-flex.version}</version>
+        </dependency>
+
+        <!-- Kotlin runtime for OpenSandbox SDK -->
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>1.9.22</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+            <version>1.9.22</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json</artifactId>
+            <version>1.6.3</version>
+        </dependency>
+
+        <!-- mybatis-flex -->
+        <dependency>
+            <groupId>com.mybatis-flex</groupId>
+            <artifactId>mybatis-flex-spring-boot3-starter</artifactId>
+        </dependency>
+
+        <!-- hutool -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
+        </dependency>
+
+        <!-- file storage -->
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-common-file-storage</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,65 @@
+{
+  "actions": {
+    "addSkill": "添加技能",
+    "editSkill": "编辑技能",
+    "deleteSkill": "删除技能",
+    "download": "下载",
+    "skillMarket": "技能商店"
+  },
+  "marketInstallHint": "浏览技能后点击详情页中的“下载 Zip 安装”即可自动安装到本地系统",
+  "closeMarket": "关闭商城",
+  "title": "技能标题",
+  "name": "技能名称",
+  "englishName": "英文名称",
+  "description": "技能描述",
+  "categoryId": "所属分类",
+  "icon": "图标",
+  "version": "版本号",
+  "author": "作者",
+  "skillPath": "技能路径",
+  "skillSize": "技能大小",
+  "fileCount": "文件数量",
+  "status": "状态",
+  "upload": {
+    "file": "Skill 文件",
+    "title": "上传 Skill ZIP 文件",
+    "description": "将 ZIP 文件拖拽到此处，或点击上传",
+    "zipOnly": "只能上传 ZIP 文件",
+    "parseSuccess": "解析成功，请确认信息后保存"
+  },
+  "files": {
+    "title": "Skill 文件列表",
+    "empty": "暂无文件",
+    "loading": "加载中..."
+  },
+  "placeholder": {
+    "title": "请输入技能标题",
+    "name": "请输入技能名称",
+    "englishName": "请输入英文名称",
+    "description": "请输入技能描述",
+    "category": "请选择分类",
+    "version": "请输入版本号",
+    "author": "请输入作者"
+  },
+  "runtime": {
+    "type": "运行时类型",
+    "local": "本地运行时",
+    "aio": "AIO Sandbox",
+    "open": "OpenSandbox"
+  },
+  "message": {
+    "uploadSuccess": "上传成功",
+    "uploadFail": "上传失败",
+    "deleteSuccess": "删除成功",
+    "deleteFail": "删除失败",
+    "saveSuccess": "保存成功",
+    "saveFail": "保存失败",
+    "englishNameRule": "只能包含 a-z, A-Z, 0-9, 下划线和短横线，最大长度为 64 个字符",
+    "installInProgress": "技能 “{title}” 正在安装中，请稍候...",
+    "installing": "正在安装技能 “{title}”...",
+    "installSuccess": "技能 “{title}” 已安装成功",
+    "installFail": "安装失败",
+    "networkError": "安装失败，请检查网络连接",
+    "parseFail": "ZIP 解析失败"
+  }
+}

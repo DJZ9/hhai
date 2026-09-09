@@ -1252,5 +1252,74 @@ CREATE TABLE `tb_bot_tool_call_record`
     INDEX `idx_created`(`created` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '智能体工具调用记录' ROW_FORMAT = DYNAMIC;
 
+-- ----------------------------
+-- Table structure for tb_skill_category
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_skill_category`;
+CREATE TABLE `tb_skill_category`
+(
+    `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `category_name` VARCHAR(100) NOT NULL COMMENT '分类名称',
+    `sort_no`       INT      DEFAULT 0 COMMENT '排序号',
+    `dept_id`       BIGINT UNSIGNED DEFAULT NULL COMMENT '部门ID',
+    `tenant_id`     BIGINT UNSIGNED DEFAULT NULL COMMENT '租户ID',
+    `created`       DATETIME DEFAULT NULL COMMENT '创建时间',
+    `created_by`    BIGINT UNSIGNED DEFAULT NULL COMMENT '创建者ID',
+    `modified`      DATETIME DEFAULT NULL COMMENT '修改时间',
+    `modified_by`   BIGINT UNSIGNED DEFAULT NULL COMMENT '修改者ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX           `idx_tenant_id`(`tenant_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '技能分类表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_skill
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_skill`;
+CREATE TABLE `tb_skill`
+(
+    `id`           bigint(0) UNSIGNED NOT NULL COMMENT '主键ID',
+    `title`        varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '技能标题',
+    `name`         varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '技能名称',
+    `english_name` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '英文名称',
+    `author`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '作者',
+    `description`  varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '技能描述',
+    `category_id`  bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '分类ID',
+    `version`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1.0.0' COMMENT '技能版本',
+    `digest`       varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '技能摘要(SHA256)',
+    `storage_key`  varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '存储键(相对路径)',
+    `skill_path`   varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '技能路径',
+    `skill_size`   bigint(0) NULL DEFAULT NULL COMMENT '技能大小',
+    `file_count`   int(0) NULL DEFAULT NULL COMMENT '文件数量',
+    `icon`         varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '图标',
+    `status`       tinyint(0) NULL DEFAULT 1 COMMENT '状态（1:启用 0:禁用）',
+    `dept_id`      bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '部门ID',
+    `tenant_id`    bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '租户ID',
+    `created`      datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+    `created_by`   bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '创建者ID',
+    `modified`     datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+    `modified_by`  bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '修改者ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX          `idx_category_id`(`category_id`) USING BTREE,
+    INDEX          `idx_tenant_id`(`tenant_id`) USING BTREE,
+    INDEX          `idx_name_version`(`name`, `version`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '技能表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_bot_skill
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_bot_skill`;
+CREATE TABLE `tb_bot_skill`
+(
+    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `bot_id`     BIGINT UNSIGNED NOT NULL COMMENT 'Bot ID',
+    `skill_id`   BIGINT UNSIGNED NOT NULL COMMENT '技能ID',
+    `created_at` DATETIME DEFAULT NULL COMMENT '创建时间',
+    `tenant_id`  BIGINT UNSIGNED DEFAULT NULL COMMENT '租户ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX        `idx_bot_id`(`bot_id` ASC) USING BTREE,
+    INDEX        `idx_skill_id`(`skill_id` ASC) USING BTREE,
+    INDEX        `idx_tenant_id`(`tenant_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'Bot技能关联表' ROW_FORMAT = DYNAMIC;
+
 SET
 FOREIGN_KEY_CHECKS = 1;

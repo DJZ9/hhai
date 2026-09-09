@@ -19,6 +19,7 @@
         <module>aiflowy-module-job</module>
         <module>aiflowy-module-datacenter</module>
         <module>aiflowy-module-wiki</module>
+        <module>aiflowy-module-skill</module>
     </modules>
 
 </project>

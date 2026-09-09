@@ -368,6 +368,11 @@
                 <artifactId>aiflowy-module-wiki</artifactId>
                 <version>${revision}</version>
             </dependency>
+            <dependency>
+                <groupId>tech.aiflowy</groupId>
+                <artifactId>aiflowy-module-skill</artifactId>
+                <version>${revision}</version>
+            </dependency>
 
             <!-- starter -->
             <dependency>

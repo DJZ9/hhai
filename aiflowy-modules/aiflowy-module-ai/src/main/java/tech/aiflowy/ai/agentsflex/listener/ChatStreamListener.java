@@ -1,6 +1,5 @@
 package tech.aiflowy.ai.agentsflex.listener;
 
-import com.agentsflex.core.document.Document;
 import com.agentsflex.core.message.AiMessage;
 import com.agentsflex.core.message.ToolCall;
 import com.agentsflex.core.message.ToolMessage;
@@ -8,16 +7,15 @@ import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
 import com.agentsflex.core.model.chat.StreamResponseListener;
 import com.agentsflex.core.model.chat.response.AiMessageResponse;
-import com.agentsflex.core.model.chat.tool.Tool;
 import com.agentsflex.core.model.chat.tool.ToolExecutor;
 import com.agentsflex.core.model.client.StreamContext;
 import com.agentsflex.core.prompt.MemoryPrompt;
 import com.agentsflex.core.util.CollectionUtil;
+import com.agentsflex.skill.runtime.SkillRuntime;
 import com.alibaba.fastjson2.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
-import tech.aiflowy.ai.agentsflex.tool.DocumentCollectionTool;
 import tech.aiflowy.ai.entity.Bot;
 import tech.aiflowy.ai.entity.BotToolCallRecord;
 import tech.aiflowy.ai.service.BotService;
@@ -235,8 +233,27 @@ public class ChatStreamListener implements StreamResponseListener {
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
+                } finally {
+                    closeSkillRuntime();
                 }
             }
+    }
+
+    /**
+     * 关闭 SkillRuntime 释放资源
+     */
+    private void closeSkillRuntime() {
+        try {
+            if (chatOptions != null && chatOptions.getContextAttributes() != null) {
+                Object runtimeObj = chatOptions.getContextAttributes().get("skillRuntime");
+                if (runtimeObj instanceof SkillRuntime runtime) {
+                    runtime.close();
+                    log.info("关闭 SkillRuntime 成功");
+                }
+            }
+        } catch (Exception e) {
+            log.error("关闭 SkillRuntime 时发生异常", e);
+        }
     }
 
     @Override

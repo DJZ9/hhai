@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 public class OkHttpUtil {
@@ -83,6 +85,53 @@ public class OkHttpUtil {
 
     public static byte[] getBytes(String url) {
         return executeBytes(url, "GET", null, null);
+    }
+
+    /**
+     * 流式下载远程文件到本地文件。
+     * 直接将响应体流写入目标文件，不在内存中缓存全部内容。
+     *
+     * @param url        远程资源 URL
+     * @param targetPath 本地目标文件路径
+     * @return 下载的字节数；失败返回 -1
+     */
+    public static long downloadToFile(String url, Path targetPath) {
+        Response response = null;
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            response = getOkHttpClient().newCall(new Request.Builder().url(url).build()).execute();
+            if (!response.isSuccessful()) {return -1L;}
+            ResponseBody body = response.body();
+            if (body == null) { return -1L;}
+            in = body.byteStream();
+            // 确保父目录存在
+            Path parent = targetPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);}
+            out = Files.newOutputStream(targetPath);
+            byte[] buffer = new byte[1024 * 64];
+            int len;
+            long total = 0L;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+                total += len;
+            }
+            out.flush();
+            return total;
+        } catch (IOException e) {
+            return -1L;
+        } finally {
+            if (out != null) {
+                try { out.close(); } catch (IOException ignored) {}
+            }
+            if (in != null) {
+                try { in.close(); } catch (IOException ignored) {}
+            }
+            if (response != null) {
+                response.close();
+            }
+        }
     }
 
     public static String get(String url, Map<String, String> headers) {

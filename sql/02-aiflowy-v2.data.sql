@@ -313,3 +313,19 @@ INSERT INTO `tb_sys_role_menu` (`id`, `role_id`, `menu_id`)
 VALUES (404440611412406272, 1, 404440611320131584);
 INSERT INTO `tb_sys_role_menu` (`id`, `role_id`, `menu_id`)
 VALUES (404440742861893632, 1, 404440742773813248);
+
+-- ----------------------------
+-- Records of tb_sys_menu (Skill)
+-- ----------------------------
+INSERT INTO `tb_sys_menu` VALUES (437109727694118912, 0, 0, 'Skill', '/skill', '/ai/skill/Skill', 'svg:oauth', 1, '', 2, 0, '2026-07-21 17:39:00', 1, '2026-07-21 17:39:00', 1, '');
+INSERT INTO `tb_sys_menu` VALUES (437109884573671424, 437109727694118912, 1, '查询', '', '', '', 0, '/api/v1/skill/query', 1, 0, '2026-07-21 17:39:38', 1, '2026-07-21 17:39:38', 1, '');
+INSERT INTO `tb_sys_menu` VALUES (437109982015741952, 437109727694118912, 1, '保存', '', '', '', 0, '/api/v1/skill/save', 2, 0, '2026-07-21 17:40:01', 1, '2026-07-21 17:40:01', 1, '');
+INSERT INTO `tb_sys_menu` VALUES (437110078753169408, 437109727694118912, 1, '删除', '', '', '', 0, '/api/v1/skill/remove', 3, 0, '2026-07-21 17:40:24', 1, '2026-07-21 17:40:24', 1, '');
+
+-- ----------------------------
+-- Records of tb_sys_role_menu (Skill)
+-- ----------------------------
+INSERT INTO `tb_sys_role_menu` VALUES (437109727710896128, 1, 437109727694118912);
+INSERT INTO `tb_sys_role_menu` VALUES (437109884577865728, 1, 437109884573671424);
+INSERT INTO `tb_sys_role_menu` VALUES (437109982019936256, 1, 437109982015741952);
+INSERT INTO `tb_sys_role_menu` VALUES (437110078757363712, 1, 437110078753169408);

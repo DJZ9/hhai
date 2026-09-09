@@ -11,6 +11,12 @@ import com.agentsflex.core.model.chat.StreamResponseListener;
 import com.agentsflex.core.model.chat.tool.Tool;
 import com.agentsflex.core.prompt.MemoryPrompt;
 import com.agentsflex.doc.DocumentExtractionService;
+import com.agentsflex.skill.SkillsTool;
+import com.agentsflex.skill.artifact.SkillArtifact;
+import com.agentsflex.skill.artifact.SkillArtifactStore;
+import com.agentsflex.skill.file.FilePublisher;
+import com.agentsflex.skill.local.LocalSkillRuntime;
+import com.agentsflex.skill.runtime.SkillRuntime;
 import com.agentsflex.wiki.WikiTool;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -45,13 +51,20 @@ import tech.aiflowy.common.util.UrlEncoderUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseEmitter;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
+import tech.aiflowy.skill.config.SkillRuntimeConfig;
+import tech.aiflowy.skill.entity.BotSkill;
+import tech.aiflowy.skill.entity.Skill;
+import tech.aiflowy.skill.service.BotSkillService;
+import tech.aiflowy.skill.service.SkillService;
 import tech.aiflowy.wiki.agentsflex.AIFlowyWikiProvider;
 import tech.aiflowy.wiki.entity.BotWiki;
 import tech.aiflowy.wiki.entity.Wiki;
 import tech.aiflowy.wiki.service.BotWikiService;
 
 import java.math.BigInteger;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -127,6 +140,16 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     private AIFlowyWikiProvider aiFlowyWikiProvider;
     @Resource
     private DocumentExtractionService documentExtractionService;
+    @Resource
+    private BotSkillService botSkillService;
+    @Resource
+    private SkillService skillService;
+    @Resource
+    private SkillRuntimeConfig skillRuntimeConfig;
+    @Resource
+    private FilePublisher filePublisher;
+    @Resource
+    private SkillArtifactStore skillArtifactStore;
 
     @Override
     public Bot getDetail(String id) {
@@ -258,6 +281,9 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     @Override
     public SseEmitter startChat(BigInteger botId, String prompt, BigInteger conversationId, List<Map<String, String>> messages,
                                 BotServiceImpl.ChatCheckResult chatCheckResult, List<String> attachments) {
+        // 获取当前登录用户信息，传递给 ChatStreamListener
+        LoginAccount currentUser = SaTokenUtil.getLoginAccount();
+        BigInteger accountId = currentUser.getId();
         Map<String, Object> modelOptions = chatCheckResult.getModelOptions();
         // 如果有图片附件且配置了VL模型，使用VL模型
         ChatModel chatModel;
@@ -334,8 +360,24 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
                 log.info("添加图片URL到消息: {}", imageUrl);
             }
         }
-        memoryPrompt.addTools(buildFunctionList(Maps.of("botId", botId).set("needEnglishName", false)));
+         // 构建工具
+        Map<String, Object> buildParams = Maps.of("botId", botId)
+                .set("needAccountId", true)
+                .set("accountId", accountId)
+                .set("chatModel", chatModel)
+                .set("conversationId", conversationId);
+        memoryPrompt.addTools(buildFunctionList(buildParams));
+        // 获取 SkillRuntime，传递给 ChatStreamListener 在结束时关闭
+        SkillRuntime skillRuntime = (SkillRuntime) buildParams.get("skillRuntime");
         ChatOptions chatOptions = getChatOptions(modelOptions);
+        if (skillRuntime != null) {
+            Map<String, Object> contextAttributes = chatOptions.getContextAttributes();
+            if (contextAttributes == null) {
+                 contextAttributes = new HashMap<>();
+                chatOptions.setContextAttributes(contextAttributes);
+            }
+            contextAttributes.put("skillRuntime", skillRuntime);
+        }
         Boolean enableDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_ENABLE_DEEP_THINKING, false);
         chatOptions.setThinkingEnabled(enableDeepThinking);
         Boolean exposeDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_EXPOSE_DEEP_THINKING, false);
@@ -572,7 +614,74 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
             functionList.add(wikiTool);
         }
 
+       // 加载 Bot 关联的 Skills
+        List<BotSkill> botSkills = botSkillService.listByBotId(botId);
+        if (botSkills != null && !botSkills.isEmpty()) {
+            SkillRuntime runtime = createSkillRuntime((BigInteger) buildParams.get("conversationId"));
+            buildParams.put("skillRuntime", runtime);
+
+            SkillsTool.Builder skillToolBuilder = SkillsTool.builder()
+                    .runtime(runtime)
+                    .filePublisher(filePublisher);
+            boolean hasSkill = false;
+            try {
+                for (BotSkill botSkill : botSkills) {
+                    Skill skill = skillService.getById(botSkill.getSkillId());
+                    if (skill != null && skill.getName() != null) {
+                        try {
+                            // 优先使用 SkillArtifactStore，如果可用
+                            if (skillArtifactStore != null && skill.getStorageKey() != null) {
+                                // 创建 SkillArtifact
+                                SkillArtifact artifact = new SkillArtifact(
+                                        skill.getName(),
+                                        skill.getVersion() != null ? skill.getVersion() : "1.0.0",
+                                        skill.getDigest() != null ? skill.getDigest() : "sha256-" + skill.getId(),
+                                        skill.getStorageKey()
+                                );
+                                // 将所有 Skill 的 artifact 累积到同一个 builder，统一构建
+                                skillToolBuilder.addSkillArtifact(skillArtifactStore, artifact);
+                                hasSkill = true;
+                            } else {
+                                // 回退到使用目录加载
+                                if (skill.getSkillPath() == null) {
+                                    log.warn("Skill [{}] 没有 skillPath，跳过加载", skill.getName());
+                                    continue;
+                                }
+                                // 将所有 Skill 的目录累积到同一个 builder，统一构建
+                                skillToolBuilder.addSkillsDirectory(String.valueOf(Paths.get(skill.getSkillPath())));
+                                hasSkill = true;
+                            }
+                        } catch (Exception e) {
+                            log.error("加载 Skill [{}] 失败: {}", skill.getName(), e.getMessage(), e);
+                        }
+                    }
+                }
+                  // 统一构建所有 Skill 的 Tools，确保 runtime 中保留所有 Skill 的上下文
+                if (hasSkill) {
+                    List<Tool> skillTools = skillToolBuilder.buildTools();
+                    if (skillTools != null) {
+                        functionList.addAll(skillTools);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("加载 Skill 工具失败", e);
+            }
+        }
+
         return functionList;
+    }
+
+    private SkillRuntime createSkillRuntime(BigInteger conversationId) {
+        String stringConversationId = conversationId != null ? conversationId.toString() : java.util.UUID.randomUUID().toString();
+        String runtimeType = skillRuntimeConfig.getType();
+        if (runtimeType == null || runtimeType.isEmpty()) {
+            runtimeType = "local";
+        }
+        // 只支持 local 运行时
+        return LocalSkillRuntime.builder()
+                .conversationId(stringConversationId)
+                .conversationsRoot(skillRuntimeConfig.getLocal().getConversationsRoot())
+                .build();
     }
 
     public String attachmentsToString(List<String> fileList) {

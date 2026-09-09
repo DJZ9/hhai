@@ -24,6 +24,12 @@ import {
 import { api } from '#/api/request.js';
 import providerList from '#/views/ai/model/modelUtils/providerList.json';
 
+// 技能功能配置
+const skillMarket = ref({
+  skill_market_domain: 'https://skill.aiflowy.tech',
+  mcp_market_enabled: false,
+  skill_market_enabled: false,
+});
 const providerOptions =
   ref<Array<{ label: string; options: any; value: string }>>(providerList);
 const brands = ref([]);
@@ -41,7 +47,7 @@ function getBrands() {
 function getOptions() {
   api
     .get(
-      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=skill_market_domain&keys=mcp_market_enabled',
+      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=skill_market_domain&keys=mcp_market_enabled&keys=skill_market_enabled',
     )
     .then((res) => {
       if (res.errorCode === 0) {
@@ -49,13 +55,15 @@ function getOptions() {
           user_center_domain, 
           env_variables, 
           skill_market_domain,
-          mcp_market_enabled, 
+          mcp_market_enabled,
+          skill_market_enabled, 
           ...rest } = res.data;
         entity.value = rest;
         userCenter.value.user_center_domain = user_center_domain;
          skillMarket.value.skill_market_domain = skill_market_domain || '';
         // 未配置时默认显示入口
-        skillMarket.value.mcp_market_enabled = mcp_market_enabled !== 'false';
+        skillMarket.value.mcp_market_enabled = Boolean(mcp_market_enabled);
+        skillMarket.value.skill_market_enabled = Boolean(skill_market_enabled);
         // 解析env_variables，如果不存在或解析失败则使用空对象
         try {
           const parsed = env_variables ? JSON.parse(env_variables) : {};
@@ -82,11 +90,7 @@ const entity = ref({
   chatgpt_model_name: '',
 });
 
-// 技能功能配置
-const skillMarket = ref({
-  skill_market_domain: 'https://skill.aiflowy.tech',
-  mcp_market_enabled: false,
-});
+
 function formatLlmList(data: any[]) {
   return data.map((item: any) => {
     const extra = new Map([
@@ -310,6 +314,9 @@ async function handleUserCenterSave() {
                 :placeholder="$t('settingsConfig.skillMarketDomainPlaceholder')"
                 v-model="skillMarket.skill_market_domain"
               />
+            </ElFormItem>
+            <ElFormItem :label="$t('settingsConfig.skillMarketEnabled')">
+              <ElSwitch v-model="skillMarket.skill_market_enabled" />
             </ElFormItem>
             <ElFormItem :label="$t('settingsConfig.mcpMarketEnabled')">
               <ElSwitch v-model="skillMarket.mcp_market_enabled" />
