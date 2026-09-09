@@ -59,5 +59,29 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-core</artifactId>
+            <version>${agents-flex.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-audio-aliyun</artifactId>
+            <version>${agents-flex.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-audio-tencent</artifactId>
+            <version>${agents-flex.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-audio-volcengine</artifactId>
+            <version>${agents-flex.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-module-system</artifactId>
+        </dependency>
     </dependencies>
 </project>

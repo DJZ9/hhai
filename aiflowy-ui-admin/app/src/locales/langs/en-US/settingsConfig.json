@@ -15,6 +15,10 @@
   "skillMarketNote": "Configure the address of skill mall for quick installation of skill. If it is not configured, https://skill.aiflowy.tech will be used by default.",
   "mcpMarketEnabled": "Show MCP Market Entry",
   "skillMarketEnabled": "Show Skill Market Entry",
+  "voiceRecognitionSettings": "Voice Recognition Settings",
+  "voiceNote": "After configuring a voice recognition provider, the bot supports voice input and voice broadcast during conversations.",
+  "voiceProvider": "Voice Provider",
+  "voiceProviderPlaceholder": "Select voice provider",
   "message": {
     "userCenterDomain": "Please enter the user center domain",
     "userCenterDomainError": "Please enter a valid domain (e.g., aiflowy.tech or http://aiflowy.tech)"

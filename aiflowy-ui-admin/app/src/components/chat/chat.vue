@@ -17,6 +17,7 @@ import { cloneDeep, cn, uuid } from '@aiflowy/utils';
 import {
   CircleCheck,
   CopyDocument,
+  Loading,
   Paperclip,
   RefreshRight,
 } from '@element-plus/icons-vue';
@@ -36,6 +37,7 @@ import SendEnableIcon from '#/components/icons/SendEnableIcon.vue';
 import SendIcon from '#/components/icons/SendIcon.vue';
 import ShowJson from '#/components/json/ShowJson.vue';
 import ChatFileUploader from '#/components/upload/ChatFileUploader.vue';
+import { useVoiceRecorder } from '#/composables/useVoiceRecorder';
 import {
   getFileExt,
   getFileIcon,
@@ -89,6 +91,8 @@ const bubbleItems = ref<BubbleListProps<MessageItem>['list']>([]);
 const senderRef = ref<InstanceType<typeof Sender>>();
 const senderValue = ref('');
 const sending = ref(false);
+const { isRecording, isProcessing, startRecording, stopRecording } =
+  useVoiceRecorder();
 const getConversationId = async () => {
   const res = await api.get('/api/v1/bot/generateConversationId');
   return res.data;
@@ -110,6 +114,16 @@ const attachmentEnabled = computed(() => {
     return storeOptions.attachmentEnabled;
   }
   return props.bot?.options?.attachmentEnabled !== false;
+});
+
+// 语音功能是否启用
+const voiceEnabled = computed(() => {
+  // 默认关闭，只有明确设置为true时才启用
+  const storeOptions = botStore.getBotOptions(botId.value);
+  if (storeOptions && storeOptions.voiceEnabled !== undefined) {
+    return storeOptions.voiceEnabled === true;
+  }
+  return props.bot?.options?.voiceEnabled === true;
 });
 defineExpose({
   clear() {
@@ -192,6 +206,19 @@ const clearSenderFiles = () => {
   attachmentsRef.value?.clearFiles();
   senderRef.value?.closeHeader();
 };
+
+async function handleVoiceToggle() {
+  if (isRecording.value) {
+    const text = await stopRecording();
+    if (text) {
+      senderValue.value = senderValue.value
+        ? senderValue.value + text
+        : text;
+    }
+  } else {
+    await startRecording();
+  }
+}
 const handleSubmit = async (refreshContent: string) => {
   const attachments = attachmentsRef.value?.getFileList();
   const currentPrompt = refreshContent || senderValue.value.trim();
@@ -715,6 +742,23 @@ function handlePasteFile(_: any, fileList: FileList) {
 
         <template #action-list>
           <ElSpace>
+            <template v-if="voiceEnabled">
+              <ElButton v-if="isProcessing" circle disabled>
+                <ElIcon size="16">
+                  <Loading />
+                </ElIcon>
+              </ElButton>
+              <ElButton
+                v-else
+                circle
+                :class="{ 'voice-recording': isRecording }"
+                @click="handleVoiceToggle"
+              >
+                <ElIcon :size="16" :color="isRecording ? '#ef4444' : undefined">
+                  <IconifyIcon icon="mdi:microphone" />
+                </ElIcon>
+              </ElButton>
+            </template>
             <ElButton v-if="attachmentEnabled" circle @click="openCloseHeader">
               <ElIcon><Paperclip /></ElIcon>
             </ElButton>
@@ -832,5 +876,20 @@ function handlePasteFile(_: any, fileList: FileList) {
   outline: 2px dashed var(--el-color-primary);
   outline-offset: -2px;
   border-radius: 8px;
+}
+
+/* ========== 语音录制脉冲动画 ========== */
+.voice-recording {
+  animation: voice-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>

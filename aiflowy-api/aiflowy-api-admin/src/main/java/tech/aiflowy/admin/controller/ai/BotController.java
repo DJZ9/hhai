@@ -149,7 +149,7 @@ public class BotController extends BaseCurdController<BotService, Bot> {
 
         String recognize = null;
         try {
-            recognize = audioServiceManager.audioToText(audioFile.getInputStream());
+            recognize = audioServiceManager.audioToText(audioFile.getInputStream(), "WAV");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

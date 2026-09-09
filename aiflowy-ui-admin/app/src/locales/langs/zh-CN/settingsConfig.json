@@ -15,6 +15,10 @@
   "skillMarketNote": "配置技能商城地址，用于快捷安装skill使用。若未配置，默认使用 https://skill.aiflowy.tech。",
   "mcpMarketEnabled": "显示 MCP 市场入口",
   "skillMarketEnabled": "显示技能商城入口",
+  "voiceRecognitionSettings": "语音识别设置",
+  "voiceNote": "配置语音识别供应商后，智能体对话支持语音输入和语音播报功能。",
+  "voiceProvider": "语音供应商",
+  "voiceProviderPlaceholder": "选择语音供应商",
   "message": {
     "userCenterDomain": "请输入域名",
     "userCenterDomainError": "请输入有效的域名（如 aiflowy.tech 或 http://aiflowy.tech）"

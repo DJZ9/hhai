@@ -76,6 +76,9 @@ const dialogueSettings = ref({
   // 附件功能配置
   attachmentEnabled: true,
   vlModelId: 'current',
+  // 语音功能配置
+  voiceEnabled: false,
+  voiceProvider: '',
 });
 watch(
   props,
@@ -242,6 +245,7 @@ onMounted(async () => {
   getAiBotWikiList();
   getUserCenterDomain();
   getSystemSearchEngineConfig();
+  getSystemVoiceConfig();
 });
 
 const handleLlmChange = async (value: string) => {
@@ -321,6 +325,112 @@ const otherSkills = ref({
 // 跳转到系统设置页面
 const goToSystemSettings = () => {
   router.push('/sys/settings');
+};
+
+// 语音供应商选项
+const voiceProviderOptions = [
+  { label: '阿里云', value: 'aliyun' },
+  { label: '腾讯云', value: 'tencent' },
+  { label: '火山引擎', value: 'volc' },
+];
+
+// 系统语音配置状态
+const systemVoiceConfig = ref({
+  provider: '',
+  aliyunAccessKeyId: '',
+  aliyunAccessKeySecret: '',
+  aliyunAppKey: '',
+  tencentSecretId: '',
+  tencentSecretKey: '',
+  tencentAppId: '',
+  volcApiKey: '',
+});
+
+// 获取系统语音配置
+const getSystemVoiceConfig = async () => {
+  try {
+    const res = await api.get(
+      '/api/v1/sysOption/list?keys=voice_provider&keys=voice_aliyun_access_key_id&keys=voice_aliyun_access_key_secret&keys=voice_aliyun_app_key&keys=voice_tencent_secret_id&keys=voice_tencent_secret_key&keys=voice_tencent_app_id&keys=voice_volc_api_key',
+    );
+    if (res.errorCode === 0) {
+      systemVoiceConfig.value = {
+        provider: res.data.voice_provider || '',
+        aliyunAccessKeyId: res.data.voice_aliyun_access_key_id || '',
+        aliyunAccessKeySecret: res.data.voice_aliyun_access_key_secret || '',
+        aliyunAppKey: res.data.voice_aliyun_app_key || '',
+        tencentSecretId: res.data.voice_tencent_secret_id || '',
+        tencentSecretKey: res.data.voice_tencent_secret_key || '',
+        tencentAppId: res.data.voice_tencent_app_id || '',
+        volcApiKey: res.data.voice_volc_api_key || '',
+      };
+    }
+  } catch (error) {
+    console.error('获取系统语音配置失败', error);
+  }
+};
+
+// 检查语音配置是否完整
+const checkVoiceConfig = (provider?: string): boolean => {
+  const p = provider || dialogueSettings.value.voiceProvider;
+  if (!p) {
+    ElMessage.warning('请先选择语音识别供应商');
+    return false;
+  }
+  switch (p) {
+    case 'aliyun': {
+      if (
+        !systemVoiceConfig.value.aliyunAccessKeyId ||
+        !systemVoiceConfig.value.aliyunAccessKeySecret ||
+        !systemVoiceConfig.value.aliyunAppKey
+      ) {
+        ElMessage.warning(
+          '系统未配置阿里云语音识别服务，请先前往系统设置页面配置',
+        );
+        return false;
+      }
+      break;
+    }
+    case 'tencent': {
+      if (
+        !systemVoiceConfig.value.tencentSecretId ||
+        !systemVoiceConfig.value.tencentSecretKey ||
+        !systemVoiceConfig.value.tencentAppId
+      ) {
+        ElMessage.warning(
+          '系统未配置腾讯云语音识别服务，请先前往系统设置页面配置',
+        );
+        return false;
+      }
+      break;
+    }
+    case 'volc': {
+      if (!systemVoiceConfig.value.volcApiKey) {
+        ElMessage.warning(
+          '系统未配置火山引擎语音识别服务，请先前往系统设置页面配置',
+        );
+        return false;
+      }
+      break;
+    }
+  }
+  return true;
+};
+
+// 处理语音开关
+const handleVoiceEnableChange = (value: boolean | number | string) => {
+  const boolValue = Boolean(value);
+  if (boolValue && !checkVoiceConfig()) {
+    dialogueSettings.value.voiceEnabled = false;
+    return;
+  }
+  dialogueSettings.value.voiceEnabled = boolValue;
+  handleDialogOptionsStrChange('voiceEnabled', boolValue);
+};
+
+// 处理语音供应商变更
+const handleVoiceProviderChange = (value: string) => {
+  dialogueSettings.value.voiceProvider = value;
+  handleDialogOptionsStrChange('voiceProvider', value);
 };
 
 // 系统搜索引擎配置状态
@@ -1391,6 +1501,50 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
                       handleDialogOptionsStrChange('vlModelId', value)
                   "
                 />
+              </div>
+            </div>
+          </ElCollapseItem>
+
+         <!-- 语音功能配置 -->
+          <ElCollapseItem :title="$t('bot.voiceConfig')">
+            <div class="other-skills-container">
+              <div class="other-skill-item search-engine-skill">
+                <div class="search-engine-row">
+                  <div class="search-engine-title">
+                    <span class="skill-label">{{ $t('bot.voiceInput') }}</span>
+                    <ElSelect
+                      v-model="dialogueSettings.voiceProvider"
+                      :placeholder="$t('bot.voiceProviderPlaceholder')"
+                      size="small"
+                      class="search-engine-select"
+                      @change="handleVoiceProviderChange"
+                    >
+                      <ElOption
+                        v-for="item in voiceProviderOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                      />
+                    </ElSelect>
+                  </div>
+                  <ElSwitch
+                    v-model="dialogueSettings.voiceEnabled"
+                    @change="handleVoiceEnableChange"
+                  />
+                </div>
+                <div class="search-engine-row">
+                  <span class="skill-desc">{{
+                    $t('bot.voiceConfigDesc')
+                  }}</span>
+                  <ElLink
+                    type="primary"
+                    underline="never"
+                    class="settings-link"
+                    @click="goToSystemSettings"
+                  >
+                    {{ $t('bot.goToSettings') }}
+                  </ElLink>
+                </div>
               </div>
             </div>
           </ElCollapseItem>

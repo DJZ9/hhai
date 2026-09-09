@@ -1,5 +1,6 @@
 package tech.aiflowy.ai.agentsflex.listener;
 
+import com.agentsflex.core.audio.tts.StreamingTextToSpeechModel;
 import com.agentsflex.core.message.AiMessage;
 import com.agentsflex.core.message.ToolCall;
 import com.agentsflex.core.message.ToolMessage;
@@ -20,6 +21,7 @@ import tech.aiflowy.ai.entity.Bot;
 import tech.aiflowy.ai.entity.BotToolCallRecord;
 import tech.aiflowy.ai.service.BotService;
 import tech.aiflowy.ai.service.BotToolCallRecordService;
+import tech.aiflowy.common.audio.listener.AudioMessageListener;
 import tech.aiflowy.common.entity.LoginAccount;
 import tech.aiflowy.common.util.SpringContextUtil;
 import tech.aiflowy.common.util.StringUtil;
@@ -60,6 +62,22 @@ public class ChatStreamListener implements StreamResponseListener {
     private final LoginAccount loginAccount;
 
     private final StringBuffer deltaMessageBuffer = new StringBuffer();
+
+    private StreamingTextToSpeechModel streamTTSModel;
+
+    private final AudioMessageListener audioMessageListener = new AudioMessageListener() {
+        @Override
+        public void onMessageReceived(String sessionId, String messageId, byte[] message) {
+        }
+
+        @Override
+        public void onFinished(String sessionId, String messageId, byte[] fullMessage) {
+        }
+
+        @Override
+        public void onError(String sessionId, String messageId, Exception e) {
+        }
+    };
 
 
     public ChatStreamListener(String botId, String accountId, String conversationId, ChatModel chatModel, MemoryPrompt memoryPrompt, ChatSseEmitter sseEmitter,
