@@ -40,6 +40,9 @@
         <snakeyaml.version>2.4</snakeyaml.version>
         <x-file-storage.version>2.2.1</x-file-storage.version>
         <aliyun-oss.version>3.16.1</aliyun-oss.version>
+        <huawei-obs.version>3.23.9</huawei-obs.version>
+        <tencent-cos.version>5.6.246</tencent-cos.version>
+        <aws-java-sdk-s3.version>1.12.429</aws-java-sdk-s3.version>
         <netty.version>4.1.130.Final</netty.version>
         <netty.version>4.1.130.Final</netty.version>
         <java-wkhtmltopdf-wrapper.version>1.3.0-RELEASE</java-wkhtmltopdf-wrapper.version>
@@ -446,6 +449,21 @@
                 <groupId>com.aliyun.oss</groupId>
                 <artifactId>aliyun-sdk-oss</artifactId>
                 <version>${aliyun-oss.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.huaweicloud</groupId>
+                <artifactId>esdk-obs-java</artifactId>
+                <version>${huawei-obs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.qcloud</groupId>
+                <artifactId>cos_api</artifactId>
+                <version>${tencent-cos.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-s3</artifactId>
+                <version>${aws-java-sdk-s3.version}</version>
             </dependency>
 
             <dependency>

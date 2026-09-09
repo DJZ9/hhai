@@ -15,7 +15,7 @@ const props = defineProps({
   },
   action: {
     type: String,
-    default: '/api/v1/commons/upload',
+    default: '/api/v1/commons/uploadTemp',
   },
   externalFiles: {
     type: Array as () => File[],

@@ -186,6 +186,38 @@ dromara:
         bucket-name: yourBucketName
         domain: yourDomain # 访问域名，注意“/”结尾，例如：https://bucketname.oss-cn-shanghai.aliyuncs.com/
         base-path: attachment # 基础路径
+    # 腾讯云存储配置
+    tencent-cos:
+      - platform: tencent-cos-1 # 存储平台标识
+        enable-storage: true  # 启用存储
+        secret-id: yourSecretId # secretId
+        secret-key: yourSecretKey # secretKey
+        region: ap-shanghai # 地区
+        bucket-name: yourBucketName # 存储桶名称
+        domain: yourDomain # 访问域名，注意"/"结尾
+        base-path: attachment # 基础路径
+    # 华为云存储配置
+    huawei-obs:
+      - platform: huawei-obs-1 # 存储平台标识
+        enable-storage: true  # 启用存储
+        access-key: yourAccessKey # accessKey
+        secret-key: yourAccessKey # secretKey
+        end-point: yourEndpoint # endpoint
+        bucket-name: yourBucketName # 存储桶名称
+        domain: yourDomain # 访问域名，注意“/”结尾，例如：http://abc.obs.com/
+        base-path: attachment # 基础路径
+
+    # Amazon S3 配置 
+    amazon-s3:
+      - platform: amazon-s3-1 # 存储平台标识
+        enable-storage: true  # 启用存储
+        access-key: yourAccessKey # accessKey
+        secret-key: yourAccessKey # secretKey
+        region: ap-east-1 # 与 end-point 参数至少填一个retKey
+        end-point: yourEndpoint # 示例：https://oss-cn-beijing.aliyuncs.com
+        bucket-name: yourBucketName #存储桶名称
+        domain: https://abcd.s3.ap-east-1.amazonaws.com/ # 访问域名，注意“/”结尾，例如：https://abcd.s3.ap-east-1.amazonaws.com/结尾，例如：http://abc.obs.com/
+        base-path: attachment # 基础路径
 # 自定义节点相关配置
 node:
   # 文件内容提取节点，默认使用简单文档读取器，可自行实现 ReadDocService
