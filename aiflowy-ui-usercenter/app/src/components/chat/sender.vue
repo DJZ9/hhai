@@ -4,15 +4,19 @@ import type { ThinkingStatus } from 'vue-element-plus-x/types/Thinking';
 
 import { computed, inject, nextTick, ref, watch } from 'vue';
 
+import { IconifyIcon } from '@aiflowy/icons';
 import { cloneDeep, uuid } from '@aiflowy/utils';
 
-import { Paperclip, Promotion } from '@element-plus/icons-vue';
+import { Loading, Paperclip, Promotion } from '@element-plus/icons-vue';
 import { ElButton, ElIcon } from 'element-plus';
 
 import { sseClient } from '#/api/request';
 import SendingIcon from '#/components/icons/SendingIcon.vue';
 import ChatFileUploader from '#/components/upload/ChatFileUploader.vue';
 import { $t } from '#/locales';
+import { useVoiceRecorder } from '#/composables/useVoiceRecorder';
+const { isRecording, isProcessing, startRecording, stopRecording } =
+  useVoiceRecorder();
 // import PaperclipIcon from '#/components/icons/PaperclipIcon.vue';
 
 type Think = {
@@ -241,6 +245,25 @@ function openCloseHeader() {
   showHeaderFlog.value = !showHeaderFlog.value;
 }
 
+// 语音功能是否启用
+const voiceEnabled = computed(() => {
+  // 默认关闭，只有明确设置为true时才启用
+  return props.bot?.options?.voiceEnabled === true;
+});
+
+async function handleVoiceToggle() {
+  if (isRecording.value) {
+    const text = await stopRecording();
+    if (text) {
+      senderValue.value = senderValue.value
+        ? senderValue.value + text
+        : text;
+    }
+  } else {
+    await startRecording();
+  }
+}
+
 // 附件功能是否启用
 const attachmentEnabled = computed(() => {
   // 默认启用，只有明确设置为false时才禁用
@@ -320,6 +343,18 @@ watch(
     </template>
     <template #action-list>
       <div class="flex items-center gap-2">
+          <template v-if="voiceEnabled">
+          <ElButton v-if="isProcessing" link disabled>
+            <ElIcon :size="18">
+              <Loading />
+            </ElIcon>
+          </ElButton>
+          <ElButton v-else link :class="{ 'voice-recording': isRecording }" @click="handleVoiceToggle">
+            <ElIcon :size="18" :color="isRecording ? '#ef4444' : undefined">
+              <IconifyIcon icon="mdi:microphone" />
+            </ElIcon>
+          </ElButton>
+        </template>
         <ElButton v-if="attachmentEnabled" link @click="openCloseHeader">
           <ElIcon size="18">
             <Paperclip />
@@ -347,6 +382,21 @@ watch(
   outline: 2px dashed var(--el-color-primary);
   outline-offset: -2px;
   border-radius: 8px;
+}
+
+/* ========== 语音录制脉冲动画 ========== */
+.voice-recording {
+  animation: voice-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ========== 手机端适配 ========== */

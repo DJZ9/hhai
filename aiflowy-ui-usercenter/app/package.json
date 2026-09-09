@@ -39,6 +39,7 @@
     "dayjs": "catalog:",
     "element-plus": "catalog:",
     "fetch-event-stream": "^0.1.6",
+    "js-audio-recorder": "^1.0.7",
     "pinia": "catalog:",
     "radash": "^12.1.1",
     "vue": "catalog:",
