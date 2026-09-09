@@ -63,10 +63,7 @@ import tech.aiflowy.wiki.service.BotWikiService;
 
 import java.math.BigInteger;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -672,7 +669,7 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     }
 
     private SkillRuntime createSkillRuntime(BigInteger conversationId) {
-        String stringConversationId = conversationId != null ? conversationId.toString() : java.util.UUID.randomUUID().toString();
+        String stringConversationId = conversationId != null ? conversationId.toString() : UUID.randomUUID().toString();
         String runtimeType = skillRuntimeConfig.getType();
         if (runtimeType == null || runtimeType.isEmpty()) {
             runtimeType = "local";

@@ -1,4 +1,4 @@
-﻿<!-- eslint-disable no-useless-escape -->
+<!-- eslint-disable no-useless-escape -->
 <script setup lang="ts">
 import type { AiLlm, BotInfo } from '@aiflowy/types';
 
@@ -99,10 +99,12 @@ const pluginToolIdsData = ref<any>([]);
 const knowledgeIdsData = ref<any>([]);
 const workflowIdsData = ref<any>([]);
 const mcpToolData = ref<any>([]);
+const skillIdsData = ref<any>([]);
 
 const workflowData = ref<any[]>([]);
 const knowledgeData = ref<any[]>([]);
 const pluginToolData = ref<any[]>([]);
+const skillData = ref<any[]>([]);
 const getAiBotPluginToolList = async () => {
   api
     .post('/api/v1/pluginItem/tool/list', { botId: botId.value })
@@ -152,6 +154,23 @@ const getAiBotWorkflowList = async () => {
         };
       });
       workflowIdsData.value = res.data.map((item: any) => item.workflowId);
+    });
+};
+const getAiBotSkillList = async () => {
+  api
+    .get('/api/v1/botSkill/list', {
+      params: {
+        botId: botId.value,
+      },
+    })
+    .then((res) => {
+      skillData.value = res.data.map((item: any) => {
+        return {
+          recordId: item.id,
+          ...item.skill,
+        };
+      });
+      skillIdsData.value = res.data.map((item: any) => item.skillId);
     });
 };
 const botInfo = ref<BotInfo>();
@@ -216,6 +235,7 @@ onMounted(async () => {
   getAiBotKnowledgeList();
   getAiBotWorkflowList();
   getAiBotMcpToolList();
+  getAiBotSkillList();
   getBotDetail();
   getVlModelListData();
   getLlmListData();
@@ -316,6 +336,7 @@ const knowledgeDataRef = ref();
 const workflowDataRef = ref();
 const publishWxRef = ref();
 const mcpToolDataRef = ref();
+const skillDataRef = ref();
 
 const handleAddPlugin = () => {
   pluginToolDataRef.value.openDialog(pluginToolIdsData.value);
@@ -329,6 +350,38 @@ const handleAddKnowledge = () => {
 };
 const handleAddWorkflow = () => {
   workflowDataRef.value.openDialog(workflowIdsData.value);
+};
+const handleAddSkill = () => {
+  skillDataRef.value.openDialog(skillIdsData.value);
+};
+const confirmUpdateAiBotSkill = (data: any) => {
+  api
+    .post('/api/v1/botSkill/updateBotSkillIds', {
+      botId: botId.value,
+      skillIds: data,
+    })
+    .then((res) => {
+      if (res.errorCode === 0) {
+        ElMessage.success($t('message.updateOkMessage'));
+        getAiBotSkillList();
+      } else {
+        ElMessage.error(res.message);
+      }
+    });
+};
+const deleteSkill = (item: any) => {
+  api
+    .post('/api/v1/botSkill/remove', {
+      id: item.recordId,
+    })
+    .then((res) => {
+      if (res.errorCode === 0) {
+        ElMessage.success($t('message.deleteOkMessage'));
+        getAiBotSkillList();
+      } else {
+        ElMessage.error(res.message);
+      }
+    });
 };
 const confirmUpdateAiBotPlugin = (data: any) => {
   api
@@ -1104,6 +1157,29 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
               @config="handleConfigMcp"
             />
           </ElCollapseItem>
+          <ElCollapseItem title="Skill">
+            <template #title>
+              <div class="flex items-center justify-between pr-2">
+                <span>Skill</span>
+                <div class="collapse-right-container">
+                  <span class="badge-circle">
+                    {{ skillData.length }}
+                  </span>
+                  <span @click="handleAddSkill()">
+                    <ElIcon>
+                      <Plus />
+                    </ElIcon>
+                  </span>
+                </div>
+              </div>
+            </template>
+            <CollapseViewItem
+              :data="skillData"
+              title-key="title"
+              description-key="description"
+              @delete="deleteSkill"
+            />
+          </ElCollapseItem>
           <ElCollapseItem title="Wiki">
             <template #title>
               <div class="flex items-center justify-between pr-2">
@@ -1538,6 +1614,18 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
       width="500"
       ref="wikiDataRef"
       @get-data="confirmUpdateAiBotWiki"
+    />
+
+    <!-- 选择 Skill -->
+    <CommonSelectDataModal
+      title="Skill"
+      width="730"
+      ref="skillDataRef"
+      page-url="/api/v1/skill/page"
+      title-key="title"
+      description-key="description"
+      :search-params="['title']"
+      @get-data="confirmUpdateAiBotSkill"
     />
 
     <!--预设问题-->
