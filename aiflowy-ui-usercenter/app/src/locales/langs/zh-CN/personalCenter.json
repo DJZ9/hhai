@@ -26,8 +26,5 @@
   "editUsername": "编辑用户名",
   "modifyPhone": "修改手机号",
   "unbind": "解绑",
-  "confirm": "确定",
-  "cancel": "取消",
-  "logout": "退出登录",
   "_locale": "zh-CN"
 }

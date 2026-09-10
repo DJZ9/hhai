@@ -1,16 +1,17 @@
 <script lang="ts" setup>
 import type { AIFlowyFormSchema } from '@aiflowy/common-ui';
 
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { AuthenticationLogin, z } from '@aiflowy/common-ui';
 import { useAppConfig } from '@aiflowy/hooks';
 import { $t } from '@aiflowy/locales';
 import { preferences } from '@aiflowy/preferences';
-
+import { ElDivider, ElMessage } from 'element-plus';
 import { api } from '#/api/request';
 import { useAuthStore } from '#/store';
-
+import { useRoute } from 'vue-router';
+const route = useRoute();
 defineOptions({ name: 'Login' });
 onMounted(() => {});
 
@@ -43,6 +44,43 @@ const formSchema = computed((): AIFlowyFormSchema[] => {
       rules: z.string().min(1, { message: $t('authentication.passwordTip') }),
     },
   ];
+});
+
+const oauthList = ref<any>([])
+
+// 判断是否为移动设备
+function isMobileDevice(): boolean {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return /mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+}
+
+// 判断是否为微信浏览器
+function isWechatBrowser(): boolean {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return /micromessenger/i.test(userAgent);
+}
+
+// 根据设备类型过滤oauthList
+const filteredOauthList = computed(() => {
+  const isMobile = isMobileDevice();
+  const isWechat = isWechatBrowser();
+
+  // 如果是PC浏览器（非移动设备且非微信浏览器）：过滤掉wx_service_account
+  // 如果是移动设备或微信浏览器：过滤掉wx_open
+  return oauthList.value.filter((item: any) => {
+    // 钉钉等其他平台不受过滤影响，在所有设备类型下都正常显示
+    if (item.platform !== 'wx_service_account' && item.platform !== 'wx_open') {
+      return true;
+    }
+
+    // PC浏览器：保留wx_open，过滤wx_service_account
+    if (!isMobile && !isWechat) {
+      return item.platform === 'wx_open';
+    }
+
+    // 移动设备或微信浏览器：保留wx_service_account，过滤wx_open
+    return item.platform === 'wx_service_account';
+  });
 });
 
 function onSubmit(values: any) {
@@ -99,6 +137,34 @@ function getAuthUrl(platform: PlatformType) {
     },
   });
 }
+async function platformLogin(platform: PlatformType) {
+  const { errorCode, data } = await getAuthUrl(platform);
+  if (errorCode === 0) {
+    window.location.href = data;
+  }
+}
+function getOAuthList() {
+  api.get('/thirdAuth/getOAuthList').then(res => {
+    oauthList.value = res.data;
+  });
+}
+function toAuthPage(url: string) {
+  window.location.href = url;
+}
+
+function checkOAuthError() {
+  const oauthError = route.query.oauthError as string;
+  if (oauthError === 'unbound') {
+    ElMessage.error('该三方账号未绑定系统用户，请先在个人中心绑定账号');
+  }
+}
+
+onMounted(() => {
+  getOAuthList();
+  // 检查OAuth登录错误
+  checkOAuthError();
+});
+
 </script>
 
 <template>
@@ -111,6 +177,19 @@ function getAuthUrl(platform: PlatformType) {
       @submit="onSubmit"
     />
     <div id="captcha-box" class="captcha-div"></div>
+    <ElDivider v-if="filteredOauthList.length > 0" content-position="center">
+      {{ $t('common.otherLoginType') }}
+    </ElDivider>
+    <div class="flex-center flex gap-[20px]">
+      <img
+        v-for="item in filteredOauthList"
+        :key="item.platform"
+        class="platform-icon"
+        :src="item.icon"
+        :alt="item.displayName"
+        @click="toAuthPage(item.authUrl)"
+      />
+    </div>
   </div>
 </template>
 

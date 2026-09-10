@@ -1,13 +1,15 @@
 <script lang="ts" setup>
 import type { AIFlowyFormSchema } from '@aiflowy/common-ui';
 
-import { computed } from 'vue';
-
+import { computed, ref, onMounted } from 'vue';
+import { ElDivider, ElMessage } from 'element-plus';
 import { AuthenticationLogin, z } from '@aiflowy/common-ui';
 import { useAppConfig } from '@aiflowy/hooks';
 import { $t } from '@aiflowy/locales';
-
+import { api } from '#/api/request';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '#/store';
+const route = useRoute();
 
 defineOptions({ name: 'Login' });
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
@@ -34,6 +36,37 @@ const formSchema = computed((): AIFlowyFormSchema[] => {
       rules: z.string().min(1, { message: $t('authentication.passwordTip') }),
     },
   ];
+});
+
+
+const oauthList = ref<any[]>([]);
+
+// 判断是否为移动设备
+function isMobile(): boolean {
+  const userAgent = navigator.userAgent;
+  return /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+}
+
+// 判断是否为微信浏览器
+function isWechatBrowser(): boolean {
+  const userAgent = navigator.userAgent;
+  return /MicroMessenger/i.test(userAgent);
+}
+
+// 根据设备类型过滤oauthList
+const filteredOauthList = computed(() => {
+  const mobile = isMobile();
+  const wechat = isWechatBrowser();
+
+  // PC浏览器（非移动设备且非微信浏览器）：过滤掉wx_service_account
+  if (!mobile && !wechat) {
+    return oauthList.value.filter(
+      (item: any) => item.platform !== 'wx_service_account',
+    );
+  }
+
+  // 移动设备或微信浏览器：过滤掉wx_open
+  return oauthList.value.filter((item: any) => item.platform !== 'wx_open');
 });
 function onSubmit(values: any) {
   // config 对象为TAC验证码的一些配置和验证的回调
@@ -81,6 +114,28 @@ function onSubmit(values: any) {
       console.error('初始化tac失败', error);
     });
 }
+function getOAuthList() {
+  api.get('/userCenter/thirdAuth/getOAuthList').then((res) => {
+    oauthList.value = res.data;
+  });
+}
+
+function toAuthPage(url: string) {
+  window.location.href = url;
+}
+
+function checkOAuthError() {
+  const oauthError = route.query.oauthError as string;
+  if (oauthError === 'unbound') {
+    ElMessage.error('该三方账号未绑定系统用户，请先在个人中心绑定账号');
+  }
+}
+
+onMounted(() => {
+  getOAuthList();
+  // 检查OAuth登录错误
+  checkOAuthError();
+});
 </script>
 
 <template>
@@ -91,12 +146,26 @@ function onSubmit(values: any) {
       @submit="onSubmit"
     />
     <div id="captcha-box" class="captcha-div"></div>
+    <ElDivider v-if="filteredOauthList.length > 0" content-position="center">
+      {{ $t('common.otherLoginType') }}
+    </ElDivider>
+    <div class="flex-center flex gap-[20px]">
+      <img v-for="item in filteredOauthList" :key="item.platform" class="platform-icon" :src="item.icon"
+        :alt="item.displayName" @click="toAuthPage(item.authUrl)" />
+    </div>
   </div>
 </template>
 <style scoped>
 .captcha-div {
   position: absolute;
   top: 30vh;
-  left: 21vh;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.platform-icon {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
 }
 </style>

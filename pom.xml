@@ -316,6 +316,11 @@
             </dependency>
             <dependency>
                 <groupId>tech.aiflowy</groupId>
+                <artifactId>aiflowy-common-third-auth</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>tech.aiflowy</groupId>
                 <artifactId>aiflowy-common-web</artifactId>
                 <version>${revision}</version>
             </dependency>

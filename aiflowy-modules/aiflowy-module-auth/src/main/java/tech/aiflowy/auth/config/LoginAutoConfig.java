@@ -32,6 +32,7 @@ public class LoginAutoConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/v1/account/login")
                 .excludePathPatterns("/api/v1/account/register")
                 .excludePathPatterns("/thirdAuth/**")
+                .excludePathPatterns("/userCenter/thirdAuth/**")
                 .excludePathPatterns("/public-api/**")
                 .excludePathPatterns(properties.getExcludesOrEmpty());
     }

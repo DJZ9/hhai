@@ -1323,3 +1323,24 @@ CREATE TABLE `tb_bot_skill`
 
 SET
 FOREIGN_KEY_CHECKS = 1;
+
+
+-- ----------------------------
+-- Table structure for tb_sys_account_openid
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_sys_account_openid`;
+CREATE TABLE `tb_sys_account_openid`
+(
+    `id`           bigint(0) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `account_id`   bigint(0) UNSIGNED NULL DEFAULT NULL COMMENT '用户ID',
+    `openid_type`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '第三方类型：wechat，dingding，qq...',
+    `openid_value` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '第三方的openId的值',
+    `nickname`     varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '昵称',
+    `avatar`       varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像',
+    `options`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    `created`      datetime(0) NULL DEFAULT NULL,
+    `modified`     datetime(0) NULL DEFAULT NULL,
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX          `account_id`(`account_id`) USING BTREE,
+    INDEX          `type_value`(`openid_type`, `openid_value`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '账号绑定信息表' ROW_FORMAT = Dynamic;
