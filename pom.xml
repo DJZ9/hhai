@@ -26,6 +26,7 @@
         <tinyflow-java.version>2.0.7</tinyflow-java.version>
         <okhttp.version>4.12.0</okhttp.version>
         <spring-boot.version>3.5.9</spring-boot.version>
+        <jackson-bom.version>2.18.2</jackson-bom.version>
         <slf4j.version>2.0.17</slf4j.version>
         <HikariCP.version>4.0.3</HikariCP.version>
         <fastjson.version>2.0.57</fastjson.version>
@@ -51,6 +52,15 @@
     </properties>
     <dependencyManagement>
         <dependencies>
+
+            <!-- Jackson BOM 统一版本，解决 MCP 模块 Jackson 3.x 与 2.x 冲突 -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <dependency>
                 <groupId>org.springdoc</groupId>
@@ -475,6 +485,21 @@
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-mcp</artifactId>
                 <version>${agents-flex.version}</version>
+                <exclusions>
+                    <!-- 排除 Jackson 3.x，使用项目统一的 Jackson 2.x -->
+                    <exclusion>
+                        <groupId>io.modelcontextprotocol.sdk</groupId>
+                        <artifactId>mcp-json-jackson3</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tools.jackson.core</groupId>
+                        <artifactId>jackson-databind</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tools.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.agentsflex</groupId>

@@ -34,30 +34,28 @@ public class SqlInjectionUtils {
         return identifier;
     }
 
-    /**
+   /**
      * 校验注释
      * 允许的字符包括以下 Unicode 类别或符号：
      * \p{L}：任何语言的字母（包括中文、英文、日文等）。
      * \p{N}：任何数字（包括阿拉伯数字 0-9 或其他语言的数字符号）。
      * \p{Zs}：空白分隔符（如空格，但不包括换行符、制表符等）。
      * 标点符号：. , - : ? !（基础标点）。
+     * 非法字符将被替换为下划线 _
      */
     public static String checkComment(String comment) {
-        if (comment == null) {
+        if (comment == null || comment.isEmpty()) {
             return "";
         }
         if (comment.length() > 255) {
             throw new BusinessException("注释过长");
         }
-        if (!comment.matches("^[\\p{L}\\p{N}\\p{Zs}\\.\\,\\-\\:\\?\\!]+$")) {
-            throw new BusinessException("包含非法字符");
-        }
-        if (comment.contains("--")) {
-            throw new BusinessException("包含非法字符！");
-        }
-        if (comment.chars().anyMatch(c -> c <= 31 || c == 127)) {
-            throw new BusinessException("存在非法字符");
-        }
+        // 替换非法字符为下划线
+        comment = comment.replaceAll("[^\\p{L}\\p{N}\\p{Zs}\\.\\,\\-\\:\\?\\!]", "_");
+        // 将连续的多个下划线替换为单个下划线
+        comment = comment.replaceAll("_+", "_");
+        // 去除首尾下划线
+        comment = comment.replaceAll("^_+|_+$", "");
         return comment;
     }
 

@@ -3,10 +3,12 @@ import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { $t } from '@aiflowy/locales';
+import { downloadFileFromBlob } from '@aiflowy/utils';
 
 import {
   ArrowLeft,
   Delete,
+  Download,
   MoreFilled,
   Plus,
   Upload,
@@ -52,6 +54,7 @@ const categoryData = [
   { key: '2', name: $t('datacenterTable.data') },
   { key: '1', name: $t('datacenterTable.structure') },
 ];
+const exportLoading = ref(false);
 function initDict() {
   dictStore.fetchDictionary('fieldType');
   dictStore.fetchDictionary('yesOrNo');
@@ -118,6 +121,18 @@ function changeTab(category: any) {
     refresh();
   }
 }
+function exportData() {
+  exportLoading.value = true;
+  api
+    .download(`/api/v1/datacenterTable/exportData?tableId=${tableId.value}`)
+    .then((res) => {
+      exportLoading.value = false;
+      downloadFileFromBlob({
+        fileName: `${detailInfo.value.tableName}数据.xlsx`,
+        source: res,
+      });
+    });
+}
 </script>
 
 <template>
@@ -161,6 +176,12 @@ function changeTab(category: any) {
             <Upload />
           </ElIcon>
           {{ $t('button.batchImport') }}
+        </ElButton>
+        <ElButton type="primary" @click="exportData" :loading="exportLoading">
+          <ElIcon class="mr-1">
+            <Download />
+          </ElIcon>
+          {{ $t('button.export') }}
         </ElButton>
       </div>
     </div>
@@ -216,7 +237,7 @@ function changeTab(category: any) {
                 v-for="item in headers"
                 :key="item.key"
                 :prop="item.key"
-                :label="item.title"
+                :label="item.title || item.key"
               >
                 <template #default="{ row }">
                   <div v-if="item.fieldType === 5">

@@ -28,5 +28,13 @@
             <groupId>tech.aiflowy</groupId>
             <artifactId>aiflowy-common-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-common-file-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-common-ai</artifactId>
+        </dependency>
     </dependencies>
 </project>
