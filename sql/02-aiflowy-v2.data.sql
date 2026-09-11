@@ -95,7 +95,7 @@ INSERT INTO `tb_sys_menu` (`id`, `parent_id`, `menu_type`, `menu_title`, `menu_u
 INSERT INTO `tb_sys_menu` (`id`, `parent_id`, `menu_type`, `menu_title`, `menu_url`, `component`, `menu_icon`, `is_show`, `permission_tag`, `sort_no`, `status`, `created`, `created_by`, `modified`, `modified_by`, `remark`) VALUES (383808702941224960, 383808444358189056, 0, '保存', '', '', '', 0, '/api/v1/vectorDatabase/save', 1, 0, '2026-02-24 15:39:46', 1, '2026-02-24 15:39:46', 1, '');
 INSERT INTO `tb_sys_menu` (`id`, `parent_id`, `menu_type`, `menu_title`, `menu_url`, `component`, `menu_icon`, `is_show`, `permission_tag`, `sort_no`, `status`, `created`, `created_by`, `modified`, `modified_by`, `remark`) VALUES (383808787234152448, 383808444358189056, 1, '查询', '', '', '', 0, '/api/v1/vectorDatabase/query', 2, 0, '2026-02-24 15:40:06', 1, '2026-02-24 15:40:06', 1, '');
 INSERT INTO `tb_sys_menu` (`id`, `parent_id`, `menu_type`, `menu_title`, `menu_url`, `component`, `menu_icon`, `is_show`, `permission_tag`, `sort_no`, `status`, `created`, `created_by`, `modified`, `modified_by`, `remark`) VALUES (383808856998010880, 383808444358189056, 1, '删除', '', '', '', 0, '/api/v1/vectorDatabase/remove', 3, 0, '2026-02-24 15:40:22', 1, '2026-02-24 15:40:22', 1, '');
-INSERT INTO `tb_sys_menu` (`id`, `parent_id`, `menu_type`, `menu_title`, `menu_url`, `component`, `menu_icon`, `is_show`, `permission_tag`, `sort_no`, `status`, `created`, `created_by`, `modified`, `modified_by`, `remark`) VALUES (453054405688225792, 373239262165159936, 0, 'menus.account.conversationLog', '/ai/conversationAnalysis', '/ai/conversationAnalysis/index', 'ant-design:align-center-outlined', 1, '', 5, 0, '2026-09-03 17:37:28', 1, '2026-09-03 17:41:48', 1, '');
+INSERT INTO `tb_sys_menu` (`id`, `parent_id`, `menu_type`, `menu_title`, `menu_url`, `component`, `menu_icon`, `is_show`, `permission_tag`, `sort_no`, `status`, `created`, `created_by`, `modified`, `modified_by`, `remark`) VALUES (453054405688225792, 258052082618335232, 0, 'menus.account.conversationLog', '/ai/conversationAnalysis', '/ai/conversationAnalysis/index', 'ant-design:align-center-outlined', 1, '', 5, 0, '2026-09-03 17:37:28', 1, '2026-09-03 17:41:48', 1, '');
 -- ----------------------------
 -- Records of tb_sys_role
 -- ----------------------------
@@ -331,4 +331,5 @@ INSERT INTO `tb_sys_role_menu` VALUES (437109884577865728, 1, 437109884573671424
 INSERT INTO `tb_sys_role_menu` VALUES (437109982019936256, 1, 437109982015741952);
 INSERT INTO `tb_sys_role_menu` VALUES (437110078757363712, 1, 437110078753169408);
 INSERT INTO `tb_sys_role_menu` VALUES (363786713469157376, 1, 363786713330745344);
+INSERT INTO `tb_sys_role_menu` VALUES (437110078757363713, 1, 453054405688225792);
 
