@@ -22,6 +22,7 @@ import tech.aiflowy.datacenter.entity.vo.HeaderVo;
 import tech.aiflowy.datacenter.mapper.DatacenterTableFieldMapper;
 import tech.aiflowy.datacenter.mapper.DatacenterTableMapper;
 import tech.aiflowy.datacenter.service.DatacenterTableService;
+import tech.aiflowy.datacenter.utils.SqlInjectionUtils;
 
 import jakarta.annotation.Resource;
 import java.math.BigDecimal;
@@ -91,6 +92,7 @@ public class DatacenterTableServiceImpl extends ServiceImpl<DatacenterTableMappe
                     field.setModified(new Date());
                     field.setModifiedBy(loginUser.getId());
                     field.setTableId(entity.getId());
+                    field.setFieldDesc(SqlInjectionUtils.checkComment(field.getFieldDesc()));
                     fieldsMapper.insert(field);
                 } else {
                     // 删除的字段
@@ -107,6 +109,7 @@ public class DatacenterTableServiceImpl extends ServiceImpl<DatacenterTableMappe
                         field.setFieldType(field.getFieldType());
                         field.setModified(new Date());
                         field.setModifiedBy(loginUser.getId());
+                        field.setFieldDesc(SqlInjectionUtils.checkComment(field.getFieldDesc()));
                         fieldsMapper.update(field);
                     }
                 }
@@ -243,8 +246,7 @@ public class DatacenterTableServiceImpl extends ServiceImpl<DatacenterTableMappe
 
     private String getActualTableName(DatacenterTable table) {
         String tableName = table.getTableName();
-        BigInteger id = table.getId();
-        return "tb_dynamic_" + tableName + "_" + id;
+        return "tb_data_" + tableName;
     }
 
     /**

@@ -180,8 +180,29 @@ CREATE TABLE `tb_datacenter_table`
     `modified`     datetime                                                     NOT NULL COMMENT '修改时间',
     `modified_by`  bigint UNSIGNED NOT NULL COMMENT '修改者',
     `options`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '扩展项',
-    PRIMARY KEY (`id`) USING BTREE
+    `category_id`  bigint UNSIGNED NULL DEFAULT NULL COMMENT '分类ID',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX          `idx_category_id`(`category_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据中枢表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_datacenter_table_category
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_table_category`;
+CREATE TABLE `tb_datacenter_table_category`
+(
+    `id`            bigint UNSIGNED NOT NULL COMMENT '主键',
+    `category_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '分类名称',
+    `sort_no`       int NULL DEFAULT 0 COMMENT '排序',
+    `created`       datetime                                                     NOT NULL COMMENT '创建时间',
+    `created_by`    bigint UNSIGNED NOT NULL COMMENT '创建者',
+    `modified`      datetime                                                     NOT NULL COMMENT '修改时间',
+    `modified_by`   bigint UNSIGNED NOT NULL COMMENT '修改者',
+    `status`        int                                                          NOT NULL DEFAULT 0 COMMENT '数据状态',
+    `dept_id`       bigint UNSIGNED NOT NULL COMMENT '部门ID',
+    `tenant_id`     bigint UNSIGNED NOT NULL COMMENT '租户ID',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据中枢表分类' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for tb_datacenter_table_field
@@ -202,6 +223,61 @@ CREATE TABLE `tb_datacenter_table_field`
     `modified_by` bigint UNSIGNED NOT NULL COMMENT '修改者',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '数据中枢字段表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_datacenter_import_record
+-- 数据中枢导入记录表（用于记录AI智能导入的数据导入情况）
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_import_record`;
+CREATE TABLE `tb_datacenter_import_record`
+(
+    `id`            bigint UNSIGNED NOT NULL COMMENT '主键',
+    `file_name`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原始文件名',
+    `table_name`    varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '表名',
+    `category_id`   bigint UNSIGNED NULL DEFAULT NULL COMMENT '分类ID',
+    `status`        int NULL DEFAULT 0 COMMENT '导入状态：0-处理中，1-成功，2-失败',
+    `total_count`   int NULL DEFAULT 0 COMMENT '总行数',
+    `success_count` int NULL DEFAULT 0 COMMENT '成功行数',
+    `error_count`   int NULL DEFAULT 0 COMMENT '失败行数',
+    `error_info`    varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
+    `dept_id`       bigint UNSIGNED NULL DEFAULT NULL COMMENT '部门ID',
+    `tenant_id`     bigint UNSIGNED NULL DEFAULT NULL COMMENT '租户ID',
+    `created`       datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `created_by`    bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建者',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX           `idx_tenant_id`(`tenant_id` ASC) USING BTREE,
+    INDEX           `idx_status`(`status` ASC) USING BTREE,
+    INDEX           `idx_table_name`(`table_name` ASC) USING BTREE,
+    INDEX           `idx_created`(`created` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '数据中枢导入记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for tb_datacenter_parse_task
+-- 数据中枢解析任务表（用于AI智能导入的异步解析）
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_parse_task`;
+CREATE TABLE `tb_datacenter_parse_task`
+(
+    `id`               bigint UNSIGNED NOT NULL COMMENT '主键',
+    `task_name`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
+    `task_type`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务类型',
+    `status`           int NULL DEFAULT 0 COMMENT '状态：0-处理中，1-成功，2-失败',
+    `input_data`       text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '输入数据(JSON格式)',
+    `result_data`      longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '输出数据(JSON格式)',
+    `error_info`       varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
+    `progress`         int NULL DEFAULT 0 COMMENT '进度百分比(0-100)',
+    `progress_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '进度消息',
+    `dept_id`          bigint UNSIGNED NULL DEFAULT NULL COMMENT '部门ID',
+    `tenant_id`        bigint UNSIGNED NULL DEFAULT NULL COMMENT '租户ID',
+    `created`          datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `created_by`       bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建者',
+    `updated`          datetime NULL DEFAULT NULL COMMENT '更新时间',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX              `idx_tenant_id`(`tenant_id` ASC) USING BTREE,
+    INDEX              `idx_status`(`status` ASC) USING BTREE,
+    INDEX              `idx_task_type`(`task_type` ASC) USING BTREE,
+    INDEX              `idx_created`(`created` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '数据中枢解析任务' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for tb_document
@@ -1344,3 +1420,29 @@ CREATE TABLE `tb_sys_account_openid`
     INDEX          `account_id`(`account_id`) USING BTREE,
     INDEX          `type_value`(`openid_type`, `openid_value`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '账号绑定信息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for tb_datacenter_table_parse_task
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_datacenter_table_parse_task`;
+CREATE TABLE `tb_datacenter_table_parse_task`  (
+    `id`                bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `task_name`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
+    `task_type`         varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务类型',
+    `status`            tinyint NULL DEFAULT 0 COMMENT '状态：0-处理中，1-成功，2-失败',
+    `input_data`        text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '输入数据(JSON格式)',
+    `result_data`       longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '输出数据(JSON格式)',
+    `error_info`        varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
+    `progress`          int NULL DEFAULT 0 COMMENT '进度百分比(0-100)',
+    `progress_message`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '进度消息',
+    `dept_id`           bigint UNSIGNED NULL DEFAULT NULL COMMENT '部门ID',
+    `tenant_id`         bigint UNSIGNED NULL DEFAULT NULL COMMENT '租户ID',
+    `created`           datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+    `created_by`        bigint UNSIGNED NULL DEFAULT NULL COMMENT '创建者ID',
+    `updated`           datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+    PRIMARY KEY (`id`) USING BTREE,
+    INDEX               `idx_tenant_id`(`tenant_id` ASC) USING BTREE,
+    INDEX               `idx_status`(`status` ASC) USING BTREE,
+    INDEX               `idx_task_type`(`task_type` ASC) USING BTREE,
+    INDEX               `idx_created`(`created` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '数据中枢解析任务' ROW_FORMAT = DYNAMIC;

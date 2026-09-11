@@ -57,7 +57,7 @@ const dropdownButtons = computed(() => {
   if (dropdownButtonsTemp.length === 0) {
     return [];
   }
-  return dropdownButtonsTemp.value.filter((action) => {
+  return dropdownButtonsTemp.filter((action) => {
     return hasPermission([action.permission]);
   });
 });

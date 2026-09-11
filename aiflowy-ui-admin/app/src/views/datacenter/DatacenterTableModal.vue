@@ -22,6 +22,10 @@ import {
 import { api } from '#/api/request';
 import { $t } from '#/locales';
 
+const props = defineProps<{
+  categories?: any[];
+}>();
+
 const emit = defineEmits(['reload']);
 // vue
 onMounted(() => {
@@ -40,6 +44,7 @@ const entity = ref<any>({
   tableName: '',
   tableDesc: '',
   actualTable: '',
+  categoryId: '',
   status: '',
   options: '',
 });
@@ -59,16 +64,16 @@ const rules = ref({
         if (!value || value.length === 0) {
           callback(new Error($t('datacenterTable.noFieldError')));
         } else {
-          // 检查字段数组中的fieldName和fieldDesc字段
-          value.forEach((field: any) => {
+        // 检查字段数组中的fieldName和fieldDesc字段
+        value.forEach((field: any) => {
             if (!field.fieldName || !field.fieldDesc) {
               callback(new Error($t('datacenterTable.fieldInfoError')));
             }
             if (!/^[a-z][a-z0-9_]*$/.test(field.fieldName)) {
-              callback(new Error($t('datacenterTable.nameRegx')));
-            }
-          });
-          callback();
+            callback(new Error($t('datacenterTable.nameRegx')));
+          }
+        });
+        callback();
         }
       },
       trigger: 'blur',
@@ -199,6 +204,19 @@ function getYesOrNo() {
       status-icon
       :rules="rules"
     >
+      <ElFormItem
+        prop="categoryId"
+        :label="$t('aiWorkflowCategory.categoryName')"
+      >
+        <ElSelect v-model="entity.categoryId" class="w-full">
+          <ElOption
+            v-for="item in props.categories?.filter((c) => c.id)"
+            :key="item.id"
+            :label="item.categoryName"
+            :value="item.id"
+          />
+        </ElSelect>
+      </ElFormItem>
       <ElFormItem prop="tableName" :label="$t('datacenterTable.tableName')">
         <ElInput :disabled="!isAdd" v-model.trim="entity.tableName" />
       </ElFormItem>

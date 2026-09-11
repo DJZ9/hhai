@@ -87,6 +87,12 @@ public class DatacenterTableBase extends DateEntity implements Serializable {
     @Column(typeHandler = FastjsonTypeHandler.class, comment = "扩展项")
     private Map<String, Object> options;
 
+    /**
+     * 分类ID
+     */
+    @Column(comment = "分类ID")
+    private BigInteger categoryId;
+
     public BigInteger getId() {
         return id;
     }
@@ -181,6 +187,14 @@ public class DatacenterTableBase extends DateEntity implements Serializable {
 
     public void setOptions(Map<String, Object> options) {
         this.options = options;
+    }
+
+    public BigInteger getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(BigInteger categoryId) {
+        this.categoryId = categoryId;
     }
 
 }

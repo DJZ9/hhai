@@ -18,6 +18,10 @@
         </dependency>
         <dependency>
             <groupId>tech.aiflowy</groupId>
+            <artifactId>aiflowy-module-datacenter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>tech.aiflowy</groupId>
             <artifactId>aiflowy-module-auth</artifactId>
         </dependency>
         <dependency>
