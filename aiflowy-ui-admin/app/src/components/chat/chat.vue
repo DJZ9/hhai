@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import type { Sender } from 'vue-element-plus-x';
-import type { BubbleListProps } from 'vue-element-plus-x/types/BubbleList';
+import type {
+  BubbleListInstance,
+  BubbleListProps,
+} from 'vue-element-plus-x/types/BubbleList';
 import type { ThinkingStatus } from 'vue-element-plus-x/types/Thinking';
-import type { TypewriterInstance } from 'vue-element-plus-x/types/Typewriter';
 
 import type { BotInfo, ChatMessage } from '@aiflowy/types';
 
-import { computed, onMounted, ref, watchEffect } from 'vue';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  useTemplateRef,
+  watchEffect,
+} from 'vue';
+import { XSender } from 'vue-element-plus-x';
 import { useRoute, useRouter } from 'vue-router';
 
 import { IconifyIcon } from '@aiflowy/icons';
@@ -21,6 +30,7 @@ import {
   Paperclip,
   RefreshRight,
 } from '@element-plus/icons-vue';
+import { useThrottleFn } from '@vueuse/core';
 import {
   ElButton,
   ElCollapse,
@@ -88,9 +98,26 @@ const botId = ref<string>((route.params.id as string) || '');
 const router = useRouter();
 
 const bubbleItems = ref<BubbleListProps<MessageItem>['list']>([]);
-const senderRef = ref<InstanceType<typeof Sender>>();
-const senderValue = ref('');
+const bubbleListRef = useTemplateRef<BubbleListInstance>('bubbleListRef');
+const senderRef = ref<InstanceType<typeof XSender>>();
+// v2 的 XSender 不再支持 v-model，输入内容通过实例 API 读取，空态用 change 事件同步
+const senderEmpty = ref(true);
 const sending = ref(false);
+
+// v2 的 BubbleList 不再可靠地自动跟到底部（长会话与流式增量都会漏滚），这里显式补偿
+const scrollToLatest = () => {
+  nextTick(() => {
+    bubbleListRef.value?.scrollToBottom(false);
+  });
+};
+
+// 智能跟随：仅当用户处于底部时才滚动，上滑查看历史期间不打断，滚回底部后自动恢复
+const followBottom = useThrottleFn(() => {
+  if (bubbleListRef.value?.currentScrollState === 'AT_BOTTOM') {
+    bubbleListRef.value.scrollToBottom(false);
+  }
+}, 16);
+
 const { isRecording, isProcessing, startRecording, stopRecording } =
   useVoiceRecorder();
 const getConversationId = async () => {
@@ -181,6 +208,8 @@ watchEffect(async () => {
             : item.content,
         placement: item.role === 'assistant' ? 'start' : 'end',
       }));
+      // 进入或切换会话时直接定位到最新消息
+      scrollToLatest();
     }
   } else {
     bubbleItems.value = [];
@@ -197,31 +226,37 @@ const stopSse = () => {
       ...lastBubbleItem,
       content: lastBubbleItem.content,
       loading: false,
-      typing: false,
     };
   }
+  followBottom();
 };
 const clearSenderFiles = () => {
   files.value = [];
   attachmentsRef.value?.clearFiles();
-  senderRef.value?.closeHeader();
+  showHeaderFlog.value = false;
+};
+
+// v2 XSender 的输入内容通过实例 API 读取
+const getSenderText = () => senderRef.value?.getModelValue()?.text ?? '';
+
+const handleSenderChange = () => {
+  senderEmpty.value = senderRef.value?.senderState?.isEmpty ?? true;
 };
 
 async function handleVoiceToggle() {
   if (isRecording.value) {
     const text = await stopRecording();
     if (text) {
-      senderValue.value = senderValue.value
-        ? senderValue.value + text
-        : text;
+      senderRef.value?.setText(getSenderText() + text);
+      senderEmpty.value = false;
     }
   } else {
     await startRecording();
   }
 }
-const handleSubmit = async (refreshContent: string) => {
+const handleSubmit = async (refreshContent?: string) => {
   const attachments = attachmentsRef.value?.getFileList();
-  const currentPrompt = refreshContent || senderValue.value.trim();
+  const currentPrompt = refreshContent || getSenderText().trim();
   if (!currentPrompt) {
     return;
   }
@@ -242,9 +277,11 @@ const handleSubmit = async (refreshContent: string) => {
   clearSenderFiles();
   messages.value.pop();
   const fileList = attachments || [];
-  const mockMessages = generateMockMessages(refreshContent, fileList);
+  const mockMessages = generateMockMessages(refreshContent ?? '', fileList);
   bubbleItems.value.push(...mockMessages);
+  scrollToLatest();
   senderRef.value?.clear();
+  senderEmpty.value = true;
   sseClient.post('/api/v1/bot/chat', data, {
     onMessage(message) {
       const event = message.event;
@@ -254,6 +291,15 @@ const handleSubmit = async (refreshContent: string) => {
       //  finish
       if (event === 'done') {
         sending.value = false;
+        scrollToLatest();
+        // v1 由 BubbleList 的打字机 complete 事件触发，v2 移除了该事件，改为流结束时替换路由
+        if (props.conversationId && props.conversationId.length <= 0) {
+          setTimeout(() => {
+            router.replace({
+              params: { conversationId: localeConversationId.value },
+            });
+          }, 100);
+        }
         return;
       }
       if (!message.data) {
@@ -271,8 +317,8 @@ const handleSubmit = async (refreshContent: string) => {
           ...lastBubbleItem,
           content: errorMessage,
           loading: false,
-          typing: true,
         };
+        followBottom();
         return;
       }
 
@@ -299,6 +345,7 @@ const handleSubmit = async (refreshContent: string) => {
         }
         bubbleItems.value[lastIndex]!.chains = chains;
         stopThinking();
+        followBottom();
         return;
       }
 
@@ -335,10 +382,10 @@ const handleSubmit = async (refreshContent: string) => {
               '```echarts\noption',
             ),
             loading: false,
-            typing: true,
           };
           stopThinking();
         }
+        followBottom();
       }
 
       // 是否需要保存聊天记录
@@ -360,6 +407,7 @@ const handleSubmit = async (refreshContent: string) => {
         };
       }
       stopThinking();
+      followBottom();
     },
     onError(err) {
       console.error(err);
@@ -390,21 +438,6 @@ const stopThinking = () => {
   }
 };
 
-const handleComplete = (_: TypewriterInstance, index: number) => {
-  if (
-    index === bubbleItems.value.length - 1 &&
-    props.conversationId &&
-    props.conversationId.length <= 0 &&
-    sending.value === false
-  ) {
-    setTimeout(() => {
-      router.replace({
-        params: { conversationId: localeConversationId.value },
-      });
-    }, 100);
-  }
-};
-
 const generateMockMessages = (refreshContent: string, fileList: string[] = []) => {
   const messages: MessageItem[] = [];
   // 附件单独一个气泡显示在文字上方
@@ -424,7 +457,7 @@ const generateMockMessages = (refreshContent: string, fileList: string[] = []) =
     role: 'user',
     id: Date.now().toString(),
     fileList: [],
-    content: refreshContent || senderValue.value,
+    content: refreshContent || getSenderText(),
     created: Date.now(),
     updateAt: Date.now(),
     placement: 'end',
@@ -455,13 +488,11 @@ const handleCopy = (content: string) => {
 const handleRefresh = () => {
   handleSubmit(lastUserMessage.value);
 };
+// v2 的 XSender 头部由使用方控制显隐（插槽 v-if），不再有 openHeader/closeHeader API
 const showHeaderFlog = ref(false);
 function openCloseHeader() {
   if (showHeaderFlog.value) {
-    senderRef.value?.closeHeader();
     files.value = [];
-  } else {
-    senderRef.value?.openHeader();
   }
   showHeaderFlog.value = !showHeaderFlog.value;
 }
@@ -498,7 +529,6 @@ function handleDrop(e: DragEvent) {
   if (!fileList || fileList.length === 0) return;
 
   showHeaderFlog.value = true;
-  senderRef.value?.openHeader();
   files.value = [...fileList];
 }
 
@@ -506,7 +536,6 @@ function handlePasteFile(_: any, fileList: FileList) {
   // 附件功能未启用时不处理
   if (!attachmentEnabled.value) return;
   showHeaderFlog.value = true;
-  senderRef.value?.openHeader();
   files.value = [...fileList];
 }
 </script>
@@ -527,10 +556,11 @@ function handlePasteFile(_: any, fileList: FileList) {
         class="message-container w-full flex-1 overflow-hidden"
       >
         <ElBubbleList
+          ref="bubbleListRef"
           class="!h-full"
-          max-height="none"
+          :auto-scroll="true"
+          max-height="100%"
           :list="bubbleItems"
-          @complete="handleComplete"
         >
           <template #header="{ item }">
             <div class="flex flex-col">
@@ -717,12 +747,11 @@ function handlePasteFile(_: any, fileList: FileList) {
       <ElSender
         ref="senderRef"
         class="w-full"
-        v-model="senderValue"
         :placeholder="$t('message.pleaseInputContent')"
         variant="updown"
-        :auto-size="{ minRows: 3, maxRows: 6 }"
-        allow-speech
+        :custom-style="{ maxHeight: '120px' }"
         :class="{ 'drag-over': isDragOver }"
+        @change="handleSenderChange"
         @submit="handleSubmit"
         @paste-file="handlePasteFile"
         @dragover.prevent="handleDragOver"
@@ -731,7 +760,7 @@ function handlePasteFile(_: any, fileList: FileList) {
         @drop="handleDrop"
       >
         <!-- 自定义头部内容 -->
-        <template #header>
+        <template v-if="showHeaderFlog" #header>
           <ChatFileUploader
             ref="attachmentsRef"
             :external-files="files"
@@ -766,7 +795,7 @@ function handlePasteFile(_: any, fileList: FileList) {
               <ElIcon size="30" color="#409eff"><SendingIcon /></ElIcon>
             </ElButton>
             <template v-else>
-              <ElButton v-if="!senderValue" circle disabled>
+              <ElButton v-if="senderEmpty" circle disabled>
                 <SendIcon />
               </ElButton>
               <ElButton v-else circle @click="handleSubmit('')">
@@ -811,6 +840,9 @@ function handlePasteFile(_: any, fileList: FileList) {
 }
 
 .message-container {
+  /* 气泡底色：与商业版一致（纯白），亮/暗主题同色 */
+  --bot-chat-bubble-bg: var(--bot-chat-message-item-back);
+
   padding: 8px;
   background-color: var(--bot-chat-message-container);
   border-radius: 8px;
@@ -820,50 +852,60 @@ function handlePasteFile(_: any, fileList: FileList) {
   border: 1px solid hsl(var(--border));
 }
 
-:deep(.el-bubble-content-wrapper .el-bubble-content-filled[data-v-a52d8fe0]) {
-  background-color: var(--bot-chat-message-item-back);
-}
-
 .chat-bubble-item-time-style {
   font-size: 12px;
   color: var(--common-font-placeholder-color);
 }
 
-.el-bubble-list :deep(.el-bubble.el-bubble-start) {
-  --bubble-content-max-width: calc(
-    100% - var(--el-bubble-avatar-placeholder-gap)
-  ) !important;
+:deep(.elx-bubble__content-wrapper) {
+  flex: none;
+  max-width: calc(100% - 104px);
 }
 
-.el-bubble-list :deep(.el-bubble.el-bubble-end) {
-  --bubble-content-max-width: calc(
-    100% -
-      calc(
-        var(--el-bubble-avatar-placeholder-gap) + var(--el-avatar-size, 40px)
-      )
-  ) !important;
-}
-
-:deep(.el-bubble-header) {
+:deep(.elx-bubble__header),
+:deep(.elx-bubble__footer) {
   width: 100%;
 }
 
-:deep(.el-bubble-end .el-bubble-header) {
+:deep(.elx-bubble--end .elx-bubble__header) {
   width: fit-content;
 }
 
-:deep(.el-thinking) {
-  margin: 0;
+:deep(.elx-bubble__content-wrapper .elx-bubble__content) {
+  --elx-bubble-content-max-width: 100%;
 }
 
-:deep(.el-thinking .content-wrapper) {
-  --el-thinking-content-wrapper-width: var(--bubble-content-max-width);
+:deep(.elx-bubble__content) {
+  --elx-bubble-bg: var(--bot-chat-bubble-bg);
+  --elx-bubble-padding-y: 4px;
+  --elx-bubble-padding-x: 8px;
+}
+
+/* x-md-renderer 内联 backgroundColor: #ffffff / padding: 16px 需 !important 覆盖 */
+:deep(.x-md-renderer) {
+  background-color: var(--bot-chat-bubble-bg) !important;
+  padding: 4px !important;
+}
+
+:deep(.mermaid-content) {
+  min-height: 300px;
+}
+
+:deep(.elx-thinking) {
+  margin: 0 !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+:deep(.elx-thinking .elx-thinking__content-wrapper) {
+  --elx-thinking-content-wrapper-width: 100%;
 
   margin-bottom: 8px;
 }
 
-:deep(.el-collapse-item) {
+:deep(.el-collapse) {
   overflow: hidden;
+  border: 1px solid var(--el-collapse-border-color);
   border-radius: 8px;
 }
 

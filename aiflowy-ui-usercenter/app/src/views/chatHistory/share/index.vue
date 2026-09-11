@@ -101,16 +101,16 @@ function getMessageList() {
 </template>
 
 <style lang="css" scoped>
-:deep(.el-bubble-list) {
+:deep(.elx-bubble-list) {
   max-height: 100%;
 }
 
-:deep(.el-bubble-content-wrapper .el-bubble-content) {
-  --bubble-content-max-width: calc(100% - 52px);
+:deep(.elx-bubble__content-wrapper .elx-bubble__content) {
+  --elx-bubble-content-max-width: calc(100% - 52px);
 }
 
 @media not all and (min-width: 640px) {
-  :deep(.el-bubble) {
+  :deep(.elx-bubble) {
     gap: 8px;
   }
 
@@ -119,8 +119,8 @@ function getMessageList() {
     height: 30px;
   }
 
-  :deep(.el-bubble-content-wrapper .el-bubble-content) {
-    --bubble-content-max-width: calc(100% - 38px);
+  :deep(.elx-bubble__content-wrapper .elx-bubble__content) {
+    --elx-bubble-content-max-width: calc(100% - 38px);
   }
 }
 </style>
