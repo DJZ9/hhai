@@ -9,12 +9,16 @@ interface BotInfo {
   id: string;
   modelId: string;
   modelOptions: {
+    // 模型参数（用户可配置）
     maxMessageCount: number;
     maxReplyLength: number;
+    maxReplyLengthEnabled?: boolean;
     systemPrompt?: string;
     temperature: number;
+    temperatureEnabled?: boolean;
     topK: number;
     topP: number;
+    topPEnabled?: boolean;
     welcomeMessage: string;
   };
   modified: string;

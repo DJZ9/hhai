@@ -19,6 +19,17 @@
   "voiceNote": "配置语音识别供应商后，智能体对话支持语音输入和语音播报功能。",
   "voiceProvider": "语音供应商",
   "voiceProviderPlaceholder": "选择语音供应商",
+  "searchEngineSection": "搜索引擎配置",
+  "searchEngineTooltip": "配置搜索引擎 API，启用后 AI 可以使用搜索引擎获取实时信息",
+  "searchEngineProvider": "搜索引擎提供商",
+  "searchEngineProviderPlaceholder": "请选择搜索引擎",
+  "searchEngineQianfanApiKey": "百度千帆 API Key",
+  "searchEngineQianfanPlaceholder": "请输入百度千帆 API Key",
+  "searchEngineBochaApiKey": "博查 API Key",
+  "searchEngineBochaPlaceholder": "请输入博查 API Key",
+  "searchEngineBraveApiKey": "Brave API Key",
+  "searchEngineBravePlaceholder": "请输入 Brave API Key",
+  "searchEngineGetApiKey": "获取 API Key",
   "message": {
     "userCenterDomain": "请输入域名",
     "userCenterDomainError": "请输入有效的域名（如 aiflowy.tech 或 http://aiflowy.tech）"

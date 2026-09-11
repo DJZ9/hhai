@@ -3,12 +3,14 @@ import type { FormRules } from 'element-plus';
 
 import { onMounted, ref, useTemplateRef } from 'vue';
 
+import { IconifyIcon } from '@aiflowy/icons';
 import { $t } from '@aiflowy/locales';
 
-import { Delete, Plus } from '@element-plus/icons-vue';
+import { Delete, InfoFilled, Plus } from '@element-plus/icons-vue';
 import {
   ElAlert,
   ElButton,
+  ElDivider,
   ElForm,
   ElFormItem,
   ElIcon,
@@ -21,6 +23,7 @@ import {
   ElSwitch,
   ElTabPane,
   ElTabs,
+  ElTooltip,
 } from 'element-plus';
 
 import { api } from '#/api/request.js';
@@ -61,6 +64,26 @@ const voiceEntity = ref({
   voice_tencent_app_id: '',
   voice_volc_api_key: '',
 });
+
+// 搜索引擎配置：提供商名称沿用品牌字面量，其余文案走 i18n
+const searchEngineOptions = [
+  {
+    label: '百度千帆',
+    value: 'qianfan',
+    apiKeyUrl: 'https://console.bce.baidu.com/iam/#/iam/apikey/list',
+  },
+  {
+    label: '博查 (Bocha)',
+    value: 'bocha',
+    apiKeyUrl: 'https://open.bochaai.com/api-keys',
+  },
+  {
+    label: 'Brave',
+    value: 'brave',
+    apiKeyUrl: 'https://api.search.brave.com/app/dashboard',
+  },
+];
+
 const providerOptions =
   ref<Array<{ label: string; options: any; value: string }>>(providerList);
 const brands = ref([]);
@@ -78,7 +101,7 @@ function getBrands() {
 function getOptions() {
   api
     .get(
-      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=skill_market_domain&keys=mcp_market_enabled&keys=skill_market_enabled&keys=voice_provider&keys=voice_aliyun_access_key_id&keys=voice_aliyun_access_key_secret&keys=voice_aliyun_app_key&keys=voice_tencent_secret_id&keys=voice_tencent_secret_key&keys=voice_tencent_app_id&keys=voice_volc_api_key',
+      '/api/v1/sysOption/list?keys=model_of_chat&keys=chatgpt_endpoint&keys=chatgpt_chatPath&keys=chatgpt_api_key&keys=chatgpt_model_name&keys=user_center_domain&keys=env_variables&keys=search_engine_provider&keys=search_engine_qianfan_api_key&keys=search_engine_bocha_api_key&keys=search_engine_brave_api_key&keys=skill_market_domain&keys=mcp_market_enabled&keys=skill_market_enabled&keys=voice_provider&keys=voice_aliyun_access_key_id&keys=voice_aliyun_access_key_secret&keys=voice_aliyun_app_key&keys=voice_tencent_secret_id&keys=voice_tencent_secret_key&keys=voice_tencent_app_id&keys=voice_volc_api_key',
     )
     .then((res) => {
       if (res.errorCode === 0) {
@@ -137,6 +160,10 @@ const entity = ref({
   chatgpt_chatPath: '',
   chatgpt_endpoint: '',
   chatgpt_model_name: '',
+  search_engine_provider: '',
+  search_engine_qianfan_api_key: '',
+  search_engine_bocha_api_key: '',
+  search_engine_brave_api_key: '',
 });
 
 
@@ -274,9 +301,127 @@ async function handleUserCenterSave() {
             <ElFormItem label="ApiKey">
               <ElInput v-model="entity.chatgpt_api_key" clearable />
             </ElFormItem>
+
+            <!-- 搜索引擎配置 -->
+            <ElDivider />
+            <div class="search-engine-section">
+              <div class="search-engine-title">
+                <span>{{ $t('settingsConfig.searchEngineSection') }}</span>
+                <ElTooltip
+                  :content="$t('settingsConfig.searchEngineTooltip')"
+                  placement="top"
+                >
+                  <ElIcon><InfoFilled /></ElIcon>
+                </ElTooltip>
+              </div>
+
+              <ElFormItem :label="$t('settingsConfig.searchEngineProvider')">
+                <ElSelect
+                  v-model="entity.search_engine_provider"
+                  clearable
+                  :placeholder="
+                    $t('settingsConfig.searchEngineProviderPlaceholder')
+                  "
+                >
+                  <ElOption
+                    v-for="item in searchEngineOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </ElSelect>
+              </ElFormItem>
+
+              <!-- 百度千帆 API Key -->
+              <ElFormItem
+                v-if="entity.search_engine_provider === 'qianfan'"
+                :label="$t('settingsConfig.searchEngineQianfanApiKey')"
+              >
+                <ElInput
+                  v-model="entity.search_engine_qianfan_api_key"
+                  clearable
+                  :placeholder="
+                    $t('settingsConfig.searchEngineQianfanPlaceholder')
+                  "
+                />
+                <div class="search-engine-api-key-hint">
+                  <ElLink
+                    :href="searchEngineOptions[0]?.apiKeyUrl"
+                    target="_blank"
+                    type="primary"
+                    underline="never"
+                  >
+                    <ElSpace :size="4">
+                      <span>
+                        {{ $t('settingsConfig.searchEngineGetApiKey') }}
+                      </span>
+                      <ElIcon><IconifyIcon icon="svg:target" /></ElIcon>
+                    </ElSpace>
+                  </ElLink>
+                </div>
+              </ElFormItem>
+
+              <!-- 博查 API Key -->
+              <ElFormItem
+                v-if="entity.search_engine_provider === 'bocha'"
+                :label="$t('settingsConfig.searchEngineBochaApiKey')"
+              >
+                <ElInput
+                  v-model="entity.search_engine_bocha_api_key"
+                  clearable
+                  :placeholder="
+                    $t('settingsConfig.searchEngineBochaPlaceholder')
+                  "
+                />
+                <div class="search-engine-api-key-hint">
+                  <ElLink
+                    :href="searchEngineOptions[1]?.apiKeyUrl"
+                    target="_blank"
+                    type="primary"
+                    underline="never"
+                  >
+                    <ElSpace :size="4">
+                      <span>
+                        {{ $t('settingsConfig.searchEngineGetApiKey') }}
+                      </span>
+                      <ElIcon><IconifyIcon icon="svg:target" /></ElIcon>
+                    </ElSpace>
+                  </ElLink>
+                </div>
+              </ElFormItem>
+
+              <!-- Brave API Key -->
+              <ElFormItem
+                v-if="entity.search_engine_provider === 'brave'"
+                :label="$t('settingsConfig.searchEngineBraveApiKey')"
+              >
+                <ElInput
+                  v-model="entity.search_engine_brave_api_key"
+                  clearable
+                  :placeholder="
+                    $t('settingsConfig.searchEngineBravePlaceholder')
+                  "
+                />
+                <div class="search-engine-api-key-hint">
+                  <ElLink
+                    :href="searchEngineOptions[2]?.apiKeyUrl"
+                    target="_blank"
+                    type="primary"
+                    underline="never"
+                  >
+                    <ElSpace :size="4">
+                      <span>
+                        {{ $t('settingsConfig.searchEngineGetApiKey') }}
+                      </span>
+                      <ElIcon><IconifyIcon icon="svg:target" /></ElIcon>
+                    </ElSpace>
+                  </ElLink>
+                </div>
+              </ElFormItem>
+            </div>
           </ElForm>
           <div class="settings-button-container">
-            <ElButton type="primary" @click="handleSave">
+            <ElButton type="primary" @click="handleSave()">
               {{ $t('button.save') }}
             </ElButton>
           </div>
@@ -583,5 +728,26 @@ async function handleUserCenterSave() {
   margin-top: -10px;
   margin-bottom: 20px;
   margin-left: 150px;
+}
+
+/* 搜索引擎配置样式 */
+.search-engine-section {
+  margin-top: 20px;
+}
+
+.search-engine-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.search-engine-api-key-hint {
+  margin-top: 8px;
+  padding-left: 150px;
+  font-size: 12px;
 }
 </style>

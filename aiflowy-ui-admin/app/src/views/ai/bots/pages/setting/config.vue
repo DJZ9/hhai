@@ -54,6 +54,9 @@ const props = defineProps<{
   bot?: BotInfo;
   hasSavePermission?: boolean;
 }>();
+const emit = defineEmits<{
+  (e: 'botUpdated'): void;
+}>();
 const botStore = useBotStore();
 const route = useRoute();
 const router = useRouter();
@@ -61,14 +64,16 @@ const botId = ref<string>((route.params.id as string) || '');
 const options = ref<AiLlm[]>([]);
 const vlModelOptions = ref<AiLlm[]>([]);
 const selectedId = ref<string>('');
+// 大模型参数：温度、TopP、最大回复长度、历史条数，
+// 通过 updateLlmOptions 保存到 bot.modelOptions。
 const llmConfig = ref({
-  maxMessageCount: 0,
-  maxReplyLength: 0,
-  maxReplyLengthEnabled: false,
   temperature: 0,
   temperatureEnabled: false,
   topP: 0,
   topPEnabled: false,
+  maxReplyLength: 0,
+  maxReplyLengthEnabled: false,
+  maxMessageCount: 0,
 });
 const dialogueSettings = ref({
   welcomeMessage: '',
@@ -263,13 +268,18 @@ const handleLlmChange = async (value: string) => {
   }
 };
 const handleLlmOptionsChange = useDebounceFn(
-  (key: keyof typeof llmConfig.value, value: number | boolean) => {
-    updateLlmOptions({
+  async (key: keyof typeof llmConfig.value, value: number | boolean) => {
+    const [err, res] = await tryit(updateLlmOptions)({
       id: props.bot?.id || '',
       llmOptions: {
         [key]: value,
       },
     });
+    if (err || res?.errorCode !== 0) {
+      ElMessage.error(res?.message || $t('message.saveFailMessage'));
+    } else {
+      emit('botUpdated');
+    }
   },
   300,
 );
@@ -1001,15 +1011,23 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
           :disabled="!hasSavePermission"
           @change="handleLlmChange"
         />
-        <!-- 温度 -->
         <ElRow :gutter="12" align="middle" type="flex">
           <ElCol class="options-config-item-left">
-            <span class="config-font-style">{{ $t('bot.temperature') }}</span>
+            <span class="config-font-style">
+              {{ $t('bot.temperature') }}
+              <ElTooltip
+                :content="$t('bot.temperatureTooltip')"
+                placement="top"
+                effect="dark"
+              >
+                <InfoFilled class="info-icon" />
+              </ElTooltip>
+            </span>
           </ElCol>
           <ElCol class="options-config-item-middle">
             <ElSlider
-              :min="0.1"
-              :max="1"
+              :min="0"
+              :max="2"
               :step="0.1"
               :disabled="!hasSavePermission"
               v-model="llmConfig.temperature"
@@ -1021,8 +1039,8 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
           </ElCol>
           <ElCol class="options-config-item-right">
             <ElInputNumber
-              :min="0.1"
-              :max="1"
+              :min="0"
+              :max="2"
               :step="0.1"
               :disabled="!hasSavePermission"
               v-model="llmConfig.temperature"
@@ -1036,23 +1054,32 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
             <ElSwitch
               v-model="llmConfig.temperatureEnabled"
               :disabled="!hasSavePermission"
-              active-text="启用"
-              inactive-text="关闭"
+              :active-text="$t('bot.enabled')"
+              :inactive-text="$t('bot.disabled')"
               inline-prompt
               @change="
                 (value) =>
                   handleLlmOptionsChange('temperatureEnabled', value as boolean)
               "
-              />
+            />
           </ElCol>
         </ElRow>
         <ElRow :gutter="12" align="middle" type="flex">
           <ElCol class="options-config-item-left">
-            <span class="config-font-style">TopP</span>
+            <span class="config-font-style">
+              TopP
+              <ElTooltip
+                :content="$t('bot.topPTooltip')"
+                placement="top"
+                effect="dark"
+              >
+                <InfoFilled class="info-icon" />
+              </ElTooltip>
+            </span>
           </ElCol>
           <ElCol class="options-config-item-middle">
             <ElSlider
-              :min="0.1"
+              :min="0"
               :max="1"
               :step="0.1"
               :disabled="!hasSavePermission"
@@ -1064,7 +1091,7 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
           </ElCol>
           <ElCol class="options-config-item-right">
             <ElInputNumber
-              :min="0.1"
+              :min="0"
               :max="1"
               :step="0.1"
               :disabled="!hasSavePermission"
@@ -1078,8 +1105,8 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
             <ElSwitch
               v-model="llmConfig.topPEnabled"
               :disabled="!hasSavePermission"
-              active-text="启用"
-              inactive-text="关闭"
+              :active-text="$t('bot.enabled')"
+              :inactive-text="$t('bot.disabled')"
               inline-prompt
               @change="
                 (value) =>
@@ -1090,9 +1117,16 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
         </ElRow>
         <ElRow :gutter="12" align="middle" type="flex">
           <ElCol class="options-config-item-left">
-            <span class="config-font-style">{{
-              $t('bot.maxReplyLength')
-            }}</span>
+            <span class="config-font-style">
+              {{ $t('bot.maxReplyLength') }}
+              <ElTooltip
+                :content="$t('bot.maxReplyLengthTooltip')"
+                placement="top"
+                effect="dark"
+              >
+                <InfoFilled class="info-icon" />
+              </ElTooltip>
+            </span>
           </ElCol>
           <ElCol class="options-config-item-middle">
             <ElSlider
@@ -1124,25 +1158,37 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
             <ElSwitch
               v-model="llmConfig.maxReplyLengthEnabled"
               :disabled="!hasSavePermission"
-              active-text="启用"
-              inactive-text="关闭"
+              :active-text="$t('bot.enabled')"
+              :inactive-text="$t('bot.disabled')"
               inline-prompt
               @change="
                 (value) =>
-                  handleLlmOptionsChange('maxReplyLengthEnabled', value as boolean)
+                  handleLlmOptionsChange(
+                    'maxReplyLengthEnabled',
+                    value as boolean,
+                  )
               "
             />
           </ElCol>
         </ElRow>
         <ElRow :gutter="12" align="middle" type="flex">
           <ElCol class="options-config-item-left">
-            <span class="config-font-style">{{ $t('bot.historyCount') }}</span>
+            <span class="config-font-style">
+              {{ $t('bot.historyCount') }}
+              <ElTooltip
+                :content="$t('bot.historyCountTooltip')"
+                placement="top"
+                effect="dark"
+              >
+                <InfoFilled class="info-icon" />
+              </ElTooltip>
+            </span>
           </ElCol>
           <ElCol class="options-config-item-middle">
             <ElSlider
-              :min="1"
-              :max="100"
-              :step="10"
+              :min="20"
+              :max="1000"
+              :step="2"
               :disabled="!hasSavePermission"
               v-model="llmConfig.maxMessageCount"
               @change="
@@ -1153,9 +1199,9 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
           </ElCol>
           <ElCol class="options-config-item-right">
             <ElInputNumber
-              :min="1"
-              :max="100"
-              :step="1"
+              :min="20"
+              :max="1000"
+              :step="2"
               :disabled="!hasSavePermission"
               v-model="llmConfig.maxMessageCount"
               @change="
@@ -1163,6 +1209,10 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
                   handleLlmOptionsChange('maxMessageCount', value as number)
               "
             />
+          </ElCol>
+          <!-- 占位：本行没有开关，保留与上方参数行一致的开关列宽度，保证数字采集器左右对齐 -->
+          <ElCol class="options-config-item-switch">
+            <span class="switch-placeholder"></span>
           </ElCol>
         </ElRow>
       </div>
@@ -1392,7 +1442,7 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
                   v-model="otherSkills.todoWriteEnabled"
                   @change="handleOtherSkillChange('todoWriteEnabled', $event)"
                 />
-              </div> 
+              </div>
             </div>
           </ElCollapseItem>
         </ElCollapse>
@@ -1884,6 +1934,7 @@ const handleWebSearchEnableChange = (value: boolean | number | string) => {
 }
 
 .switch-placeholder {
+  display: block;
   width: 49px;
   height: 22px;
 }

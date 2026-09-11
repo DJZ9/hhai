@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
+import java.util.concurrent.ThreadPoolExecutor;
+
 @Configuration
 public class ThreadPoolConfig {
     private static final Logger log = LoggerFactory.getLogger(ThreadPoolConfig.class);
@@ -34,6 +36,26 @@ public class ThreadPoolConfig {
             // 抛出自定义异常，全局捕获后返回“服务繁忙”
             throw new BusinessException("服务器忙，请稍后重试");
         });
+        executor.initialize();
+        return executor;
+    }
+
+    // 通用任务线程池
+    @Bean("commonExecutor")
+    public ThreadPoolTaskExecutor commonExecutor() {
+        int cpuCoreNum = Runtime.getRuntime().availableProcessors();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+        // 通用IO密集型（DB/HTTP/Redis）4核最优
+        int corePoolSize = cpuCoreNum * 4;   // 4核=16
+        int maxPoolSize = Math.max(corePoolSize * 2, 32); // 确保 maxPoolSize > corePoolSize，最小32
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(500);             // 队列 500
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("CommonAsync-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
         executor.initialize();
         return executor;
     }

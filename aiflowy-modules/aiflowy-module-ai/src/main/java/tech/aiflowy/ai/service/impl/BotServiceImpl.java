@@ -1,23 +1,18 @@
 package tech.aiflowy.ai.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.agentsflex.agent.Agent;
+import com.agentsflex.agent.AgentContextTokenEstimator;
+import com.agentsflex.agent.AgentRunner;
+import com.agentsflex.agent.AgentTurnOptions;
+import com.agentsflex.agent.compression.AgentContextCompressionPolicy;
 import com.agentsflex.core.memory.ChatMemory;
 import com.agentsflex.core.message.Message;
-import com.agentsflex.core.message.SystemMessage;
 import com.agentsflex.core.message.UserMessage;
 import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
-import com.agentsflex.core.model.chat.StreamResponseListener;
-import com.agentsflex.core.model.chat.tool.Tool;
 import com.agentsflex.core.prompt.MemoryPrompt;
-import com.agentsflex.doc.DocumentExtractionService;
-import com.agentsflex.skill.SkillsTool;
-import com.agentsflex.skill.artifact.SkillArtifact;
-import com.agentsflex.skill.artifact.SkillArtifactStore;
-import com.agentsflex.skill.file.FilePublisher;
-import com.agentsflex.skill.local.LocalSkillRuntime;
 import com.agentsflex.skill.runtime.SkillRuntime;
-import com.agentsflex.wiki.WikiTool;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -30,39 +25,33 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import tech.aiflowy.ai.agentsflex.listener.ChatStreamListener;
+import tech.aiflowy.ai.agentsflex.AttachmentHelper;
+import tech.aiflowy.ai.agentsflex.ChatOptionsBuilder;
+import tech.aiflowy.ai.agentsflex.compression.AgentCompressionHelper;
+import tech.aiflowy.ai.agentsflex.execution.AgentExecutionPolicyHelper;
+import tech.aiflowy.ai.agentsflex.listener.AgentChatEventListener;
+import tech.aiflowy.ai.agentsflex.loader.DynamicAgentLoader;
 import tech.aiflowy.ai.agentsflex.memory.BotMessageMemory;
 import tech.aiflowy.ai.agentsflex.memory.DefaultBotMessageMemory;
 import tech.aiflowy.ai.agentsflex.memory.PublicBotMessageMemory;
-import tech.aiflowy.ai.agentsflex.tool.PluginTool;
-import tech.aiflowy.ai.agentsflex.tool.WorkflowTool;
+import tech.aiflowy.ai.agentsflex.middleware.AgentChatToolMiddleware;
+import tech.aiflowy.ai.agentsflex.tool.BotToolBuilder;
 import tech.aiflowy.ai.entity.*;
 import tech.aiflowy.ai.mapper.BotMapper;
+import tech.aiflowy.ai.mapper.BotMessageMapper;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.ai.utils.CustomBeanUtils;
 import tech.aiflowy.ai.utils.RegexUtils;
 import tech.aiflowy.common.entity.LoginAccount;
-import tech.aiflowy.common.filestorage.FileStorageService;
 import tech.aiflowy.common.filestorage.utils.PathGeneratorUtil;
 import tech.aiflowy.common.satoken.util.SaTokenUtil;
 import tech.aiflowy.common.util.MapUtil;
 import tech.aiflowy.common.util.Maps;
-import tech.aiflowy.common.util.UrlEncoderUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseEmitter;
 import tech.aiflowy.core.chat.protocol.sse.ChatSseUtil;
-import tech.aiflowy.skill.config.SkillRuntimeConfig;
-import tech.aiflowy.skill.entity.BotSkill;
-import tech.aiflowy.skill.entity.Skill;
-import tech.aiflowy.skill.service.BotSkillService;
-import tech.aiflowy.skill.service.SkillService;
-import tech.aiflowy.wiki.agentsflex.AIFlowyWikiProvider;
-import tech.aiflowy.wiki.entity.BotWiki;
-import tech.aiflowy.wiki.entity.Wiki;
-import tech.aiflowy.wiki.service.BotWikiService;
 
 import java.math.BigInteger;
-import java.nio.file.Paths;
 import java.util.*;
 
 
@@ -76,6 +65,26 @@ import java.util.*;
 public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotService {
 
     private static final Logger log = LoggerFactory.getLogger(BotServiceImpl.class);
+
+    /**
+     * 上下文 Token 估算器：按消息文本长度的 1/4 估算，用于「挂载 Token 上限」。
+     */
+    private static final AgentContextTokenEstimator CONTEXT_TOKEN_ESTIMATOR = messages -> {
+        if (messages == null) {
+            return 0;
+        }
+        long total = 0;
+        for (Message message : messages) {
+            if (message == null) {
+                continue;
+            }
+            String text = message.getTextContent();
+            if (text != null) {
+                total += text.length() / 4L;
+            }
+        }
+        return total;
+    };
 
     public static class ChatCheckResult {
         private Bot aiBot;
@@ -113,40 +122,31 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     @Resource
     private BotMessageService botMessageService;
 
+    @Resource
+    private BotMessageMapper botMessageMapper;
+
+    @Resource
+    private BotConversationService botConversationService;
+
     @Resource(name = "sseThreadPool")
     private ThreadPoolTaskExecutor threadPoolTaskExecutor;
+
+    @Resource(name = "commonExecutor")
+    private java.util.concurrent.Executor commonExecutor;
+
     @Resource
     private ModelService modelService;
+
     @Resource
-    private BotWorkflowService botWorkflowService;
+    private AttachmentHelper attachmentHelper;
     @Resource
-    private BotDocumentCollectionService botDocumentCollectionService;
+    private AgentCompressionHelper compressionHelper;
     @Resource
-    private BotPluginService botPluginService;
+    private AgentExecutionPolicyHelper executionPolicyHelper;
     @Resource
-    private PluginItemService pluginItemService;
+    private DynamicAgentLoader dynamicAgentLoader;
     @Resource
-    private BotMcpService botMcpService;
-    @Resource
-    private McpService mcpService;
-    @Resource(name = "default")
-    FileStorageService storageService;
-    @Resource
-    private BotWikiService botWikiService;
-    @Resource
-    private AIFlowyWikiProvider aiFlowyWikiProvider;
-    @Resource
-    private DocumentExtractionService documentExtractionService;
-    @Resource
-    private BotSkillService botSkillService;
-    @Resource
-    private SkillService skillService;
-    @Resource
-    private SkillRuntimeConfig skillRuntimeConfig;
-    @Resource
-    private FilePublisher filePublisher;
-    @Resource
-    private SkillArtifactStore skillArtifactStore;
+    private BotToolBuilder botToolBuilder;
 
     @Override
     public Bot getDetail(String id) {
@@ -210,7 +210,7 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         }
 
         // 检测attachments中是否有图片
-        boolean hasImageAttachment = hasImageInAttachments(attachments);
+        boolean hasImageAttachment = attachmentHelper.hasImageInAttachments(attachments);
         chatCheckResult.setHasImageAttachment(hasImageAttachment);
 
         // 如果有图片，获取VL模型
@@ -252,36 +252,14 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         return null;
     }
 
-    /**
-     * 检测attachments中是否有图片
-     * 图片格式包括：jpg, jpeg, png, gif, bmp, webp, svg
-     */
-    private boolean hasImageInAttachments(List<String> attachments) {
-        if (attachments == null || attachments.isEmpty()) {
-            return false;
-        }
-        String[] imageExtensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg"};
-        for (String attachment : attachments) {
-            if (attachment == null) {
-                continue;
-            }
-            String lowerCaseUrl = attachment.toLowerCase();
-            for (String ext : imageExtensions) {
-                if (lowerCaseUrl.endsWith(ext)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     @Override
     public SseEmitter startChat(BigInteger botId, String prompt, BigInteger conversationId, List<Map<String, String>> messages,
                                 BotServiceImpl.ChatCheckResult chatCheckResult, List<String> attachments) {
-        // 获取当前登录用户信息，传递给 ChatStreamListener
-        LoginAccount currentUser = SaTokenUtil.getLoginAccount();
-        BigInteger accountId = currentUser.getId();
+        // 获取当前登录用户信息，传递给 Agent 事件监听器
+        LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
+        BigInteger accountId = loginAccount.getId();
         Map<String, Object> modelOptions = chatCheckResult.getModelOptions();
+        Bot aiBot = chatCheckResult.getAiBot();
         // 如果有图片附件且配置了VL模型，使用VL模型
         ChatModel chatModel;
         if (chatCheckResult.hasImageAttachment() && chatCheckResult.getVlChatModel() != null) {
@@ -290,15 +268,10 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         } else {
             chatModel = chatCheckResult.getChatModel();
         }
-        final MemoryPrompt memoryPrompt = new MemoryPrompt();
+
+        // 系统提示词作为 Agent 的 instructions
         String systemPrompt = MapUtil.getString(modelOptions, Bot.KEY_SYSTEM_PROMPT);
-        Integer maxMessageCount = MapUtil.getInteger(modelOptions, Bot.KEY_MAX_MESSAGE_COUNT);
-        if (maxMessageCount != null) {
-            memoryPrompt.setMaxAttachedMessageCount(maxMessageCount);
-        }
-        if (StringUtils.hasLength(systemPrompt)) {
-            memoryPrompt.setSystemMessage(SystemMessage.of(systemPrompt));
-        }
+        String instructions = StringUtils.hasText(systemPrompt) ? systemPrompt : "";
 
         // 分离图片附件和非图片附件
         List<String> imageAttachments = new ArrayList<>();
@@ -326,8 +299,9 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         }
 
         // 处理非图片附件（转换为文本）
-        String nonImageAttachmentsText = attachmentsToString(nonImageAttachments);
-        if (StringUtils.hasLength(nonImageAttachmentsText)) {
+        String originalPrompt = prompt;
+        String nonImageAttachmentsText = attachmentHelper.attachmentsToString(nonImageAttachments);
+        if (StringUtils.hasText(nonImageAttachmentsText)) {
             prompt = "【用户问题】：\n" + prompt + "\n请基于用户上传的附件内容回答用户问题： \n\n" + "【用户上传的附件内容】：\n" + nonImageAttachmentsText;
         }
 
@@ -341,7 +315,7 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
                 }
                 imageInfoBuilder.append("图片").append(i + 1).append("，文件名为：").append(PathGeneratorUtil.getPureFileName(imageUrl)).append("，访问地址为：").append(imageUrl);
             }
-            if (StringUtils.hasLength(nonImageAttachmentsText)) {
+            if (StringUtils.hasText(nonImageAttachmentsText)) {
                 prompt = prompt + "\n\n" + "【用户上传的图片信息】：\n" + imageInfoBuilder.toString();
             } else {
                 prompt = "【用户问题】：\n" + prompt + "\n\n" + "【用户上传的图片信息】：\n" + imageInfoBuilder.toString();
@@ -357,54 +331,109 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
                 log.info("添加图片URL到消息: {}", imageUrl);
             }
         }
-         // 构建工具
+
+        // 构建 ChatOptions
+        ChatOptions chatOptions = ChatOptionsBuilder.getChatOptions(modelOptions);
+        Boolean enableDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_ENABLE_DEEP_THINKING, false);
+        chatOptions.setThinkingEnabled(enableDeepThinking);
+        Boolean exposeDeepThinking = MapUtil.getBoolean(aiBot.getOptions(), Bot.KEY_EXPOSE_DEEP_THINKING, false);
+
+        // 收集工具（其他技能 + 挂载模块）
+        MemoryPrompt memoryPrompt = new MemoryPrompt();
+        botToolBuilder.addOtherSkillsTools(memoryPrompt, aiBot);
         Map<String, Object> buildParams = Maps.of("botId", botId)
-                .set("needAccountId", true)
-                .set("accountId", accountId)
-                .set("chatModel", chatModel)
                 .set("conversationId", conversationId);
-        memoryPrompt.addTools(buildFunctionList(buildParams));
-        // 获取 SkillRuntime，传递给 ChatStreamListener 在结束时关闭
+        memoryPrompt.addTools(botToolBuilder.buildFunctionList(buildParams));
+        // 获取 SkillRuntime，传递给事件监听器在结束时关闭
         SkillRuntime skillRuntime = (SkillRuntime) buildParams.get("skillRuntime");
-        ChatOptions chatOptions = getChatOptions(modelOptions);
         if (skillRuntime != null) {
             Map<String, Object> contextAttributes = chatOptions.getContextAttributes();
             if (contextAttributes == null) {
-                 contextAttributes = new HashMap<>();
+                contextAttributes = new HashMap<>();
                 chatOptions.setContextAttributes(contextAttributes);
             }
             contextAttributes.put("skillRuntime", skillRuntime);
         }
-        Boolean enableDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_ENABLE_DEEP_THINKING, false);
-        chatOptions.setThinkingEnabled(enableDeepThinking);
-        Boolean exposeDeepThinking = MapUtil.getBoolean(modelOptions, Bot.KEY_EXPOSE_DEEP_THINKING, false);
-        LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
+        chatOptions.setContextConversationId(conversationId);
+        chatOptions.setContextAccountId(accountId);
+
         ChatSseEmitter chatSseEmitter = new ChatSseEmitter();
         SseEmitter emitter = chatSseEmitter.getEmitter();
+
+        // 创建对话记忆
+        final ChatMemory chatMemory;
         if (messages != null && !messages.isEmpty()) {
-            ChatMemory defaultChatMemory = new DefaultBotMessageMemory(conversationId, chatSseEmitter, messages);
-            memoryPrompt.setMemory(defaultChatMemory);
+            chatMemory = new DefaultBotMessageMemory(conversationId, chatSseEmitter, messages);
         } else {
-            BotMessageMemory memory = new BotMessageMemory(botId, loginAccount.getId(), conversationId, botMessageService);
-            memoryPrompt.setMemory(memory);
+            BotMessageMemory botMessageMemory = new BotMessageMemory(botId, accountId, conversationId,
+                    botMessageService, botMessageMapper, botConversationService, commonExecutor);
+            botMessageMemory.setOriginalUserContent(originalPrompt);
+            chatMemory = botMessageMemory;
         }
-        memoryPrompt.addMessage(userMessage);
+
+        // 构建 Agent
+        Agent.Builder agentBuilder = Agent.builder("bot-" + botId)
+                .instructions(instructions)
+                .chatModel(chatModel)
+                .maxAttachedTurns(aiBot.getMaxAttachedTurns())
+                .maxAttachedMessages(aiBot.getMaxAttachedMessages())
+                .chatOptions(chatOptions)
+                .tools(memoryPrompt.getTools() == null ? new ArrayList<>() : memoryPrompt.getTools())
+                .executionPolicy(executionPolicyHelper.buildExecutionPolicy(aiBot))
+                .middleware(new AgentChatToolMiddleware(botId.toString(), accountId.toString(),
+                        conversationId.toString(), chatSseEmitter, loginAccount));
+
+        // 挂载 Token 上限（0 表示不限制）
+        if (aiBot.getMaxAttachedTokens() > 0) {
+            agentBuilder.maxAttachedTokens(aiBot.getMaxAttachedTokens(), CONTEXT_TOKEN_ESTIMATOR);
+        }
+
+        // 如果有图片附件，设置多模态模型
+        if (chatCheckResult.hasImageAttachment() && chatCheckResult.getVlChatModel() != null) {
+            agentBuilder.multimodalChatModel(chatCheckResult.getVlChatModel());
+        }
+
+        // 配置模型摘要压缩（固定策略：阈值 2 轮触发、保留最近 2 轮、摘要模型为当前对话模型）
+        AgentContextCompressionPolicy compressionPolicy =
+                compressionHelper.createCompressionPolicy(aiBot, conversationId.toString());
+        if (compressionPolicy != null) {
+            agentBuilder.compressionPolicy(compressionPolicy);
+        }
+
+        Agent agent = agentBuilder.build();
+        dynamicAgentLoader.register(agent);
+
+        // 构建 AgentRunner，配置 chatMemoryProvider 接入对话记忆
+        AgentRunner runner = AgentRunner.builder()
+                .chatMemoryProvider(conversationIdStr -> chatMemory)
+                .build();
+
+        // 创建事件监听器
+        AgentChatEventListener eventListener = new AgentChatEventListener(
+                botId.toString(), accountId.toString(), conversationId.toString(),
+                chatSseEmitter, exposeDeepThinking);
+        if (skillRuntime != null) {
+            eventListener.setSkillRuntime(skillRuntime);
+        }
+        runner.addEventListener(eventListener);
+
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        final boolean finalExposeDeepThinking = exposeDeepThinking;
+        ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
         threadPoolTaskExecutor.execute(() -> {
-            ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
-            RequestContextHolder.setRequestAttributes(sra, true);
-            StreamResponseListener streamResponseListener = new ChatStreamListener(
-                    botId.toString(),
-                    loginAccount.getId().toString(),
-                    conversationId.toString(),
-                    chatModel,
-                    memoryPrompt,
-                    chatSseEmitter,
-                    chatOptions,
-                    finalExposeDeepThinking,
-                    loginAccount);
-            chatModel.chatStream(memoryPrompt, streamResponseListener, chatOptions);
+            boolean requestAttributesSet = false;
+            try {
+                RequestContextHolder.setRequestAttributes(sra, true);
+                requestAttributesSet = true;
+                runner.run(agent, conversationId.toString(), userMessage,
+                        AgentTurnOptions.builder().streaming(true).build());
+            } catch (Exception e) {
+                log.error("Agent 对话执行异常", e);
+                eventListener.sendSystemError("对话处理失败: " + e.getMessage());
+            } finally {
+                if (requestAttributesSet) {
+                    RequestContextHolder.resetRequestAttributes();
+                }
+            }
         });
 
         return emitter;
@@ -418,34 +447,82 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
     @Override
     public SseEmitter startPublicChat(BigInteger botId, String prompt,  List<Message> messages, BotServiceImpl.ChatCheckResult chatCheckResult) {
         Map<String, Object> modelOptions = chatCheckResult.getModelOptions();
-        ChatOptions chatOptions = getChatOptions(modelOptions);
+        ChatOptions chatOptions = ChatOptionsBuilder.getChatOptions(modelOptions);
         ChatModel chatModel = chatCheckResult.getChatModel();
+        // 将 botId 和 conversationId 加入上下文，供运行时对象回查使用
+        chatOptions.setContextBotId(botId);
+        chatOptions.setContextConversationId(chatCheckResult.getConversationIdStr());
         UserMessage userMessage = new UserMessage(prompt);
         ChatSseEmitter chatSseEmitter = new ChatSseEmitter();
         SseEmitter emitter = chatSseEmitter.getEmitter();
-        ChatMemory defaultChatMemory = new PublicBotMessageMemory(chatSseEmitter, messages);
-        final MemoryPrompt memoryPrompt = new MemoryPrompt();
-        memoryPrompt.setMemory(defaultChatMemory);
-        memoryPrompt.addMessage(userMessage);
-        memoryPrompt.addTools(buildFunctionList(Maps.of("botId", botId)
+        final ChatMemory publicChatMemory = new PublicBotMessageMemory(chatSseEmitter, messages);
+
+        // 收集工具
+        MemoryPrompt memoryPrompt = new MemoryPrompt();
+        Bot publicBot = getById(botId);
+        botToolBuilder.addOtherSkillsTools(memoryPrompt, publicBot);
+        // 会话ID：用于 SkillRuntime 等运行时对象，非数字时传 null
+        BigInteger publicConversationId = parseConversationId(chatCheckResult.getConversationIdStr());
+        memoryPrompt.addTools(botToolBuilder.buildFunctionList(Maps.of("botId", botId)
                 .set("needEnglishName", false)
-                .set("needAccountId", false)
+                .set("conversationId", publicConversationId)
         ));
+
+        String instructions = StringUtils.hasText(MapUtil.getString(modelOptions, Bot.KEY_SYSTEM_PROMPT))
+                ? MapUtil.getString(modelOptions, Bot.KEY_SYSTEM_PROMPT) : "";
+
+        // 构建 Agent
+        Agent.Builder agentBuilder = Agent.builder("bot-" + botId)
+                .instructions(instructions)
+                .chatModel(chatModel)
+                .maxAttachedTurns(publicBot != null ? publicBot.getMaxAttachedTurns() : 10)
+                .maxAttachedMessages(publicBot != null ? publicBot.getMaxAttachedMessages() : 100)
+                .chatOptions(chatOptions)
+                .tools(memoryPrompt.getTools() == null ? new ArrayList<>() : memoryPrompt.getTools())
+                .executionPolicy(executionPolicyHelper.buildExecutionPolicy(publicBot))
+                .middleware(new AgentChatToolMiddleware(botId.toString(), null,
+                        chatCheckResult.getConversationIdStr(), chatSseEmitter, null));
+
+        if (publicBot != null && publicBot.getMaxAttachedTokens() > 0) {
+            agentBuilder.maxAttachedTokens(publicBot.getMaxAttachedTokens(), CONTEXT_TOKEN_ESTIMATOR);
+        }
+
+        // 配置模型摘要压缩（固定策略：阈值 2 轮触发、保留最近 2 轮、摘要模型为当前对话模型）
+        AgentContextCompressionPolicy compressionPolicy =
+                compressionHelper.createCompressionPolicy(publicBot, chatCheckResult.getConversationIdStr());
+        if (compressionPolicy != null) {
+            agentBuilder.compressionPolicy(compressionPolicy);
+        }
+
+        Agent agent = agentBuilder.build();
+        dynamicAgentLoader.register(agent);
+
+        AgentRunner runner = AgentRunner.builder()
+                .chatMemoryProvider(conversationIdStr -> publicChatMemory)
+                .build();
+
+        AgentChatEventListener eventListener = new AgentChatEventListener(
+                botId.toString(), null, chatCheckResult.getConversationIdStr(),
+                chatSseEmitter, true);
+        runner.addEventListener(eventListener);
+
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         ServletRequestAttributes sra = (ServletRequestAttributes) requestAttributes;
         threadPoolTaskExecutor.execute(() -> {
-            RequestContextHolder.setRequestAttributes(sra, true);
-            StreamResponseListener streamResponseListener = new ChatStreamListener(
-                    botId.toString(),
-                    null,
-                    chatCheckResult.getConversationIdStr(),
-                    chatModel,
-                    memoryPrompt,
-                    chatSseEmitter,
-                    chatOptions,
-                    false,
-                    null);
-            chatModel.chatStream(memoryPrompt, streamResponseListener, chatOptions);
+            boolean requestAttributesSet = false;
+            try {
+                RequestContextHolder.setRequestAttributes(sra, true);
+                requestAttributesSet = true;
+                runner.run(agent, chatCheckResult.getConversationIdStr(), userMessage,
+                        AgentTurnOptions.builder().streaming(true).build());
+            } catch (Exception e) {
+                log.error("Agent 对话执行异常（startPublicChat）", e);
+                eventListener.sendSystemError("对话处理失败: " + e.getMessage());
+            } finally {
+                if (requestAttributesSet) {
+                    RequestContextHolder.resetRequestAttributes();
+                }
+            }
         });
 
         return emitter;
@@ -484,220 +561,18 @@ public class BotServiceImpl extends ServiceImpl<BotMapper, Bot> implements BotSe
         return super.updateById(aiBot, false);
     }
 
-    public static ChatOptions getChatOptions(Map<String, Object> llmOptions) {
-        ChatOptions defaultOptions = new ChatOptions();
-        if (llmOptions != null) {
-            Object topK = llmOptions.get("topK");
-            Object maxReplyLength = llmOptions.get("maxReplyLength");
-            Object temperature = llmOptions.get("temperature");
-            Object topP = llmOptions.get("topP");
-            Object thinkingEnabled = llmOptions.get("thinkingEnabled");
-
-            if (topK != null) {
-                defaultOptions.setTopK(Integer.parseInt(String.valueOf(topK)));
-            }
-            if (maxReplyLength != null) {
-                defaultOptions.setMaxTokens(Integer.parseInt(String.valueOf(maxReplyLength)));
-            }
-            if (temperature != null) {
-                defaultOptions.setTemperature(Float.parseFloat(String.valueOf(temperature)));
-            }
-            if (topP != null) {
-                defaultOptions.setTopP(Float.parseFloat(String.valueOf(topP)));
-            }
-            if (thinkingEnabled != null) {
-                defaultOptions.setThinkingEnabled(Boolean.parseBoolean(String.valueOf(thinkingEnabled)));
-            }
-
+    /**
+     * 将会话ID字符串解析为 BigInteger，非数字或为空时返回 null。
+     */
+    private BigInteger parseConversationId(String conversationIdStr) {
+        if (!StringUtils.hasText(conversationIdStr)) {
+            return null;
         }
-        return defaultOptions;
-    }
-
-    private List<Tool> buildFunctionList(Map<String, Object> buildParams) {
-
-        if (buildParams == null || buildParams.isEmpty()) {
-            throw new IllegalArgumentException("buildParams is empty");
+        try {
+            return new BigInteger(conversationIdStr);
+        } catch (NumberFormatException e) {
+            return null;
         }
-
-        List<Tool> functionList = new ArrayList<>();
-
-        BigInteger botId = (BigInteger) buildParams.get("botId");
-        if (botId == null) {
-            throw new IllegalArgumentException("botId is empty");
-        }
-        Boolean needEnglishName = (Boolean) buildParams.get("needEnglishName");
-        if (needEnglishName == null) {
-            needEnglishName = false;
-        }
-
-        QueryWrapper queryWrapper = QueryWrapper.create();
-
-        // 工作流 function 集合
-        queryWrapper.eq(BotWorkflow::getBotId, botId);
-        List<BotWorkflow> botWorkflows = botWorkflowService.getMapper()
-                .selectListWithRelationsByQuery(queryWrapper);
-        if (botWorkflows != null && !botWorkflows.isEmpty()) {
-            for (BotWorkflow botWorkflow : botWorkflows) {
-                WorkflowTool function = (WorkflowTool) botWorkflow.getWorkflow().toFunction(needEnglishName);
-                // 设置Bot自定义输出模板
-                String customTemplate = botWorkflow.getOutputTemplate();
-                if (customTemplate != null && !customTemplate.isEmpty()) {
-                    function.setBotOutputTemplate(customTemplate);
-                }
-                functionList.add(function);
-            }
-        }
-
-        // 知识库 function 集合
-        queryWrapper = QueryWrapper.create();
-        queryWrapper.eq(BotDocumentCollection::getBotId, botId);
-        List<BotDocumentCollection> botDocumentCollections = botDocumentCollectionService.getMapper()
-                .selectListWithRelationsByQuery(queryWrapper);
-        if (botDocumentCollections != null && !botDocumentCollections.isEmpty()) {
-            for (BotDocumentCollection botDocumentCollection : botDocumentCollections) {
-                Tool function = botDocumentCollection.getKnowledge().toFunction(needEnglishName);
-                functionList.add(function);
-            }
-        }
-
-        // 插件 function 集合
-        queryWrapper = QueryWrapper.create();
-        queryWrapper.eq(BotPlugin::getBotId, botId);
-        List<BotPlugin> botPlugins = botPluginService.getMapper()
-                .selectListWithRelationsByQuery(queryWrapper);
-        if (botPlugins != null && !botPlugins.isEmpty()) {
-            for (BotPlugin botPlugin : botPlugins) {
-                PluginItem pluginItem = pluginItemService.getById(botPlugin.getPluginItemId());
-                if (pluginItem != null) {
-                    PluginTool function = (PluginTool) pluginItem.toFunction();
-                    // 设置Bot自定义输出模板
-                    String customTemplate = botPlugin.getOutputTemplate();
-                    if (customTemplate != null && !customTemplate.isEmpty()) {
-                        function.setBotOutputTemplate(customTemplate);
-                    }
-                    functionList.add(function);
-                }
-            }
-        }
-
-        // MCP function 集合
-        queryWrapper = QueryWrapper.create();
-        queryWrapper.eq(BotMcp::getBotId, botId);
-        List<BotMcp> botMcpList = botMcpService.getMapper().selectListWithRelationsByQuery(queryWrapper);
-        botMcpList.forEach(botMcp -> {
-            Tool tool = mcpService.toFunction(botMcp);
-            functionList.add(tool);
-        });
-
-        // Wiki
-        queryWrapper = QueryWrapper.create();
-        queryWrapper.eq(BotWiki::getBotId, botId);
-        List<BotWiki> botWikis = botWikiService.getMapper().selectListWithRelationsByQuery(queryWrapper);
-        if (botWikis != null && !botWikis.isEmpty()) {
-            List<com.agentsflex.wiki.Wiki> afWikiList = new ArrayList<>();
-            for (BotWiki botWiki : botWikis) {
-                Wiki wiki = botWiki.getWiki();
-                com.agentsflex.wiki.Wiki afWiki = new com.agentsflex.wiki.Wiki();
-                afWiki.setPath(wiki.getId().toString());
-                afWiki.setTitle(wiki.getTitle());
-                afWiki.setSummary(wiki.getDescription());
-                // afWiki.setContent(wiki.getContent());
-                afWikiList.add(afWiki);
-            }
-            Tool wikiTool = WikiTool.builder()
-                    .wikiProvider(aiFlowyWikiProvider)
-                    .addWikis(afWikiList)
-                    .build();
-            functionList.add(wikiTool);
-        }
-
-       // 加载 Bot 关联的 Skills
-        List<BotSkill> botSkills = botSkillService.listByBotId(botId);
-        if (botSkills != null && !botSkills.isEmpty()) {
-            SkillRuntime runtime = createSkillRuntime((BigInteger) buildParams.get("conversationId"));
-            buildParams.put("skillRuntime", runtime);
-
-            SkillsTool.Builder skillToolBuilder = SkillsTool.builder()
-                    .runtime(runtime)
-                    .filePublisher(filePublisher);
-            boolean hasSkill = false;
-            try {
-                for (BotSkill botSkill : botSkills) {
-                    Skill skill = skillService.getById(botSkill.getSkillId());
-                    if (skill != null && skill.getName() != null) {
-                        try {
-                            // 优先使用 SkillArtifactStore，如果可用
-                            if (skillArtifactStore != null && skill.getStorageKey() != null) {
-                                // 创建 SkillArtifact
-                                SkillArtifact artifact = new SkillArtifact(
-                                        skill.getName(),
-                                        skill.getVersion() != null ? skill.getVersion() : "1.0.0",
-                                        skill.getDigest() != null ? skill.getDigest() : "sha256-" + skill.getId(),
-                                        skill.getStorageKey()
-                                );
-                                // 将所有 Skill 的 artifact 累积到同一个 builder，统一构建
-                                skillToolBuilder.addSkillArtifact(skillArtifactStore, artifact);
-                                hasSkill = true;
-                            } else {
-                                // 回退到使用目录加载
-                                if (skill.getSkillPath() == null) {
-                                    log.warn("Skill [{}] 没有 skillPath，跳过加载", skill.getName());
-                                    continue;
-                                }
-                                // 将所有 Skill 的目录累积到同一个 builder，统一构建
-                                skillToolBuilder.addSkillsDirectory(String.valueOf(Paths.get(skill.getSkillPath())));
-                                hasSkill = true;
-                            }
-                        } catch (Exception e) {
-                            log.error("加载 Skill [{}] 失败: {}", skill.getName(), e.getMessage(), e);
-                        }
-                    }
-                }
-                  // 统一构建所有 Skill 的 Tools，确保 runtime 中保留所有 Skill 的上下文
-                if (hasSkill) {
-                    List<Tool> skillTools = skillToolBuilder.buildTools();
-                    if (skillTools != null) {
-                        functionList.addAll(skillTools);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("加载 Skill 工具失败", e);
-            }
-        }
-
-        return functionList;
-    }
-
-    private SkillRuntime createSkillRuntime(BigInteger conversationId) {
-        String stringConversationId = conversationId != null ? conversationId.toString() : UUID.randomUUID().toString();
-        String runtimeType = skillRuntimeConfig.getType();
-        if (runtimeType == null || runtimeType.isEmpty()) {
-            runtimeType = "local";
-        }
-        // 只支持 local 运行时
-        return LocalSkillRuntime.builder()
-                .conversationId(stringConversationId)
-                .conversationsRoot(skillRuntimeConfig.getLocal().getConversationsRoot())
-                .build();
-    }
-
-    public String attachmentsToString(List<String> fileList) {
-        StringBuilder messageBuilder = new StringBuilder();
-        if (fileList != null && !fileList.isEmpty()) {
-            for (int i = 0; i < fileList.size(); i++) {
-                String fileUrl = fileList.get(i);
-                String encodedUrl = UrlEncoderUtil.getEncodedUrl(fileUrl);
-                String result = documentExtractionService.extract(new com.agentsflex.doc.source.HttpDocumentSource(encodedUrl));
-                if (result != null) {
-                    if (i > 0) {
-                        messageBuilder.append("\n\n");
-                    }
-                    messageBuilder.append("附件").append(i + 1).append("，文件名为：").append(PathGeneratorUtil.getPureFileName(fileUrl)).append("，访问地址为：").append(fileUrl).append("，内容为：  \n").append(result);
-                }
-                storageService.delete(fileUrl);
-            }
-        }
-        return messageBuilder.toString();
     }
 
 }

@@ -89,6 +89,22 @@
             <artifactId>agents-flex-mcp</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-agent</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-websearch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-tool-webfetch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-tool-todowrite</artifactId>
+        </dependency>
+        <dependency>
             <groupId>tech.aiflowy</groupId>
             <artifactId>aiflowy-module-wiki</artifactId>
         </dependency>

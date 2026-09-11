@@ -35,6 +35,13 @@ const fetchBotDetail = async (id: string) => {
   }
 };
 
+// 大模型等配置保存后，重新拉取 Bot 详情，保证各区块展示的配置与后端一致
+function handleBotUpdated() {
+  if (route.params.id) {
+    fetchBotDetail(route.params.id as string);
+  }
+}
+
 function formatRelativeTime(dateStr: string): string {
   if (!dateStr) return '';
   const time = new Date(dateStr.replace(/-/g, '/')).getTime();
@@ -141,7 +148,11 @@ onMounted(() => {
           <Prompt :bot="bot" :has-save-permission="hasSavePermission" />
         </div>
         <div class="row-item">
-          <Config :bot="bot" :has-save-permission="hasSavePermission" />
+          <Config
+            :bot="bot"
+            :has-save-permission="hasSavePermission"
+            @bot-updated="handleBotUpdated"
+          />
         </div>
         <div class="row-item">
           <Preview :bot="bot" />

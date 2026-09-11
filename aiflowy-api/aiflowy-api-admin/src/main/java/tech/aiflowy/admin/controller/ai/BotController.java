@@ -6,7 +6,6 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.IdUtil;
 import com.agentsflex.core.model.chat.ChatModel;
-import com.agentsflex.core.model.chat.ChatOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alicp.jetcache.Cache;
@@ -419,43 +418,8 @@ public class BotController extends BaseCurdController<BotService, Bot> {
         return super.onSaveOrUpdateBefore(entity, isSave);
     }
 
-    private ChatOptions getChatOptions(Map<String, Object> llmOptions) {
-        ChatOptions defaultOptions = new ChatOptions();
-        if (llmOptions != null) {
-            Object topK = llmOptions.get("topK");
-            Object maxReplyLength = llmOptions.get("maxReplyLength");
-            Object temperature = llmOptions.get("temperature");
-            Object topP = llmOptions.get("topP");
-            Object thinkingEnabled = llmOptions.get("thinkingEnabled");
-
-            if (topK != null) {
-                defaultOptions.setTopK(Integer.parseInt(String.valueOf(topK)));
-            }
-            if (maxReplyLength != null) {
-                defaultOptions.setMaxTokens(Integer.parseInt(String.valueOf(maxReplyLength)));
-            }
-            if (temperature != null) {
-                defaultOptions.setTemperature(Float.parseFloat(String.valueOf(temperature)));
-            }
-            if (topP != null) {
-                defaultOptions.setTopP(Float.parseFloat(String.valueOf(topP)));
-            }
-            if (thinkingEnabled != null) {
-                defaultOptions.setThinkingEnabled(Boolean.parseBoolean(String.valueOf(thinkingEnabled)));
-            }
-
-        }
-        return defaultOptions;
-    }
-
     private Map<String, Object> getDefaultLlmOptions() {
-        Map<String, Object> defaultLlmOptions = new HashMap<>();
-        defaultLlmOptions.put("temperature", 0.7);
-        defaultLlmOptions.put("topK", 4);
-        defaultLlmOptions.put("maxReplyLength", 20000);
-        defaultLlmOptions.put("topP", 0.7);
-        defaultLlmOptions.put("maxMessageCount", 100);
-        return defaultLlmOptions;
+        return Bot.getDefaultLlmOptions();
     }
 
     private Map<String, Object> errorRespnseMsg(int errorCode, String message) {
@@ -568,13 +532,7 @@ public class BotController extends BaseCurdController<BotService, Bot> {
     }
 
     private Map<String, Object> getDefaultOptions() {
-        Map<String, Object> defaultOptions = new HashMap<>();
-        defaultOptions.put(Bot.KEY_EXPOSE_DEEP_THINKING, true);
-        // 默认开启附件功能
-        defaultOptions.put(Bot.KEY_ATTACHMENT_ENABLED, true);
-        // 默认使用当前对话模型作为VL模型
-        defaultOptions.put(Bot.KEY_VL_MODEL_ID, "current");
-        return defaultOptions;
+        return Bot.getDefaultOptions();
     }
 
     /**
