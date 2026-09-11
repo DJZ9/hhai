@@ -159,11 +159,11 @@ async function handleDelete() {
 </template>
 
 <style lang="css" scoped>
-:deep(.el-bubble-list) {
+:deep(.elx-bubble-list) {
   max-height: 100%;
 }
 
-:deep(.el-bubble-content-wrapper .el-bubble-content) {
-  --bubble-content-max-width: calc(100% - 52px);
+:deep(.elx-bubble__content-wrapper .elx-bubble__content) {
+  --elx-bubble-content-max-width: calc(100% - 52px);
 }
 </style>

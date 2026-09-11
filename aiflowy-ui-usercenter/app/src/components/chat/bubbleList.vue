@@ -228,13 +228,13 @@ defineExpose({ scrollBottom });
 
 :deep(.elx-bubble__content) {
   --elx-bubble-bg: #f7f7f7;
-  --elx-bubble-padding-y: 5px;
+  --elx-bubble-padding-y: 8px;
   --elx-bubble-padding-x: 10px;
 }
 
 :deep(.x-md-renderer) {
   background-color: #f7f7f7 !important;
-  padding: 12px !important;
+  padding: 4px !important;
 }
 
 :deep(.mermaid-content) {
@@ -289,7 +289,7 @@ defineExpose({ scrollBottom });
   }
 
   :deep(.elx-bubble__content) {
-    padding: 12px !important;
+    padding: 4px 8px !important;
   }
 
   :deep(.elx-bubble__content img) {

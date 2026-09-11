@@ -3,6 +3,7 @@ import type { BubbleProps } from 'vue-element-plus-x/types/Bubble';
 import type { ThinkingStatus } from 'vue-element-plus-x/types/Thinking';
 
 import { computed, inject, nextTick, ref, watch } from 'vue';
+import { XSender } from 'vue-element-plus-x';
 
 import { IconifyIcon } from '@aiflowy/icons';
 import { cloneDeep, uuid } from '@aiflowy/utils';
@@ -13,8 +14,8 @@ import { ElButton, ElIcon } from 'element-plus';
 import { sseClient } from '#/api/request';
 import SendingIcon from '#/components/icons/SendingIcon.vue';
 import ChatFileUploader from '#/components/upload/ChatFileUploader.vue';
-import { $t } from '#/locales';
 import { useVoiceRecorder } from '#/composables/useVoiceRecorder';
+import { $t } from '#/locales';
 const { isRecording, isProcessing, startRecording, stopRecording } =
   useVoiceRecorder();
 // import PaperclipIcon from '#/components/icons/PaperclipIcon.vue';
@@ -52,15 +53,19 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const senderValue = ref('');
+// v2 的 XSender 不再支持 v-model，输入内容通过实例 API 读取，空态用 change 事件同步
+const senderEmpty = ref(true);
 const btnLoading = ref(false);
 const getSessionList = inject<any>('getSessionList');
 const addSession = inject<any>('addSession');
+const getSenderText = () => senderRef.value?.getModelValue()?.text ?? '';
+const handleSenderChange = () => {
+  senderEmpty.value = senderRef.value?.senderState?.isEmpty ?? true;
+};
 const clearSenderFiles = () => {
   files.value = [];
   attachmentsRef.value?.clearFiles();
   showHeaderFlog.value = false;
-  senderRef.value?.closeHeader();
 };
 async function sendMessage() {
   let conversationId = props.conversationId;
@@ -70,7 +75,7 @@ async function sendMessage() {
 
   const data = {
     conversationId,
-    prompt: senderValue.value,
+    prompt: getSenderText(),
     botId: props.bot.id,
     attachments: attachmentsRef.value?.getFileList(),
   };
@@ -87,15 +92,13 @@ async function sendMessage() {
       isAttachment: true,
       fileList,
       content: '',
-      typing: true,
     });
   }
   props.addMessage({
     key: uuid(),
     role: 'user',
     placement: 'end',
-    content: senderValue.value,
-    typing: true,
+    content: getSenderText(),
   });
   props.addMessage({
     key: uuid(),
@@ -103,9 +106,9 @@ async function sendMessage() {
     placement: 'start',
     content: '',
     loading: true,
-    typing: true,
   });
-  senderValue.value = '';
+  senderRef.value?.clear();
+  senderEmpty.value = true;
 
   let content = '';
 
@@ -131,7 +134,6 @@ async function sendMessage() {
         props.updateLastMessage({
           content: errorMessage,
           loading: false,
-          typing: false,
         });
         return;
       }
@@ -200,7 +202,8 @@ async function sendMessage() {
       btnLoading.value = false;
     },
     onFinished() {
-      senderValue.value = '';
+      senderRef.value?.clear();
+      senderEmpty.value = true;
       btnLoading.value = false;
       props.updateLastMessage({ loading: false });
       props.stopThinking();
@@ -214,7 +217,7 @@ const isThink = (item: Think | Tool): item is Think => {
   return !('id' in item);
 };
 function getDisabled() {
-  return !senderValue.value;
+  return senderEmpty.value;
 }
 const stopSse = () => {
   sseClient.abort();
@@ -222,7 +225,7 @@ const stopSse = () => {
 };
 const showHeaderFlog = ref(false);
 const attachmentsRef = ref();
-const senderRef = ref();
+const senderRef = ref<InstanceType<typeof XSender>>();
 const files = ref<any[]>([]);
 const isDragOver = ref(false);
 
@@ -232,15 +235,11 @@ function handlePasteFile(_: any, fileList: FileList) {
     return;
   }
   showHeaderFlog.value = true;
-  senderRef.value?.openHeader();
   files.value = [...fileList];
 }
 function openCloseHeader() {
   if (showHeaderFlog.value) {
-    senderRef.value?.closeHeader();
     files.value = [];
-  } else {
-    senderRef.value?.openHeader();
   }
   showHeaderFlog.value = !showHeaderFlog.value;
 }
@@ -255,9 +254,8 @@ async function handleVoiceToggle() {
   if (isRecording.value) {
     const text = await stopRecording();
     if (text) {
-      senderValue.value = senderValue.value
-        ? senderValue.value + text
-        : text;
+      senderRef.value?.setText(getSenderText() + text);
+      senderEmpty.value = false;
     }
   } else {
     await startRecording();
@@ -294,20 +292,19 @@ function handleDrop(e: DragEvent) {
   const fileList = e.dataTransfer?.files;
   if (!fileList || fileList.length === 0) return;
   showHeaderFlog.value = true;
-  senderRef.value?.openHeader();
   files.value = [...fileList];
 }
 
 watch(
   () => props.externalSendTrigger,
-  () => {
+  async () => {
     if (!props.externalSendMessage?.trim()) {
       return;
     }
-    senderValue.value = props.externalSendMessage;
-    nextTick(() => {
-      sendMessage();
-    });
+    await senderRef.value?.setText(props.externalSendMessage);
+    senderEmpty.value = false;
+    await nextTick();
+    sendMessage();
   },
 );
 </script>
@@ -315,14 +312,13 @@ watch(
 <template>
   <ElSender
     ref="senderRef"
-    v-model="senderValue"
     variant="updown"
-    :auto-size="{ minRows: 2, maxRows: 5 }"
+    :custom-style="{ maxHeight: '120px' }"
     clearable
-    allow-speech
     :placeholder="$t('bot.sendMessage')"
     :class="{ 'drag-over': isDragOver }"
-    @keyup.enter="sendMessage"
+    @change="handleSenderChange"
+    @submit="sendMessage"
     @paste-file="handlePasteFile"
     @dragover.prevent="handleDragOver"
     @dragenter="handleDragEnter"
@@ -333,7 +329,7 @@ watch(
     <!-- <template #prefix>
     </template> -->
     <!-- 自定义头部内容 -->
-    <template #header>
+    <template v-if="showHeaderFlog" #header>
       <ChatFileUploader
         ref="attachmentsRef"
         :external-files="files"

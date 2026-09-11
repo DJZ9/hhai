@@ -40,13 +40,17 @@
     "element-plus": "catalog:",
     "fetch-event-stream": "^0.1.6",
     "js-audio-recorder": "^1.0.7",
+    "katex": "catalog:",
     "pinia": "catalog:",
     "radash": "^12.1.1",
+    "shiki": "catalog:",
+    "shiki-stream": "catalog:",
     "vue": "catalog:",
     "vue-cropper": "^1.1.4",
     "vue-element-plus-x": "catalog:",
     "vue-router": "catalog:",
-    "vue3-json-viewer": "^2.4.1"
+    "vue3-json-viewer": "^2.4.1",
+    "x-markdown-vue": "catalog:"
   },
   "devDependencies": {
     "unplugin-element-plus": "catalog:"

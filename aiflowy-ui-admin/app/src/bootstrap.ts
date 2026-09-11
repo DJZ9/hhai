@@ -1,11 +1,5 @@
 import { createApp, watchEffect } from 'vue';
-import {
-  BubbleList,
-  Conversations,
-  Sender,
-  Thinking,
-  XMarkdown,
-} from 'vue-element-plus-x';
+import { BubbleList, Conversations, Thinking, XSender } from 'vue-element-plus-x';
 
 import { registerAccessDirective } from '@aiflowy/access';
 import { registerLoadingDirective } from '@aiflowy/common-ui';
@@ -16,6 +10,7 @@ import '@aiflowy/styles/ele';
 
 import { useTitle } from '@vueuse/core';
 import { ElLoading } from 'element-plus';
+import { MarkdownRenderer } from 'x-markdown-vue';
 
 import { $t, setupI18n } from '#/locales';
 
@@ -23,6 +18,10 @@ import { initComponentAdapter } from './adapter/component';
 import { initSetupAIFlowyForm } from './adapter/form';
 import App from './app.vue';
 import { router } from './router';
+
+import 'x-markdown-vue/style';
+
+import 'katex/dist/katex.min.css';
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
@@ -46,8 +45,8 @@ async function bootstrap(namespace: string) {
 
   app.component('ElBubbleList', BubbleList);
   app.component('ElConversations', Conversations);
-  app.component('ElSender', Sender);
-  app.component('ElXMarkdown', XMarkdown);
+  app.component('ElSender', XSender);
+  app.component('ElXMarkdown', MarkdownRenderer);
   app.component('ElThinking', Thinking);
 
   // 注册AIFlowy提供的v-loading和v-spinning指令

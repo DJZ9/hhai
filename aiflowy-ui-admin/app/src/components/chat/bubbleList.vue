@@ -140,30 +140,30 @@ defineExpose({ scrollBottom });
 </template>
 
 <style lang="css" scoped>
-:deep(.el-bubble-content-wrapper) {
+:deep(.elx-bubble__content-wrapper) {
   flex: none;
   max-width: calc(100% - 104px);
 }
 
-:deep(.el-bubble-header),
-:deep(.el-bubble-footer) {
+:deep(.elx-bubble__header),
+:deep(.elx-bubble__footer) {
   width: 100%;
 }
 
-:deep(.el-bubble-end .el-bubble-header) {
+:deep(.elx-bubble--end .elx-bubble__header) {
   width: fit-content;
 }
 
-:deep(.el-bubble-content-wrapper .el-bubble-content) {
-  --bubble-content-max-width: 100%;
+:deep(.elx-bubble__content-wrapper .elx-bubble__content) {
+  --elx-bubble-content-max-width: 100%;
 }
 
-:deep(.el-thinking) {
+:deep(.elx-thinking) {
   margin: 0;
 }
 
-:deep(.el-thinking .content-wrapper) {
-  --el-thinking-content-wrapper-width: 100%;
+:deep(.elx-thinking .elx-thinking__content-wrapper) {
+  --elx-thinking-content-wrapper-width: 100%;
 
   margin-bottom: 8px;
 }
