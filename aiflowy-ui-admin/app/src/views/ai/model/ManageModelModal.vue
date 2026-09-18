@@ -62,6 +62,12 @@ const ocrModelTabList = [
     name: 'ocrModel',
   },
 ];
+const imageModelTabList = [
+  {
+    label: $t('llmProvider.imageModel'),
+    name: 'imageModel',
+  },
+];
 const formDataRef = ref();
 const providerInfo = ref<any>();
 const getProviderInfo = (id: string) => {
@@ -106,6 +112,10 @@ defineExpose({
       }
       case 'ocrModel': {
         tabList.value = [...ocrModelTabList];
+        break;
+      }
+      case 'imageModel': {
+        tabList.value = [...imageModelTabList];
         break;
       }
       case 'rerankModel': {

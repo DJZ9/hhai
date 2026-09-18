@@ -1,4 +1,4 @@
-﻿{
+{
   "id": "ID 主键",
   "alias": "别名",
   "deptId": "部门ID",
@@ -51,6 +51,12 @@
   "ocrContentExtraction": "OCR内容提取",
   "model": "大模型",
   "ocrRecognizeContent": "OCR识别文件返回的内容",
+  "imageGeneration": "图片生成",
+  "imagePrompt": "提示词",
+  "imageNegativePrompt": "负向提示词",
+  "imageSize": "图片尺寸",
+  "imageCount": "生成数量",
+  "imageUrl": "图片地址",
   "download": "下载",
   "descriptions": {
     "fileContentExtraction": "提取 PDF 或者 Word 等文件中的文字内容",
@@ -72,6 +78,11 @@
     "enterSQL": "请输入SQL语句",
     "queryResultJson": "查询结果(json对象)",
     "subProcess": "选择定义好的流程",
-    "ocrFileAddress": "待识别内容的文件地址"
+    "ocrFileAddress": "待识别内容的文件地址",
+    "imagePrompt": "描述期望生成画面的正向提示词",
+    "imageNegativePrompt": "描述需要排除的内容或视觉特征",
+    "imageSize": "图片尺寸，例如 1024x1024",
+    "imageCount": "单次请求生成的图片数量",
+    "imageUrl": "生成后的图片访问地址"
   }
 }

@@ -11,6 +11,7 @@
   "chatModel": "ChatModel",
   "rerankModel": "RerankModel",
   "ocrModel": "OcrModel",
+  "imageModel": "ImageModel",
   "model": "Model",
   "apiType": "ApiType",
   "providerWebsite": "Provider Website",

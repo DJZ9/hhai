@@ -17,4 +17,8 @@ export const modelTypes = [
     label: $t('llmProvider.ocrModel'),
     value: 'ocrModel',
   },
+  {
+    label: $t('llmProvider.imageModel'),
+    value: 'imageModel',
+  },
 ];

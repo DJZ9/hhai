@@ -526,6 +526,31 @@
                 <artifactId>agents-flex-tool-todowrite</artifactId>
                 <version>${agents-flex.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-image-openai</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-image-aliyun</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-image-gitee</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-image-volcengine</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-image-gemini</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
 
             <!--pdf： wkhtmltopdf-->
             <dependency>

@@ -96,6 +96,7 @@ const chatModelListData = ref([]);
 const embeddingModelListData = ref([]);
 const rerankModelListData = ref([]);
 const ocrModelListData = ref([]);
+const imageModelListData = ref([]);
 
 const getLlmDetailList = (providerId) => {
   api
@@ -137,6 +138,15 @@ const getLlmDetailList = (providerId) => {
         // 处理ocrModel数据
         const ocrModelMap = res.data.ocrModel || {};
         ocrModelListData.value = Object.entries(ocrModelMap).map(
+          ([groupName, llmList]) => ({
+            groupName,
+            llmList,
+          }),
+        );
+
+        // 处理imageModel数据
+        const imageModelMap = res.data.imageModel || {};
+        imageModelListData.value = Object.entries(imageModelMap).map(
           ([groupName, llmList]) => ({
             groupName,
             llmList,
@@ -656,6 +666,59 @@ const isBatchPublishing = (modelType, groupName) => {
               <ElCollapse expand-icon-position="left">
                 <ElCollapseItem
                   v-for="group in ocrModelListData"
+                  :key="group.groupName"
+                  :title="group.groupName"
+                  :name="group.groupName"
+                >
+                  <template #title>
+                    <div class="flex items-center justify-between pr-2">
+                      <span class="flex items-center gap-1.5">
+                        <span>{{ group.groupName }}</span>
+                        <span class="publish-count">
+                          {{ $t('llm.publishCount') }}
+                          {{ countPublishedModels(group.llmList) }}
+                        </span>
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <ElButton
+                          link
+                          type="primary"
+                          size="small"
+                          :loading="isBatchPublishing(model.value, group.groupName)"
+                          :disabled="isBatchPublishing(model.value, group.groupName)"
+                          @click.stop="handleBatchPublish(group, model.value)"
+                        >
+                          {{ $t('llm.batchPublish') }}
+                        </ElButton>
+                        <ElIcon
+                          @click.stop="
+                            handleGroupNameUpdateModel(group.groupName)
+                          "
+                        >
+                          <Minus />
+                        </ElIcon>
+                      </span>
+                    </div>
+                  </template>
+                  <ModelViewItemOperation
+                    :llm-list="group.llmList"
+                    :icon="defaultIcon"
+                    @delete-llm="handleDeleteLlm"
+                    @edit-llm="handleEditLlm"
+                    @update-with-used="handleUpdateLlm"
+                    @publish-change="handlePublishChange"
+                  />
+                </ElCollapseItem>
+              </ElCollapse>
+            </div>
+
+            <!-- 图片模型（imageModel）遍历-->
+            <div
+              v-if="model.value === 'imageModel' && imageModelListData.length > 0"
+            >
+              <ElCollapse expand-icon-position="left">
+                <ElCollapseItem
+                  v-for="group in imageModelListData"
                   :key="group.groupName"
                   :title="group.groupName"
                   :name="group.groupName"

@@ -63,6 +63,8 @@ public class TinyFlowConfigService {
         OcrContentRecognizeNodeParser ocrNodeParser = new OcrContentRecognizeNodeParser();
         // Mcp 节点
         McpToolNodeParser mcpToolNodeParser = new McpToolNodeParser();
+        // 图片生成节点
+        ImageGenerationNodeParser imageGenerationNodeParser = new ImageGenerationNodeParser();
 
         chainParser.addNodeParser(docNodeParser.getNodeName(), docNodeParser);
         chainParser.addNodeParser(makeFileNodeParser.getNodeName(), makeFileNodeParser);
@@ -74,6 +76,7 @@ public class TinyFlowConfigService {
         chainParser.addNodeParser(workflowNodeParser.getNodeName(), workflowNodeParser);
         chainParser.addNodeParser(ocrNodeParser.getNodeName(), ocrNodeParser);
         chainParser.addNodeParser(mcpToolNodeParser.getNodeName(), mcpToolNodeParser);
+        chainParser.addNodeParser(imageGenerationNodeParser.getNodeName(), imageGenerationNodeParser);
     }
 
     public void setSearchEngineProvider() {

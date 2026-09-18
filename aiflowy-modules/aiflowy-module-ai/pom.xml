@@ -104,6 +104,27 @@
             <groupId>com.agentsflex</groupId>
             <artifactId>agents-flex-tool-todowrite</artifactId>
         </dependency>
+        <!-- 图片生成模型 -->
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-image-openai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-image-aliyun</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-image-gitee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-image-volcengine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-image-gemini</artifactId>
+        </dependency>
         <dependency>
             <groupId>tech.aiflowy</groupId>
             <artifactId>aiflowy-module-wiki</artifactId>

@@ -7,6 +7,9 @@ import com.agentsflex.core.document.Document;
 import com.agentsflex.core.model.chat.ChatModel;
 import com.agentsflex.core.model.chat.ChatOptions;
 import com.agentsflex.core.model.embedding.EmbeddingModel;
+import com.agentsflex.core.model.image.GenerateImageRequest;
+import com.agentsflex.core.model.image.ImageModel;
+import com.agentsflex.core.model.image.ImageResponse;
 import com.agentsflex.core.model.ocr.OcrResponse;
 import com.agentsflex.core.model.rerank.RerankModel;
 import com.agentsflex.core.store.VectorData;
@@ -103,6 +106,12 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
 
         }
 
+        // 走图片生成验证逻辑
+        if (Model.MODEL_TYPES[4].equals(modelType)) {
+            verifyImageModel(model);
+            return null;
+        }
+
         // 以上不满足，视为验证失败
         throw new BusinessException("校验失败！");
 
@@ -192,6 +201,35 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
             throw new BusinessException(e.getMessage());
         }
 
+    }
+
+    /**
+     * 校验图片生成模型配置：生成一张测试图片，确认模型可正常返回图片数据。
+     */
+    private void verifyImageModel(Model model) {
+        ImageModel imageModel = model.toImageModel();
+        if (imageModel == null) {
+            throw new BusinessException("imageModel为空");
+        }
+        try {
+            GenerateImageRequest request = new GenerateImageRequest();
+            request.setPrompt("一只可爱的猫咪，简约插画风格");
+            request.setN(1);
+            ImageResponse response = imageModel.generate(request);
+            if (response == null || response.isError()) {
+                String msg = response == null ? "无响应" : response.getErrorMessage();
+                throw new BusinessException("校验未通过：" + msg);
+            }
+            if (response.getImages() == null || response.getImages().isEmpty()) {
+                throw new BusinessException("校验未通过：未返回图片数据");
+            }
+            log.info("图片生成模型校验通过，返回图片数：{}", response.getImages().size());
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("图片生成模型校验失败：{}", e.getMessage());
+            throw new BusinessException(e.getMessage());
+        }
     }
 
     @Override

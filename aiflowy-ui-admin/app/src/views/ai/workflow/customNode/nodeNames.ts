@@ -9,4 +9,5 @@ export default {
   searchDatacenterNode: 'search-datacenter-node',
   saveToDatacenterNode: 'save-to-datacenter-node',
   ocrContentExtractionNode: 'ocr-content-extraction-node',
+  imageGenerationNode: 'image-generation-node',
 };

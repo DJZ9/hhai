@@ -1,4 +1,4 @@
-﻿{
+{
   "id": "Id",
   "alias": "Alias",
   "deptId": "DeptId",
@@ -51,6 +51,12 @@
   "ocrContentExtraction": "OCRContentExtraction",
   "ocrRecognizeContent": "OCRRecognizeContent",
   "model": "Model",
+  "imageGeneration": "ImageGeneration",
+  "imagePrompt": "Prompt",
+  "imageNegativePrompt": "NegativePrompt",
+  "imageSize": "ImageSize",
+  "imageCount": "ImageCount",
+  "imageUrl": "ImageUrl",
   "download": "Download",
   "descriptions": {
     "fileContentExtraction": "Extract text content from PDF or Word documents, etc",
@@ -72,6 +78,11 @@
     "enterSQL": "Please enter the SQL statement",
     "queryResultJson": "Query result (JSON object)",
     "subProcess": "Select a predefined process",
-    "ocrFileAddress": "file address"
+    "ocrFileAddress": "file address",
+    "imagePrompt": "Positive prompt describing the desired image",
+    "imageNegativePrompt": "Negative prompt describing content to exclude",
+    "imageSize": "Image size, e.g. 1024x1024",
+    "imageCount": "Number of images to generate per request",
+    "imageUrl": "URL of the generated image"
   }
 }

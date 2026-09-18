@@ -52,7 +52,7 @@ function submit() {
         :prop="item.name"
         :key="idx"
         :label="item.description || item.name"
-        :rules="[{ required: true, message: $t('message.required') }]"
+        :rules="item.required ? [{ required: true, message: $t('message.required') }] : []"
       >
         <ElInput
           v-if="item.formType === 'input' || !item.formType"

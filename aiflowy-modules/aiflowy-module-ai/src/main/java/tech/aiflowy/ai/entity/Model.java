@@ -25,8 +25,19 @@ import com.agentsflex.rerank.gitee.GiteeRerankModelConfig;
 import com.mybatisflex.annotation.RelationManyToOne;
 import com.mybatisflex.annotation.Table;
 import com.agentsflex.core.document.DocumentImagePublisher;
+import com.agentsflex.core.model.image.ImageModel;
 import com.agentsflex.core.model.ocr.BaseOcrModel;
 import com.agentsflex.core.model.ocr.OcrModel;
+import com.agentsflex.image.aliyun.AliyunImageModel;
+import com.agentsflex.image.aliyun.AliyunImageModelConfig;
+import com.agentsflex.image.gemini.GeminiImageModel;
+import com.agentsflex.image.gemini.GeminiImageModelConfig;
+import com.agentsflex.image.gitee.GiteeImageModel;
+import com.agentsflex.image.gitee.GiteeImageModelConfig;
+import com.agentsflex.image.openai.OpenAIImageModel;
+import com.agentsflex.image.openai.OpenAIImageModelConfig;
+import com.agentsflex.image.volcengine.VolcengineImageModel;
+import com.agentsflex.image.volcengine.VolcengineImageModelConfig;
 import com.agentsflex.ocr.gitee.GiteeOcrConfig;
 import com.agentsflex.ocr.gitee.GiteeOcrModel;
 import tech.aiflowy.ai.agentsflex.ocrModel.AliBailianOcrModel;
@@ -58,7 +69,7 @@ public class Model extends ModelBase {
     /**
      * 模型类型
      */
-    public final static String[] MODEL_TYPES = {"chatModel", "embeddingModel", "rerankModel", "ocrModel"};
+    public final static String[] MODEL_TYPES = {"chatModel", "embeddingModel", "rerankModel", "ocrModel", "imageModel"};
 
 
     public ModelProvider getModelProvider() {
@@ -265,6 +276,78 @@ public class Model extends ModelBase {
             }
         }
         return null;
+    }
+
+    /**
+     * 根据供应商类型构建图片生成模型。
+     */
+    public ImageModel toImageModel() {
+        String providerType = modelProvider.getProviderType();
+        if (StringUtil.noText(providerType)) {
+            throw new BusinessException("模型提供者不能为空");
+        }
+        switch (providerType.toLowerCase()) {
+            case "aliyun": {
+                AliyunImageModelConfig config = new AliyunImageModelConfig();
+                config.setApiKey(checkAndGetApiKey());
+                if (StrUtil.isNotBlank(getEndpoint())) {
+                    config.setEndpoint(getEndpoint());
+                }
+                if (StrUtil.isNotBlank(getRequestPath())) {
+                    config.setRequestPath(getRequestPath());
+                }
+                config.setModel(checkAndGetModelName());
+                return new AliyunImageModel(config);
+            }
+            case "gitee": {
+                GiteeImageModelConfig config = new GiteeImageModelConfig();
+                config.setApiKey(checkAndGetApiKey());
+                if (StrUtil.isNotBlank(getEndpoint())) {
+                    config.setEndpoint(getEndpoint());
+                }
+                if (StrUtil.isNotBlank(getRequestPath())) {
+                    config.setRequestPath(getRequestPath());
+                }
+                config.setModel(checkAndGetModelName());
+                return new GiteeImageModel(config);
+            }
+            case "volcengine": {
+                VolcengineImageModelConfig config = new VolcengineImageModelConfig();
+                config.setApiKey(checkAndGetApiKey());
+                if (StrUtil.isNotBlank(getEndpoint())) {
+                    config.setEndpoint(getEndpoint());
+                }
+                if (StrUtil.isNotBlank(getRequestPath())) {
+                    config.setRequestPath(getRequestPath());
+                }
+                config.setModel(checkAndGetModelName());
+                return new VolcengineImageModel(config);
+            }
+            case "gemini": {
+                GeminiImageModelConfig config = new GeminiImageModelConfig();
+                config.setApiKey(checkAndGetApiKey());
+                if (StrUtil.isNotBlank(getEndpoint())) {
+                    config.setEndpoint(getEndpoint());
+                }
+                if (StrUtil.isNotBlank(getRequestPath())) {
+                    config.setRequestPath(getRequestPath());
+                }
+                config.setModel(checkAndGetModelName());
+                return new GeminiImageModel(config);
+            }
+            default: {
+                OpenAIImageModelConfig config = new OpenAIImageModelConfig();
+                config.setApiKey(checkAndGetApiKey());
+                if (StrUtil.isNotBlank(getEndpoint())) {
+                    config.setEndpoint(getEndpoint());
+                }
+                if (StrUtil.isNotBlank(getRequestPath())) {
+                    config.setRequestPath(getRequestPath());
+                }
+                config.setModel(checkAndGetModelName());
+                return new OpenAIImageModel(config);
+            }
+        }
     }
 
     /**
