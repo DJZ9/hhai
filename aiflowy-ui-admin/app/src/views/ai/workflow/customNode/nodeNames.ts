@@ -10,4 +10,5 @@ export default {
   saveToDatacenterNode: 'save-to-datacenter-node',
   ocrContentExtractionNode: 'ocr-content-extraction-node',
   imageGenerationNode: 'image-generation-node',
+  videoGenerationNode: 'video-generation',
 };

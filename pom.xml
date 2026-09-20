@@ -551,6 +551,21 @@
                 <artifactId>agents-flex-image-gemini</artifactId>
                 <version>${agents-flex.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-video-aliyun</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-video-gitee</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentsflex</groupId>
+                <artifactId>agents-flex-video-volcengine</artifactId>
+                <version>${agents-flex.version}</version>
+            </dependency>
 
             <!--pdf： wkhtmltopdf-->
             <dependency>

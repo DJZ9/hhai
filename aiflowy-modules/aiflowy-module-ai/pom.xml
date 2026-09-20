@@ -125,6 +125,19 @@
             <groupId>com.agentsflex</groupId>
             <artifactId>agents-flex-image-gemini</artifactId>
         </dependency>
+        <!-- 视频生成模型 -->
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-video-aliyun</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-video-gitee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-video-volcengine</artifactId>
+        </dependency>
         <dependency>
             <groupId>tech.aiflowy</groupId>
             <artifactId>aiflowy-module-wiki</artifactId>

@@ -65,6 +65,8 @@ public class TinyFlowConfigService {
         McpToolNodeParser mcpToolNodeParser = new McpToolNodeParser();
         // 图片生成节点
         ImageGenerationNodeParser imageGenerationNodeParser = new ImageGenerationNodeParser();
+        // 视频生成节点
+        VideoGenerationNodeParser videoGenerationNodeParser = new VideoGenerationNodeParser();
 
         chainParser.addNodeParser(docNodeParser.getNodeName(), docNodeParser);
         chainParser.addNodeParser(makeFileNodeParser.getNodeName(), makeFileNodeParser);
@@ -77,6 +79,7 @@ public class TinyFlowConfigService {
         chainParser.addNodeParser(ocrNodeParser.getNodeName(), ocrNodeParser);
         chainParser.addNodeParser(mcpToolNodeParser.getNodeName(), mcpToolNodeParser);
         chainParser.addNodeParser(imageGenerationNodeParser.getNodeName(), imageGenerationNodeParser);
+        chainParser.addNodeParser(videoGenerationNodeParser.getNodeName(), videoGenerationNodeParser);
     }
 
     public void setSearchEngineProvider() {

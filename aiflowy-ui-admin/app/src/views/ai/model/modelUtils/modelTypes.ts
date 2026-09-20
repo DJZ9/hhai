@@ -21,4 +21,8 @@ export const modelTypes = [
     label: $t('llmProvider.imageModel'),
     value: 'imageModel',
   },
+  {
+    label: $t('llmProvider.videoModel'),
+    value: 'videoModel',
+  },
 ];

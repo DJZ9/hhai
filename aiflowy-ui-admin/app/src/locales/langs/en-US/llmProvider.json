@@ -12,6 +12,7 @@
   "rerankModel": "RerankModel",
   "ocrModel": "OcrModel",
   "imageModel": "ImageModel",
+  "videoModel": "VideoModel",
   "model": "Model",
   "apiType": "ApiType",
   "providerWebsite": "Provider Website",

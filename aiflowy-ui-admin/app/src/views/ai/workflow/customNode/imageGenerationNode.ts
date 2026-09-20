@@ -44,16 +44,6 @@ export const ImageGenerationNode = async () => {
         deleteDisabled: false,
         nameDisabled: true,
       },
-      {
-        name: 'n',
-        title: $t('aiWorkflow.imageCount'),
-        dataType: 'Integer',
-        dataTypeDisabled: true,
-        required: false,
-        description: $t('aiWorkflow.descriptions.imageCount'),
-        deleteDisabled: false,
-        nameDisabled: true,
-      },
     ],
     outputDefs: [
       {

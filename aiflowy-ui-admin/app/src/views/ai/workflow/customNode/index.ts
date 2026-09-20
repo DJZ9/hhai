@@ -1,6 +1,7 @@
 import docNode from './documentNode';
 import downloadNode from './downloadNode';
 import { ImageGenerationNode } from './imageGenerationNode';
+import { VideoGenerationNode } from './videoGenerationNode';
 import makeFileNode from './makeFileNode';
 import { McpNode } from './mcpNode';
 import nodeNames from './nodeNames';
@@ -27,6 +28,7 @@ export const getCustomNode = async (options: CustomNodeOptions) => {
   const saveToDatacenterNode = await SaveToDatacenterNode();
   const ocrContentExtractionNode = await OcrContentExtractionNode();
   const imageGenerationNode = await ImageGenerationNode();
+  const videoGenerationNode = await VideoGenerationNode();
   return {
     ...docNode,
     ...makeFileNode,
@@ -39,5 +41,6 @@ export const getCustomNode = async (options: CustomNodeOptions) => {
     [nodeNames.saveToDatacenterNode]: saveToDatacenterNode,
     [nodeNames.ocrContentExtractionNode]: ocrContentExtractionNode,
     [nodeNames.imageGenerationNode]: imageGenerationNode,
+    [nodeNames.videoGenerationNode]: videoGenerationNode,
   };
 };

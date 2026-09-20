@@ -28,6 +28,8 @@ import com.agentsflex.core.document.DocumentImagePublisher;
 import com.agentsflex.core.model.image.ImageModel;
 import com.agentsflex.core.model.ocr.BaseOcrModel;
 import com.agentsflex.core.model.ocr.OcrModel;
+import com.agentsflex.core.model.video.BaseVideoConfig;
+import com.agentsflex.core.model.video.VideoModel;
 import com.agentsflex.image.aliyun.AliyunImageModel;
 import com.agentsflex.image.aliyun.AliyunImageModelConfig;
 import com.agentsflex.image.gemini.GeminiImageModel;
@@ -38,6 +40,14 @@ import com.agentsflex.image.openai.OpenAIImageModel;
 import com.agentsflex.image.openai.OpenAIImageModelConfig;
 import com.agentsflex.image.volcengine.VolcengineImageModel;
 import com.agentsflex.image.volcengine.VolcengineImageModelConfig;
+import com.agentsflex.video.aliyun.AliyunHappyHorseVideoModel;
+import com.agentsflex.video.aliyun.AliyunHappyHorseVideoModelConfig;
+import com.agentsflex.video.aliyun.AliyunWanVideoModel;
+import com.agentsflex.video.aliyun.AliyunWanVideoModelConfig;
+import com.agentsflex.video.gitee.GiteeVideoModel;
+import com.agentsflex.video.gitee.GiteeVideoModelConfig;
+import com.agentsflex.video.volcengine.VolcengineVideoModel;
+import com.agentsflex.video.volcengine.VolcengineVideoModelConfig;
 import com.agentsflex.ocr.gitee.GiteeOcrConfig;
 import com.agentsflex.ocr.gitee.GiteeOcrModel;
 import tech.aiflowy.ai.agentsflex.ocrModel.AliBailianOcrModel;
@@ -69,7 +79,7 @@ public class Model extends ModelBase {
     /**
      * 模型类型
      */
-    public final static String[] MODEL_TYPES = {"chatModel", "embeddingModel", "rerankModel", "ocrModel", "imageModel"};
+    public final static String[] MODEL_TYPES = {"chatModel", "embeddingModel", "rerankModel", "ocrModel", "imageModel", "videoModel"};
 
 
     public ModelProvider getModelProvider() {
@@ -347,6 +357,90 @@ public class Model extends ModelBase {
                 config.setModel(checkAndGetModelName());
                 return new OpenAIImageModel(config);
             }
+        }
+    }
+
+    /**
+     * 将当前 Model 实例转换为 agents-flex 的 VideoModel。
+     */
+    public VideoModel toVideoModel() {
+        if (modelProvider == null) {
+            throw new BusinessException("模型提供者不能为空");
+        }
+        String providerType = modelProvider.getProviderType();
+        if (StringUtil.noText(providerType)) {
+            throw new BusinessException("模型提供者类型不能为空");
+        }
+        String apiKey = checkAndGetApiKey();
+        String modelName = checkAndGetModelName();
+        String providerName = modelProvider.getProviderName();
+        Map<String, Object> opts = getOptions();
+
+        switch (providerType.toLowerCase()) {
+            case "aliyun":
+            case "aliyun-dashscope": {
+                if (modelName.toLowerCase().startsWith("happyhorse")) {
+                    AliyunHappyHorseVideoModelConfig config = new AliyunHappyHorseVideoModelConfig();
+                    applyVideoConfig(config, apiKey, modelName, providerName, opts);
+                    return new AliyunHappyHorseVideoModel(config);
+                }
+                AliyunWanVideoModelConfig config = new AliyunWanVideoModelConfig();
+                applyVideoConfig(config, apiKey, modelName, providerName, opts);
+                return new AliyunWanVideoModel(config);
+            }
+            case "gitee":
+            case "gitee-ai": {
+                GiteeVideoModelConfig config = new GiteeVideoModelConfig();
+                applyVideoConfig(config, apiKey, modelName, providerName, opts);
+                return new GiteeVideoModel(config);
+            }
+            case "volcengine":
+            case "volcengine-ark": {
+                VolcengineVideoModelConfig config = new VolcengineVideoModelConfig();
+                applyVideoConfig(config, apiKey, modelName, providerName, opts);
+                return new VolcengineVideoModel(config);
+            }
+            default:
+                throw new BusinessException("不支持的视频服务商类型：" + providerType
+                    + "，目前仅支持 aliyun / gitee / volcengine");
+        }
+    }
+
+    /**
+     * 把 Model 实例的连接信息与 options 中的视频专属参数应用到 BaseVideoConfig。
+     * endpoint/requestPath/queryPath 仅在 Model 自身非空时覆盖适配器默认值。
+     */
+    private void applyVideoConfig(BaseVideoConfig config,
+                                  String apiKey, String modelName, String providerName,
+                                  Map<String, Object> opts) {
+        config.setApiKey(apiKey);
+        config.setModel(modelName);
+        if (StringUtil.hasText(providerName)) {
+            config.setProvider(providerName);
+        }
+        if (opts == null || opts.isEmpty()) {
+            return;
+        }
+        Object endpoint = opts.get("endpoint");
+        if (endpoint instanceof String && StrUtil.isNotBlank((String) endpoint)) {
+            config.setEndpoint((String) endpoint);
+        }
+        Object requestPath = opts.get("requestPath");
+        if (requestPath instanceof String && StrUtil.isNotBlank((String) requestPath)) {
+            config.setRequestPath((String) requestPath);
+        }
+        // 视频专属扩展参数：queryPath / pollIntervalMillis / timeoutMillis
+        Object queryPath = opts.get("queryPath");
+        if (queryPath instanceof String && StrUtil.isNotBlank((String) queryPath)) {
+            config.setQueryPath((String) queryPath);
+        }
+        Object pollInterval = opts.get("pollIntervalMillis");
+        if (pollInterval instanceof Number) {
+            config.setPollIntervalMillis(((Number) pollInterval).longValue());
+        }
+        Object timeout = opts.get("timeoutMillis");
+        if (timeout instanceof Number) {
+            config.setTimeoutMillis(((Number) timeout).longValue());
         }
     }
 

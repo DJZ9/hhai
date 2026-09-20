@@ -64,7 +64,6 @@ public class ImageGenerationNode extends BaseNode {
         request.setNegativePrompt(getStringParam(params, "negativePrompt"));
         request.setSizeString(getStringParam(params, "size"));
         request.setResolution(getStringParam(params, "resolution"));
-        request.setN(getIntegerParam(params, "n"));
         request.setQuality(getStringParam(params, "quality"));
         request.setStyle(getStringParam(params, "style"));
         request.setSeed(getIntegerParam(params, "seed"));

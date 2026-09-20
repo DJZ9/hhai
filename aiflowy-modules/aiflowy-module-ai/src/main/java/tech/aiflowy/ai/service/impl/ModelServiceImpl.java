@@ -12,6 +12,7 @@ import com.agentsflex.core.model.image.ImageModel;
 import com.agentsflex.core.model.image.ImageResponse;
 import com.agentsflex.core.model.ocr.OcrResponse;
 import com.agentsflex.core.model.rerank.RerankModel;
+import com.agentsflex.core.model.video.VideoModel;
 import com.agentsflex.core.store.VectorData;
 import com.alicp.jetcache.Cache;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -109,6 +110,12 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
         // 走图片生成验证逻辑
         if (Model.MODEL_TYPES[4].equals(modelType)) {
             verifyImageModel(model);
+            return null;
+        }
+
+        // 走视频生成验证逻辑：仅校验模型配置可正常构建，不实际生成视频（成本高、耗时长）
+        if (Model.MODEL_TYPES[5].equals(modelType)) {
+            verifyVideoModel(model);
             return null;
         }
 
@@ -228,6 +235,23 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
             throw e;
         } catch (Exception e) {
             log.error("图片生成模型校验失败：{}", e.getMessage());
+            throw new BusinessException(e.getMessage());
+        }
+    }
+
+    /**
+     * 校验视频生成模型配置：仅校验模型配置可正常构建为 VideoModel，不实际生成视频。
+     * 视频生成成本高、耗时长，实际生成由工作流节点调用时执行。
+     */
+    private void verifyVideoModel(Model model) {
+        try {
+            VideoModel videoModel = model.toVideoModel();
+            if (videoModel == null) {
+                throw new BusinessException("videoModel为空");
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
             throw new BusinessException(e.getMessage());
         }
     }

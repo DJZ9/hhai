@@ -68,6 +68,12 @@ const imageModelTabList = [
     name: 'imageModel',
   },
 ];
+const videoModelTabList = [
+  {
+    label: $t('llmProvider.videoModel'),
+    name: 'videoModel',
+  },
+];
 const formDataRef = ref();
 const providerInfo = ref<any>();
 const getProviderInfo = (id: string) => {
@@ -116,6 +122,10 @@ defineExpose({
       }
       case 'imageModel': {
         tabList.value = [...imageModelTabList];
+        break;
+      }
+      case 'videoModel': {
+        tabList.value = [...videoModelTabList];
         break;
       }
       case 'rerankModel': {
