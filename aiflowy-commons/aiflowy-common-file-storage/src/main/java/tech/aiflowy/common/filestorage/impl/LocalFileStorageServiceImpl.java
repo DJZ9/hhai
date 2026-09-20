@@ -193,11 +193,71 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
     }
 
 
+    /**
+     * 获取存储根目录下的本地文件。
+     * <p>
+     * 会对路径做规范化处理，确保最终访问的文件一定落在存储根目录内。
+     */
     private File getLocalFile(String path) throws IOException {
         if (this.root == null || this.root.isEmpty()) {
             throw new RuntimeException("请指定存储根目录");
         }
-        return new File(this.root, path.replace(prefix, ""));
+        String relativePath = stripStoragePrefix(path, this.prefix);
+        return resolveLocalFile(this.root, relativePath, path);
+    }
+
+    /**
+     * 剥离存储路径的访问前缀（例如 http://localhost:8080/attachment）。
+     * 仅当路径确实以 prefix 开头时截断一次，避免使用 replace 造成的全局替换问题。
+     */
+    static String stripStoragePrefix(String path, String prefix) {
+        if (path == null) {
+            return null;
+        }
+        String trimmed = path.trim();
+        if (prefix != null && !prefix.isEmpty() && trimmed.startsWith(prefix)) {
+            return trimmed.substring(prefix.length());
+        }
+        return trimmed;
+    }
+
+    /**
+     * 将相对路径解析到存储根目录内，并确保最终落点在根目录内。
+     * <p>
+     * 采用 canonical path 而非 real path：save 场景下目标文件可能尚不存在，
+     * 同时 canonical path 已能解析 <code>..</code> 与已存在的符号链接。
+     *
+     * @param rootPath       存储根目录
+     * @param relativePath   相对存储根目录的路径
+     * @param originalPath   调用方传入的原始路径（仅用于日志）
+     * @return 根目录内的目标文件
+     * @throws SecurityException 路径不合法
+     */
+    static File resolveLocalFile(String rootPath, String relativePath, String originalPath) throws IOException {
+        if (relativePath == null || relativePath.isEmpty() || relativePath.indexOf('\0') >= 0) {
+            throw illegalPath(originalPath);
+        }
+
+        File rootDir = new File(rootPath).getCanonicalFile();
+        File target;
+        try {
+            target = new File(rootDir, relativePath).getCanonicalFile();
+        } catch (IOException e) {
+            // 畸形路径（例如 Windows 上的非法盘符路径）无法规范化，直接拒绝
+            throw illegalPath(originalPath);
+        }
+
+        Path rootDirPath = rootDir.toPath();
+        Path targetPath = target.toPath();
+        if (targetPath.equals(rootDirPath) || !targetPath.startsWith(rootDirPath)) {
+            throw illegalPath(originalPath);
+        }
+        return target;
+    }
+
+    private static SecurityException illegalPath(String originalPath) {
+        LOG.warn("检测到非法文件路径访问，已拒绝: {}", originalPath);
+        return new SecurityException("非法的文件路径");
     }
 
     @Override
