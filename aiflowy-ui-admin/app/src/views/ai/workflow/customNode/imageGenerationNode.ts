@@ -44,6 +44,16 @@ export const ImageGenerationNode = async () => {
         deleteDisabled: false,
         nameDisabled: true,
       },
+      {
+        name: 'inputImages',
+        title: $t('aiWorkflow.referenceImages'),
+        dataType: 'String',
+        dataTypeDisabled: true,
+        required: false,
+        description: $t('aiWorkflow.descriptions.referenceImages'),
+        deleteDisabled: false,
+        nameDisabled: true,
+      },
     ],
     outputDefs: [
       {

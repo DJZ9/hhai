@@ -7,6 +7,7 @@ import com.agentsflex.core.model.image.GenerateImageRequest;
 import com.agentsflex.core.model.image.Image;
 import com.agentsflex.core.model.image.ImageModel;
 import com.agentsflex.core.model.image.ImageResponse;
+import com.alibaba.fastjson2.JSON;
 import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.node.BaseNode;
 import org.slf4j.Logger;
@@ -18,9 +19,7 @@ import tech.aiflowy.common.util.SpringContextUtil;
 import tech.aiflowy.common.web.exceptions.BusinessException;
 
 import java.math.BigInteger;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 图片生成节点：调用 agents-flex 图片模型生成图片，并保存到文件存储后返回访问地址。
@@ -67,6 +66,27 @@ public class ImageGenerationNode extends BaseNode {
         request.setQuality(getStringParam(params, "quality"));
         request.setStyle(getStringParam(params, "style"));
         request.setSeed(getIntegerParam(params, "seed"));
+        request.setN(1);
+
+        // 输入图片：用于参考图生成、多图融合或图片编辑。
+        String inputImages = getStringParam(params, "inputImages");
+        if (StrUtil.isNotBlank(inputImages)) {
+            String trimmedInput = inputImages.trim();
+            List<String> urls;
+            if (trimmedInput.startsWith("[")) {
+                // JSON 数组格式
+                urls = JSON.parseArray(trimmedInput, String.class);
+            } else {
+                // 逗号分隔的纯字符串
+                urls = Arrays.asList(trimmedInput.split(","));
+            }
+            for (String url : urls) {
+                String trimmed = url == null ? "" : url.trim();
+                if (StrUtil.isNotBlank(trimmed)) {
+                    request.addInputImage(Image.ofUrl(trimmed));
+                }
+            }
+        }
 
         ImageResponse response = imageModel.generate(request);
         if (response == null || response.isError()) {
