@@ -5,6 +5,7 @@ import tech.aiflowy.common.util.SpringContextUtil;
 
 import tech.aiflowy.common.web.controller.BaseCurdController;
 import tech.aiflowy.common.dict.DictManager;
+import tech.aiflowy.common.web.exceptions.BusinessException;
 import tech.aiflowy.system.entity.SysDict;
 import tech.aiflowy.system.service.SysDictService;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -27,6 +28,25 @@ public class SysDictController extends BaseCurdController<SysDictService, SysDic
 
     public SysDictController(SysDictService service) {
         super(service);
+    }
+
+    /**
+     * 保存 / 更新前校验数据表字典的表名、列名配置。
+     * <p>
+     * 这些字段会被拼进 SQL，不合法的取值在这里就被拒绝，不会写入 tb_sys_dict，
+     * 也不会注册成字典加载器。
+     */
+    @Override
+    protected Result<?> onSaveOrUpdateBefore(SysDict entity, boolean isSave) {
+        if (entity == null) {
+            return null;
+        }
+        try {
+            entity.checkTableDictOptions();
+        } catch (BusinessException e) {
+            return Result.fail(e.getMessage());
+        }
+        return null;
     }
 
     @Override

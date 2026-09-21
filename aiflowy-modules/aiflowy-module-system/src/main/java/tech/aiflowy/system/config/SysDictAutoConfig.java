@@ -6,6 +6,9 @@ import tech.aiflowy.common.dict.loader.DbDataLoader;
 import tech.aiflowy.system.entity.SysDict;
 import tech.aiflowy.system.mapper.*;
 import tech.aiflowy.system.service.SysDictService;
+import tech.aiflowy.common.web.exceptions.BusinessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
@@ -15,6 +18,8 @@ import java.util.List;
 
 @Configuration
 public class SysDictAutoConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(SysDictAutoConfig.class);
 
     private SysDictService service;
 
@@ -50,7 +55,16 @@ public class SysDictAutoConfig {
 
         List<SysDict> sysDicts = service.list();
         if (sysDicts != null) {
-            sysDicts.forEach(sysDict -> dictManager.putLoader(sysDict.buildLoader()));
+            sysDicts.forEach(sysDict -> {
+                // 库中可能存在历史数据（例如格式不规范的 options），这里只告警不阻止启动；
+                // 真正执行 SQL 之前 DatabaseDictLoader 还会再校验一次并直接拒绝。
+                try {
+                    sysDict.checkTableDictOptions();
+                } catch (BusinessException e) {
+                    logger.warn("数据表字典 [{}] 配置非法，读取该字典时将被拒绝：{}", sysDict.getCode(), e.getMessage());
+                }
+                dictManager.putLoader(sysDict.buildLoader());
+            });
         }
     }
 }
