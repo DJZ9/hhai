@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-import { ElDialog, ElImage } from 'element-plus';
+import { ElDialog } from 'element-plus';
+
+import FilePreview from '#/components/filePreview/FilePreview.vue';
 
 defineExpose({
   openDialog,
@@ -15,6 +17,16 @@ function openDialog(row: any) {
 function closeDialog() {
   dialogVisible.value = false;
 }
+
+// 构造带后缀的文件名给 jit-viewer 推断格式
+const filename = computed(() => {
+  if (!data.value) return '';
+  const name = data.value.resourceName || '';
+  const suffix = data.value.suffix || '';
+  // 文件名已带后缀则直接用
+  if (suffix && name.endsWith(`.${suffix}`)) return name;
+  return suffix ? `${name}.${suffix}` : name;
+});
 </script>
 
 <template>
@@ -23,24 +35,14 @@ function closeDialog() {
     draggable
     :title="$t('message.preview')"
     :before-close="closeDialog"
-    :close-on-click-modal="false"
-    destroy-on-close
+    :destroy-on-close="true"
   >
-    <div class="flex justify-center">
-      <ElImage
-        v-if="data.resourceType === 0"
-        style="width: 200px"
-        :preview-src-list="[data.resourceUrl]"
-        :src="data.resourceUrl"
-      />
-      <video v-if="data.resourceType === 1" controls width="640" height="360">
-        <source :src="data.resourceUrl" type="video/mp4" />
-        {{ $t('aiResource.unsupportedVideo') }}
-      </video>
-      <audio v-if="data.resourceType === 2" controls :src="data.resourceUrl">
-        {{ $t('aiResource.unsupportedAudio') }}
-      </audio>
-    </div>
+    <FilePreview
+      v-if="data"
+      :url="data.resourceUrl"
+      :filename="filename"
+      height="60vh"
+    />
   </ElDialog>
 </template>
 

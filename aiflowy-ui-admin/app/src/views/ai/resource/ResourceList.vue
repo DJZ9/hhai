@@ -34,6 +34,7 @@ import { tryit } from 'radash';
 
 import { api } from '#/api/request';
 import DictSelect from '#/components/dict/DictSelect.vue';
+import FilePreview from '#/components/filePreview/FilePreview.vue';
 import PageData from '#/components/page/PageData.vue';
 import PageSide from '#/components/page/PageSide.vue';
 import Tag from '#/components/tag/Tag.vue';
@@ -44,7 +45,6 @@ import {
   getResourceTypeColor,
   getSrc,
 } from '#/utils/resource';
-import PreviewModal from '#/views/ai/resource/PreviewModal.vue';
 
 import ResourceModal from './ResourceModal.vue';
 
@@ -55,7 +55,8 @@ onMounted(() => {
 const formRef = ref<FormInstance>();
 const pageDataRef = ref();
 const saveDialog = ref();
-const previewDialog = ref();
+const previewVisible = ref(false);
+const previewRow = ref<any>();
 const formInline = ref({
   resourceName: '',
   resourceType: '',
@@ -106,9 +107,17 @@ function remove(row: any) {
     },
   }).catch(() => {});
 }
+const previewFilename = ref('');
 function preview(row: any) {
-  previewDialog.value.openDialog({ ...row });
+  previewRow.value = { ...row };
+  previewVisible.value = true;
+  previewFilename.value = `${row.resourceName || ''}.${row.suffix || ''}`;
 }
+
+function closePreview() {
+  previewVisible.value = false;
+}
+
 function download(row: any) {
   window.open(row.resourceUrl, '_blank');
 }
@@ -248,7 +257,20 @@ const getSideList = async () => {
 
 <template>
   <div class="flex h-full flex-col gap-1.5 p-6">
-    <PreviewModal ref="previewDialog" />
+    <ElDialog
+      v-model="previewVisible"
+      draggable
+      :title="$t('message.preview')"
+      :before-close="closePreview"
+      :destroy-on-close="true"
+    >
+      <FilePreview
+        v-if="previewVisible && previewRow"
+        :url="previewRow.resourceUrl"
+        :filename="previewFilename"
+        height="60vh"
+      />
+    </ElDialog>
     <ResourceModal ref="saveDialog" @reload="reset" />
     <div class="flex items-center justify-between">
       <ElForm ref="formRef" inline :model="formInline">
