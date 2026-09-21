@@ -1,5 +1,32 @@
 # MCP 配置详情
 
+> **安全模式**
+>
+> 前端 MCP 页面只允许手动添加 HTTP、SSE、Streamable HTTP 等远程 MCP。
+> `npx`、`python`、`docker`、`/bin/sh` 等 stdio MCP 必须由管理员放入
+> 默认通过 `aiflowy.mcp.admin-config-classpath` 读取随应用打包的清单文件，
+> 默认路径为 `mcp/aiflowy-mcp-catalog.json`，并由前端用户从
+> “添加 -> 从后台目录安装”页签中选择安装。
+> 如需运行期覆盖，可额外配置 `aiflowy.mcp.admin-config-dir`，
+> 同名条目由该目录中的文件覆盖。
+>
+> 管理员目录文件示例：
+>
+> ```json
+> {
+>   "title": "本地文件系统",
+>   "enabled": true,
+>   "config": {
+>     "mcpServers": {
+>       "filesystem": {
+>         "command": "npx",
+>         "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+>       }
+>     }
+>   }
+> }
+> ```
+
 
 ## 1. 前置环境要求
 
@@ -76,6 +103,11 @@ MCP 支持三种主要传输模式，请根据部署场景选择。
 **适用场景**：服务与客户端在同一台机器，追求最低延迟，配置最简单。
 **原理**：通过标准输入输出 (stdin/stdout) 进行通信。
 
+> **重要**：STDIO 配置不能通过前端手动添加，只能由管理员放入
+> classpath 清单或可选的服务器 MCP 配置目录（`aiflowy.mcp.admin-config-dir`），
+> 并由用户从目录页签安装。
+> 所有安装用户共享同一个 stdio 进程和认证信息。
+
 ```JSON
 {
   "mcpServers": {
@@ -148,6 +180,9 @@ MCP 支持三种主要传输模式，请根据部署场景选择。
 ## 4. 常见场景配置模板
 
 ### 4.1 运行 NPX 包 (最常用)
+
+> 以下示例只能写入管理员目录，不能直接提交到前端“手动添加”表单。
+
 ```JSON
 {
   "mcpServers": {
@@ -160,6 +195,9 @@ MCP 支持三种主要传输模式，请根据部署场景选择。
 ```
 
 ### 4.2 运行 Python 脚本
+
+> 以下示例只能写入管理员目录，不能直接提交到前端“手动添加”表单。
+
 ```JSON
 {
   "mcpServers": {
@@ -176,6 +214,10 @@ MCP 支持三种主要传输模式，请根据部署场景选择。
 ```
 
 ### 4.3 运行 Docker 容器
+
+> 以下示例只能写入管理员目录，不能直接提交到前端“手动添加”表单。
+> 生产环境挂载 Docker Socket 会显著扩大安全影响，请谨慎评估。
+
 ```JSON
 {
   "mcpServers": {

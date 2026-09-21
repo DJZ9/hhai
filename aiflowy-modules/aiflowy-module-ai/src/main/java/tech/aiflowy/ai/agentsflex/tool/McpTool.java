@@ -3,12 +3,8 @@ package tech.aiflowy.ai.agentsflex.tool;
 import com.agentsflex.core.model.chat.tool.BaseTool;
 import com.agentsflex.core.model.chat.tool.Tool;
 import com.agentsflex.core.prompt.PromptTemplate;
-import com.agentsflex.mcp.client.McpClientManager;
-import tech.aiflowy.ai.entity.Mcp;
 import tech.aiflowy.ai.service.McpService;
-import tech.aiflowy.ai.service.impl.McpServiceImpl;
 import tech.aiflowy.common.util.SpringContextUtil;
-import tech.aiflowy.common.util.StringUtil;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -28,11 +24,8 @@ public class McpTool extends BaseTool {
     public Object runMcp(BigInteger mcpId, Map<String, Object> argsMap) {
 
         McpService mcpService = SpringContextUtil.getBean(McpService.class);
-        Mcp mcp = mcpService.getMapper().selectOneById(mcpId);
-        String serverName = McpServiceImpl.getFirstMcpServerName(mcp.getConfigJson());
-        if (StringUtil.hasText(serverName)) {
-            McpClientManager mcpClientManager = McpClientManager.getInstance();
-            Tool mcpTool = mcpClientManager.getMcpTool(serverName, this.name);
+        Tool mcpTool = mcpService.getRuntimeTool(mcpId, this.name);
+        if (mcpTool != null) {
             Object result = mcpTool.invoke(argsMap);
             // 应用Bot自定义输出模板
             if (botOutputTemplate != null && !botOutputTemplate.isEmpty()) {
@@ -48,7 +41,7 @@ public class McpTool extends BaseTool {
             }
             return Objects.requireNonNullElse(result, "");
         }
-        return "未查询到相关数据";
+        return "MCP工具不可用或已停用";
     }
 
     public void setMcpId(BigInteger mcpId) {

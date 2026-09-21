@@ -1,0 +1,17 @@
+{
+  "entries": {
+    "12306-mcp": {
+      "title": "12306购票综合查询",
+      "description": "12306购票综合查询",
+      "enabled": true,
+      "config": {
+        "mcpServers": {
+          "12306-mcp": {
+            "command": "npx.cmd",
+            "args": ["-y", "12306-mcp"]
+          }
+        }
+      }
+    }
+  }
+}

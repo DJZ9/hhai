@@ -3,11 +3,15 @@ package tech.aiflowy.ai.service;
 import com.agentsflex.core.model.chat.tool.Tool;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
+import tech.aiflowy.ai.dto.McpCatalogImportDTO;
+import tech.aiflowy.ai.dto.McpCatalogItemDTO;
 import tech.aiflowy.ai.entity.BotMcp;
 import tech.aiflowy.ai.entity.Mcp;
 import tech.aiflowy.common.domain.Result;
 
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.util.List;
 
 /**
  *  服务层。
@@ -25,6 +29,8 @@ public interface McpService extends IService<Mcp> {
 
     Tool toFunction(BotMcp botMcp);
 
+    Tool getRuntimeTool(BigInteger mcpId, String toolName);
+
     Result<Page<Mcp>> pageMcp(Result<Page<Mcp>> page);
 
     Mcp getMcpTools(String id);
@@ -32,4 +38,8 @@ public interface McpService extends IService<Mcp> {
     Page<Mcp> pageTools(Page<Mcp> mcpPage);
 
     com.alibaba.fastjson2.JSONObject getMcpToolData(java.math.BigInteger mcpId, String toolName);
+
+    List<McpCatalogItemDTO> listCatalog();
+
+    Result<?> importFromCatalog(McpCatalogImportDTO request);
 }

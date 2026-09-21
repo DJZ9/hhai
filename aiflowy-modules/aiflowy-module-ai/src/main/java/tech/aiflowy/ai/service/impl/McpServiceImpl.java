@@ -2,30 +2,39 @@ package tech.aiflowy.ai.service.impl;
 
 import com.agentsflex.core.model.chat.tool.Parameter;
 import com.agentsflex.core.model.chat.tool.Tool;
-import com.agentsflex.mcp.client.McpClientManager;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.tenant.TenantManager;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tech.aiflowy.ai.agentsflex.tool.McpTool;
+import tech.aiflowy.ai.dto.McpCatalogEntry;
+import tech.aiflowy.ai.dto.McpCatalogImportDTO;
+import tech.aiflowy.ai.dto.McpCatalogItemDTO;
+import tech.aiflowy.ai.dto.ResolvedMcpConfig;
 import tech.aiflowy.ai.entity.BotMcp;
 import tech.aiflowy.ai.entity.Mcp;
 import tech.aiflowy.ai.mapper.McpMapper;
+import tech.aiflowy.ai.service.McpAdminCatalogRegistry;
 import tech.aiflowy.ai.service.McpService;
+import tech.aiflowy.ai.service.McpRuntimeConfigResolver;
+import tech.aiflowy.ai.service.McpSharedRuntimeManager;
 import tech.aiflowy.ai.utils.CommonFiledUtil;
+import tech.aiflowy.ai.utils.McpConfigSecurityUtil;
 import tech.aiflowy.common.constant.enums.EnumRes;
 import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.entity.LoginAccount;
 import tech.aiflowy.common.satoken.util.SaTokenUtil;
 import tech.aiflowy.common.util.StringUtil;
-import tech.aiflowy.common.web.exceptions.BusinessException;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.*;
 
 /**
@@ -36,8 +45,16 @@ import java.util.*;
  */
 @Service
 public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpService{
-    private final McpClientManager mcpClientManager = McpClientManager.getInstance();
-    protected Logger Log = LoggerFactory.getLogger(DocumentServiceImpl.class);
+    private final Logger Log = LoggerFactory.getLogger(McpServiceImpl.class);
+
+    @Resource
+    private McpRuntimeConfigResolver mcpRuntimeConfigResolver;
+
+    @Resource
+    private McpSharedRuntimeManager mcpSharedRuntimeManager;
+
+    @Resource
+    private McpAdminCatalogRegistry mcpAdminCatalogRegistry;
 
     @Override
     public Result<?> saveMcp(Mcp entity) {
@@ -49,58 +66,71 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
         if (!StringUtil.hasText(serverName)) {
             return Result.fail("未找到mcp服务名称", serverName);
         }
-        try {
-            mcpClientManager.registerFromJson(entity.getConfigJson());
-        } catch (Exception e) {
-            Log.error("MCP服务名称：{} 注册失败", serverName, e);
-        }
-        if (entity.getStatus()) {
-            try {
-                getMcpClient(entity, mcpClientManager);
-            } catch (Exception e) {
-                Log.error("MCP服务名称：{} 启动失败", serverName, e);
-                return Result.fail("MCP服务名称：" + serverName + " 启动失败", serverName);
-            }
-        }
 
         LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
         CommonFiledUtil.commonFiled(entity, loginAccount.getId(), loginAccount.getTenantId(), loginAccount.getDeptId());
         this.save(entity);
+
+        try {
+            ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(entity);
+            if (Boolean.TRUE.equals(entity.getStatus())) {
+                mcpSharedRuntimeManager.start(resolved);
+            } else {
+                mcpSharedRuntimeManager.register(resolved);
+            }
+        } catch (Exception e) {
+            Log.error("MCP服务名称：{} 注册失败", serverName, e);
+            this.removeById(entity.getId());
+            return Result.fail("MCP服务名称：" + serverName + " 启动失败", serverName);
+        }
         return Result.ok();
     }
 
     @Override
     public Result<?> updateMcp(Mcp entity) {
-        Result<?> validateResult = validateMcpConfig(entity);
-        if (!(EnumRes.SUCCESS.getCode() == validateResult.getErrorCode())) {
-            return validateResult;
+        if (entity == null || entity.getId() == null) {
+            return Result.fail("MCP id 不能为空");
         }
-        String serverName = getFirstMcpServerName(entity.getConfigJson());
-        if (!StringUtil.hasText(serverName)) {
-            return Result.fail("未找到mcp服务名称", serverName);
+        Mcp existing = this.getById(entity.getId());
+        if (existing == null) {
+            return Result.fail("MCP 不存在");
         }
-        if (entity.getStatus()) {
-            try {
-                mcpClientManager.registerFromJson(entity.getConfigJson());
-            } catch (Exception e) {
-                Log.error("MCP服务名称：{} 注册失败", serverName, e);
-            }
-            try {
-                getMcpClient(entity, mcpClientManager);
-            } catch (Exception e) {
-                Log.error("MCP服务名称：{} 启动失败", serverName, e);
-                return Result.fail("MCP服务名称：" + serverName + " 启动失败" + "请尝试重新启动！");
-            }
+        if (!StringUtil.hasText(entity.getConfigJson())) {
+            entity.setConfigJson(existing.getConfigJson());
+        }
 
+        String existingCatalogKey = mcpRuntimeConfigResolver.getCatalogKey(existing);
+        String requestCatalogKey = McpConfigSecurityUtil.getCatalogKey(entity.getConfigJson());
+        if (existingCatalogKey != null) {
+            if (!Objects.equals(existingCatalogKey, requestCatalogKey)) {
+                return Result.fail("管理员目录引用不可修改，请删除后重新安装");
+            }
         } else {
-            entity.setClientOnline(false);
-            if (StringUtil.hasText(serverName)) {
-                if (mcpClientManager.isClientOnline(serverName)) {
-                    mcpClientManager.getMcpClient(serverName).close();
-                }
+            Result<?> validateResult = validateMcpConfig(entity);
+            if (!(EnumRes.SUCCESS.getCode() == validateResult.getErrorCode())) {
+                return validateResult;
             }
         }
+
         entity.setModified(new Date());
+
+        try {
+            ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(entity);
+            LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
+            if (Boolean.TRUE.equals(entity.getStatus())) {
+                mcpSharedRuntimeManager.start(resolved);
+                Log.info("共享 MCP 启动，userId={}, mcpId={}, catalogKey={}",
+                        loginAccount.getId(), entity.getId(), resolved.getCatalogKey());
+            } else {
+                entity.setClientOnline(false);
+                mcpSharedRuntimeManager.stop(resolved);
+                Log.info("共享 MCP 停止，userId={}, mcpId={}, catalogKey={}",
+                        loginAccount.getId(), entity.getId(), resolved.getCatalogKey());
+            }
+        } catch (Exception e) {
+            Log.error("MCP更新失败，id: {}", entity.getId(), e);
+            return Result.fail("MCP服务启动失败：" + e.getMessage());
+        }
         this.updateById(entity);
         return Result.ok();
     }
@@ -108,9 +138,15 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
     @Override
     public void removeMcp(Serializable id) {
         Mcp mcp = this.getById(id);
-        if (mcp != null && mcp.getStatus()) {
-            McpSyncClient mcpClient = getMcpClient(mcp, mcpClientManager);
-            mcpClient.close();
+        if (mcp != null) {
+            try {
+                ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+                if (!resolved.isShared() || !hasOtherCatalogReference(resolved.getCatalogKey(), mcp.getId())) {
+                    mcpSharedRuntimeManager.stop(resolved);
+                }
+            } catch (Exception e) {
+                Log.warn("移除 MCP 时关闭客户端失败，id: {}", id, e);
+            }
         }
         this.removeById(id);
     }
@@ -119,8 +155,12 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
     public Result<Page<Mcp>> pageMcp(Result<Page<Mcp>> page) {
         List<Mcp> records = page.getData().getRecords();
         records.forEach(mcp -> {
-                    boolean clientOnline = mcpClientManager.isClientOnline(getFirstMcpServerName(mcp.getConfigJson()));
-                    mcp.setClientOnline(clientOnline);
+                    try {
+                        ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+                        mcp.setClientOnline(mcpSharedRuntimeManager.isOnline(resolved));
+                    } catch (Exception e) {
+                        mcp.setClientOnline(false);
+                    }
                 }
         );
         page.getData().setRecords(records);
@@ -131,7 +171,8 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
     public Mcp getMcpTools(String id) {
         Mcp mcp = this.getById(id);
         if (mcp != null && mcp.getStatus()) {
-            McpSyncClient mcpClient = getMcpClient(mcp, mcpClientManager);
+            ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+            McpSyncClient mcpClient = mcpSharedRuntimeManager.getClient(resolved);
             List<McpSchema.Tool> tools = null;
             if (mcpClient != null) {
                 tools = mcpClient.listTools().tools();
@@ -141,25 +182,15 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
         return mcp;
     }
 
-    public static McpSyncClient getMcpClient(Mcp mcp, McpClientManager mcpClientManager) {
-        String configJson = mcp.getConfigJson();
-        String mcpServerName = getFirstMcpServerName(configJson);
-        if (StringUtil.hasText(mcpServerName)) {
-            return mcpClientManager.getMcpClient(mcpServerName);
-        }
-        return null;
-    }
-
     @Override
     public Tool toFunction(BotMcp botMcp) {
         Mcp mcpInfo = this.getById(botMcp.getMcpId());
-        String configJson = null;
-        if (mcpInfo != null) {
-            configJson = mcpInfo.getConfigJson();
+        if (mcpInfo == null || !Boolean.TRUE.equals(mcpInfo.getStatus())) {
+            return null;
         }
-        String mcpServerName = getFirstMcpServerName(configJson);
-        if (StringUtil.hasText(mcpServerName)) {
-            McpSyncClient mcpClient = mcpClientManager.getMcpClient(mcpServerName);
+        try {
+            ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcpInfo);
+            McpSyncClient mcpClient = mcpSharedRuntimeManager.getClient(resolved);
             List<McpSchema.Tool> tools = mcpClient.listTools().tools();
             for (McpSchema.Tool tool : tools) {
                 if (tool.name().equals(botMcp.getMcpToolName())) {
@@ -196,6 +227,32 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
                     return mcpTool;
                 }
             }
+        } catch (Exception e) {
+            Log.warn("加载 MCP 工具失败，mcpId: {}", botMcp.getMcpId(), e);
+        }
+        return null;
+    }
+
+    @Override
+    public Tool getRuntimeTool(BigInteger mcpId, String toolName) {
+        Mcp mcp = this.getById(mcpId);
+        if (mcp == null || !Boolean.TRUE.equals(mcp.getStatus())) {
+            return null;
+        }
+        try {
+            ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+            McpSyncClient mcpClient = mcpSharedRuntimeManager.getClient(resolved);
+            if (mcpClient == null) {
+                return null;
+            }
+            for (McpSchema.Tool tool : mcpClient.listTools().tools()) {
+                if (tool.name().equals(toolName)) {
+                    com.agentsflex.mcp.client.McpTool runtimeTool = new com.agentsflex.mcp.client.McpTool(mcpClient, tool);
+                    return runtimeTool;
+                }
+            }
+        } catch (Exception e) {
+            Log.warn("加载运行时 MCP 工具失败，mcpId: {}", mcpId, e);
         }
         return null;
     }
@@ -225,23 +282,19 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
             if (!mcp.getStatus()) {
                 continue;
             }
-            String configJson = mcp.getConfigJson();
-            String serverName = getFirstMcpServerName(configJson);
-            if (!StringUtil.hasText(serverName)) {
-                continue;
-            }
-            boolean clientOnline = mcpClientManager.isClientOnline(serverName);
-            mcp.setClientOnline(clientOnline);
-            if (!clientOnline) {
-                continue;
-            }
             try {
-                McpSyncClient mcpClient = mcpClientManager.getMcpClient(serverName);
+                ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+                boolean clientOnline = mcpSharedRuntimeManager.isOnline(resolved);
+                mcp.setClientOnline(clientOnline);
+                if (!clientOnline) {
+                    continue;
+                }
+                McpSyncClient mcpClient = mcpSharedRuntimeManager.getClient(resolved);
                 List<McpSchema.Tool> tools = mcpClient.listTools().tools();
                 mcp.setTools(tools);
                 filteredRecords.add(mcp);
             } catch (Exception e) {
-                Log.error("MCP服务名称：{} 获取工具失败", serverName, e);
+                Log.warn("MCP 获取工具失败，id: {}", mcp.getId(), e);
             }
         }
         page.setRecords(filteredRecords);
@@ -259,9 +312,9 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
         nodeData.put("mcpName", mcp.getTitle());
         nodeData.put("mcpToolName", toolName);
 
-        String serverName = getFirstMcpServerName(mcp.getConfigJson());
-        if (StringUtil.hasText(serverName)) {
-            McpSyncClient mcpClient = mcpClientManager.getMcpClient(serverName);
+        try {
+            ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+            McpSyncClient mcpClient = mcpSharedRuntimeManager.getClient(resolved);
             if (mcpClient != null) {
                 java.util.List<McpSchema.Tool> tools = mcpClient.listTools().tools();
                 for (McpSchema.Tool tool : tools) {
@@ -288,9 +341,48 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
                     }
                 }
             }
+        } catch (Exception e) {
+            Log.warn("MCP 工具信息加载失败，mcpId: {}", mcpId, e);
         }
         nodeData.put("outputDefs", new com.alibaba.fastjson2.JSONArray());
         return nodeData;
+    }
+
+    @Override
+    public List<McpCatalogItemDTO> listCatalog() {
+        List<McpCatalogItemDTO> result = new ArrayList<>();
+        for (McpCatalogEntry entry : mcpAdminCatalogRegistry.listEnabled()) {
+            McpCatalogItemDTO item = new McpCatalogItemDTO();
+            item.setKey(entry.getKey());
+            item.setTitle(entry.getTitle());
+            item.setDescription(entry.getDescription());
+            item.setProtocol(entry.getProtocol());
+            item.setRunning(mcpSharedRuntimeManager.isSharedOnline(entry.getKey()));
+            result.add(item);
+        }
+        return result;
+    }
+
+    @Override
+    public Result<?> importFromCatalog(McpCatalogImportDTO request) {
+        if (request == null || !StringUtil.hasText(request.getCatalogKey())) {
+            return Result.fail("catalogKey 不能为空");
+        }
+        McpCatalogEntry entry = mcpAdminCatalogRegistry.get(request.getCatalogKey());
+        if (entry == null || !entry.isEnabled()) {
+            return Result.fail("管理员 MCP 目录条目不存在或已停用");
+        }
+
+        Mcp entity = new Mcp();
+        entity.setTitle(StringUtil.hasText(request.getTitle()) ? request.getTitle() : entry.getTitle());
+        entity.setDescription(StringUtil.hasText(request.getDescription()) ? request.getDescription() : entry.getDescription());
+        entity.setConfigJson(McpConfigSecurityUtil.buildCatalogReference(entry.getKey()));
+        entity.setStatus(false);
+
+        LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
+        CommonFiledUtil.commonFiled(entity, loginAccount.getId(), loginAccount.getTenantId(), loginAccount.getDeptId());
+        this.save(entity);
+        return Result.ok();
     }
 
     private Result<?> validateMcpConfig(Mcp entity) {
@@ -298,6 +390,28 @@ public class McpServiceImpl extends ServiceImpl<McpMapper, Mcp>  implements McpS
             Log.error("MCP 配置不能为空");
             return Result.fail("MCP 配置 JSON 不能为空");
         }
-        return Result.ok();
+        return McpConfigSecurityUtil.validateRemoteOnly(entity.getConfigJson());
+    }
+
+    private boolean hasOtherCatalogReference(String catalogKey, BigInteger excludeId) {
+        if (!StringUtil.hasText(catalogKey)) {
+            return false;
+        }
+        TenantManager.ignoreTenantCondition();
+        try {
+            List<Mcp> all = this.list();
+            for (Mcp mcp : all) {
+                if (mcp == null || Objects.equals(mcp.getId(), excludeId)) {
+                    continue;
+                }
+                if (Boolean.TRUE.equals(mcp.getStatus())
+                        && Objects.equals(catalogKey, mcpRuntimeConfigResolver.getCatalogKey(mcp))) {
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            TenantManager.restoreTenantCondition();
+        }
     }
 }

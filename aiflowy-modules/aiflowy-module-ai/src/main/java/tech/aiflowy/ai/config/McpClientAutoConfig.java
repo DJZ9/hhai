@@ -1,30 +1,32 @@
 package tech.aiflowy.ai.config;
 
-import com.agentsflex.mcp.client.McpClientManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import tech.aiflowy.ai.dto.ResolvedMcpConfig;
 import tech.aiflowy.ai.entity.Mcp;
+import tech.aiflowy.ai.service.McpRuntimeConfigResolver;
+import tech.aiflowy.ai.service.McpSharedRuntimeManager;
 import tech.aiflowy.ai.service.impl.McpServiceImpl;
-import tech.aiflowy.common.util.StringUtil;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import java.util.List;
-import java.util.Optional;
-
-import static tech.aiflowy.ai.service.impl.McpServiceImpl.getFirstMcpServerName;
 
 @Configuration
 @DependsOn("mcpServiceImpl") // 确保 mcpService 先初始化
 public class McpClientAutoConfig {
 
-    private final McpClientManager mcpClientManager = McpClientManager.getInstance();
     private static final Logger log = LoggerFactory.getLogger(McpClientAutoConfig.class);
 
     @Resource
     private McpServiceImpl mcpService;
+
+    @Resource
+    private McpRuntimeConfigResolver mcpRuntimeConfigResolver;
+
+    @Resource
+    private McpSharedRuntimeManager mcpSharedRuntimeManager;
 
     @PostConstruct
     public void initMcpClient() {
@@ -35,17 +37,17 @@ public class McpClientAutoConfig {
             if (!mcp.getStatus()) {
                 return;
             }
-            String configJson = mcp.getConfigJson();
-            String serverName = getFirstMcpServerName(configJson);
-            if (StringUtil.hasText(serverName)) {
-                try {
-                    mcpClientManager.registerFromJson(configJson);
-                } catch (Exception e) {
-                    log.error("MCP服务名称：{} 注册失败", serverName, e);
+            try {
+                ResolvedMcpConfig resolved = mcpRuntimeConfigResolver.resolve(mcp);
+                if (!resolved.isShared() || !mcpSharedRuntimeManager.isOnline(resolved)) {
+                    mcpSharedRuntimeManager.register(resolved);
+                    if (resolved.isShared()) {
+                        mcpSharedRuntimeManager.start(resolved);
+                    }
                 }
-                log.info("MCP服务名称：{} 注册成功", serverName);
-            } else {
-                log.error("MCP服务名称为：{} 启动失败，配置 JSON 中未找到服务名称", mcp.getTitle());
+                log.info("MCP服务名称：{} 注册成功", mcp.getTitle());
+            } catch (Exception e) {
+                log.error("MCP服务名称：{} 注册失败", mcp.getTitle(), e);
             }
         });
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { FormInstance } from 'element-plus';
 
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import {
+  ElAlert,
   ElButton,
   ElDialog,
   ElForm,
@@ -19,6 +20,7 @@ import {
 
 import { api } from '#/api/request';
 import { $t } from '#/locales';
+import McpCatalogTab from './McpCatalogTab.vue';
 
 interface PropValue {
   type?: string;
@@ -56,6 +58,8 @@ const saveForm = ref<FormInstance>();
 const dialogVisible = ref(false);
 const isAdd = ref(true);
 const btnLoading = ref(false);
+const activeName = ref('manual');
+const catalogTabRef = ref<InstanceType<typeof McpCatalogTab>>();
 
 const defaultEntity: McpEntity = {
   title: '',
@@ -87,8 +91,11 @@ const rules = ref({
 function openDialog(row: Partial<McpEntity> = {}) {
   isAdd.value = !row.id;
   entity.value = { ...defaultEntity, ...row };
+  activeName.value = isAdd.value ? 'manual' : 'config';
   if (!isAdd.value) {
     getMcpTools(row);
+  } else {
+    catalogTabRef.value?.loadCatalog();
   }
   dialogVisible.value = true;
 }
@@ -101,6 +108,9 @@ function getMcpTools(row: Partial<McpEntity>) {
   });
 }
 function save() {
+  if (isAdd.value && activeName.value === 'catalog') {
+    return;
+  }
   saveForm.value?.validate((valid) => {
     if (valid) {
       btnLoading.value = true;
@@ -131,21 +141,51 @@ function save() {
 function closeDialog() {
   saveForm.value?.resetFields();
   isAdd.value = true;
+  activeName.value = 'manual';
   entity.value = { ...defaultEntity };
   dialogVisible.value = false;
 }
+
+function handleCatalogImported() {
+  emit('reload');
+  closeDialog();
+}
+
+function handleTabChange(name: string | number) {
+  if (name === 'catalog') {
+    catalogTabRef.value?.loadCatalog();
+  }
+}
+
+const isCatalogReference = computed(() => {
+  try {
+    const config = JSON.parse(entity.value.configJson || '{}');
+    return config?.aiflowyMcpSource?.type === 'catalog';
+  } catch {
+    return false;
+  }
+});
+
+const catalogKeyText = computed(() => {
+  try {
+    const config = JSON.parse(entity.value.configJson || '{}');
+    return config?.aiflowyMcpSource?.key || '';
+  } catch {
+    return '';
+  }
+});
+
 const jsonPlaceholder = ref(`{
   "mcpServers": {
-    "12306-mcp": {
-      "command": "npx.cmd",
-      "args": [
-        "-y",
-        "12306-mcp"
-      ]
+    "remote-mcp": {
+      "type": "http-sse",
+      "url": "https://mcp.example.com/sse",
+      "headers": {
+        "Authorization": "Bearer <token>"
+      }
     }
   }
 }`);
-const activeName = ref('config');
 </script>
 
 <template>
@@ -156,9 +196,21 @@ const activeName = ref('config');
     :before-close="closeDialog"
     :close-on-click-modal="false"
   >
-    <ElTabs v-model="activeName" class="demo-tabs">
-      <ElTabPane :label="$t('mcp.modal.config')" name="config">
+    <ElTabs
+      v-if="isAdd"
+      v-model="activeName"
+      class="demo-tabs"
+      @tab-change="handleTabChange"
+    >
+      <ElTabPane label="手动添加 HTTP MCP" name="manual">
+        <ElAlert
+          title="手动添加仅支持 HTTP、SSE、Streamable HTTP 等远程 MCP。npx、python、docker 等本地命令型 MCP 不能在前端填写，请联系管理员在服务器的 MCP 配置目录中添加，再从“从后台目录安装”页签导入。"
+          type="info"
+          :closable="false"
+          show-icon
+        />
         <ElForm
+          class="mt-3"
           label-width="120px"
           ref="saveForm"
           :model="entity"
@@ -176,15 +228,59 @@ const activeName = ref('config');
               type="textarea"
               :rows="15"
               v-model.trim="entity.configJson"
-              :placeholder="$t('mcp.example') + jsonPlaceholder" />
+              :placeholder="$t('mcp.example') + jsonPlaceholder"
+            />
           </ElFormItem>
           <ElFormItem prop="status" :label="$t('mcp.status')">
             <ElSwitch v-model="entity.status" />
           </ElFormItem>
         </ElForm>
       </ElTabPane>
-      <div v-if="!isAdd">
-        <ElTabPane :label="$t('mcp.modal.tool')" name="tool">
+      <ElTabPane label="从后台目录安装" name="catalog">
+        <McpCatalogTab ref="catalogTabRef" @imported="handleCatalogImported" />
+      </ElTabPane>
+    </ElTabs>
+    <ElTabs v-else v-model="activeName" class="demo-tabs">
+      <ElTabPane :label="$t('mcp.modal.config')" name="config">
+        <ElAlert
+          v-if="isCatalogReference"
+          title="管理员共享 MCP：配置由服务器 MCP 配置目录统一维护，所有安装用户共享服务实例和认证信息。"
+          type="warning"
+          :closable="false"
+          show-icon
+        />
+        <ElForm
+          class="mt-3"
+          label-width="120px"
+          ref="saveForm"
+          :model="entity"
+          status-icon
+          :rules="rules"
+        >
+          <ElFormItem prop="title" :label="$t('mcp.title')">
+            <ElInput v-model.trim="entity.title" />
+          </ElFormItem>
+          <ElFormItem prop="description" :label="$t('mcp.description')">
+            <ElInput v-model.trim="entity.description" />
+          </ElFormItem>
+          <ElFormItem v-if="isCatalogReference" label="目录 KEY">
+            <ElInput :model-value="catalogKeyText" readonly />
+          </ElFormItem>
+          <ElFormItem prop="configJson" :label="$t('mcp.configJson')">
+            <ElInput
+              type="textarea"
+              :rows="15"
+              v-model.trim="entity.configJson"
+              :readonly="isCatalogReference"
+              :placeholder="$t('mcp.example') + jsonPlaceholder"
+            />
+          </ElFormItem>
+          <ElFormItem prop="status" :label="$t('mcp.status')">
+            <ElSwitch v-model="entity.status" />
+          </ElFormItem>
+        </ElForm>
+      </ElTabPane>
+      <ElTabPane :label="$t('mcp.modal.tool')" name="tool">
           <ElTable
             :data="entity.tools"
             border
@@ -247,13 +343,13 @@ const activeName = ref('config');
             </ElTableColumn>-->
           </ElTable>
         </ElTabPane>
-      </div>
     </ElTabs>
     <template #footer>
       <ElButton @click="closeDialog">
         {{ $t('button.cancel') }}
       </ElButton>
       <ElButton
+        v-if="!isAdd || activeName === 'manual'"
         type="primary"
         @click="save"
         :loading="btnLoading"
@@ -266,6 +362,9 @@ const activeName = ref('config');
 </template>
 
 <style scoped>
+.mt-3 {
+  margin-top: 12px;
+}
 .content-left {
   display: flex;
   flex-direction: column;

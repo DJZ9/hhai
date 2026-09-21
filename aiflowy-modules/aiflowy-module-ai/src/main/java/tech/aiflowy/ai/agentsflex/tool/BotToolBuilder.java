@@ -165,7 +165,12 @@ public class BotToolBuilder {
         List<BotMcp> botMcpList = botMcpService.getMapper().selectListWithRelationsByQuery(queryWrapper);
         botMcpList.forEach(botMcp -> {
             Tool tool = mcpService.toFunction(botMcp);
-            functionList.add(tool);
+            if (tool != null) {
+                functionList.add(tool);
+            } else {
+                log.warn("MCP 工具不可用，已跳过。botId: {}, mcpId: {}, toolName: {}",
+                        botId, botMcp.getMcpId(), botMcp.getMcpToolName());
+            }
         });
 
         // Wiki

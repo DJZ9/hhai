@@ -1,11 +1,14 @@
 package tech.aiflowy.admin.controller.ai;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import tech.aiflowy.ai.dto.GetMcpToolsRequestDTO;
+import tech.aiflowy.ai.dto.McpCatalogImportDTO;
+import tech.aiflowy.ai.dto.McpCatalogItemDTO;
 import tech.aiflowy.ai.entity.BotMcp;
 import tech.aiflowy.ai.entity.Mcp;
 import tech.aiflowy.ai.service.BotMcpService;
@@ -16,6 +19,7 @@ import tech.aiflowy.common.web.dto.RemoveRequestDTO;
 
 import jakarta.annotation.Resource;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  *  控制层。
@@ -63,6 +67,7 @@ public class McpController extends BaseCurdController<McpService, Mcp> {
      * @return MCP信息
      */
     @PostMapping("/getMcpTools")
+    @SaCheckPermission("/api/v1/mcp/query")
     public Result<Mcp> getMcpTools(@RequestBody GetMcpToolsRequestDTO request) {
 
         return Result.ok(service.getMcpTools(request.getId()));
@@ -70,6 +75,7 @@ public class McpController extends BaseCurdController<McpService, Mcp> {
 
 
     @GetMapping("pageTools")
+    @SaCheckPermission("/api/v1/mcp/query")
     public Result<Page<Mcp>> pageTools(HttpServletRequest request, String sortKey, String sortType, Long pageNumber, Long pageSize) {
         if (pageNumber == null || pageNumber < 1) {
             pageNumber = 1L;
@@ -86,6 +92,7 @@ public class McpController extends BaseCurdController<McpService, Mcp> {
     }
 
     @GetMapping("/getTinyFlowData")
+    @SaCheckPermission("/api/v1/mcp/query")
     public Result<?> getTinyFlowData(java.math.BigInteger mcpId, String toolName) {
         com.alibaba.fastjson2.JSONObject nodeData = service.getMcpToolData(mcpId, toolName);
         com.alibaba.fastjson2.JSONArray parameters = nodeData.getJSONArray("parameters");
@@ -93,6 +100,18 @@ public class McpController extends BaseCurdController<McpService, Mcp> {
             handleArray(parameters);
         }
         return Result.ok(nodeData);
+    }
+
+    @GetMapping("/catalog")
+    @SaCheckPermission("/api/v1/mcp/query")
+    public Result<List<McpCatalogItemDTO>> catalog() {
+        return Result.ok(service.listCatalog());
+    }
+
+    @PostMapping("/importFromCatalog")
+    @SaCheckPermission("/api/v1/mcp/save")
+    public Result<?> importFromCatalog(@RequestBody McpCatalogImportDTO request) {
+        return service.importFromCatalog(request);
     }
 
     private void handleArray(com.alibaba.fastjson2.JSONArray array) {

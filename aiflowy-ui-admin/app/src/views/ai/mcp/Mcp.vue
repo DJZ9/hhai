@@ -37,6 +37,37 @@ function reset(formEl: FormInstance | undefined) {
 function showDialog(row: any) {
   saveDialog.value.openDialog({ ...row });
 }
+
+function isCatalogReference(row: any) {
+  try {
+    const config = JSON.parse(row?.configJson || '{}');
+    return config?.aiflowyMcpSource?.type === 'catalog';
+  } catch {
+    return false;
+  }
+}
+
+function handleStatusChange(row: any, value: boolean) {
+  if (!isCatalogReference(row)) {
+    handleUpdate(row, false);
+    return;
+  }
+  const actionText = value ? '启动' : '停止';
+  const content = value
+    ? '该操作会为所有使用者启动共享 MCP 服务，是否继续？'
+    : '该操作会立即停止共享 MCP 服务，并影响所有正在使用的用户，是否继续？';
+  ElMessageBox.confirm(content, `共享 MCP ${actionText}`, {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+    .then(() => {
+      handleUpdate(row, false);
+    })
+    .catch(() => {
+      row.status = !value;
+    });
+}
 function remove(row: any) {
   ElMessageBox.confirm($t('message.deleteAlert'), $t('message.noticeTitle'), {
     confirmButtonText: $t('message.ok'),
@@ -176,7 +207,9 @@ const refreshLoadingMap = ref<Record<number | string, boolean>>({});
               <template #default="{ row }">
                 <ElSwitch
                   v-model="row.status"
-                  @change="() => handleUpdate(row, false)"
+                  @change="(value) =>
+                    handleStatusChange(row, value === true)
+                  "
                   :loading="loadingMap[row.id]"
                   :disabled="loadingMap[row.id]"
                 />
