@@ -1,7 +1,6 @@
 import docNode from './documentNode';
 import downloadNode from './downloadNode';
 import { ImageGenerationNode } from './imageGenerationNode';
-import { VideoGenerationNode } from './videoGenerationNode';
 import makeFileNode from './makeFileNode';
 import { McpNode } from './mcpNode';
 import nodeNames from './nodeNames';
@@ -9,7 +8,10 @@ import { OcrContentExtractionNode } from './ocrContentExtractionNode';
 import { PluginNode } from './pluginNode';
 import { SaveToDatacenterNode } from './saveToDatacenter';
 import { SearchDatacenterNode } from './searchDatacenter';
+import { SpeechToTextNode } from './sttNode';
 import sqlNode from './sqlNode';
+import { TextToSpeechNode } from './ttsNode';
+import { VideoGenerationNode } from './videoGenerationNode';
 import { WorkflowNode } from './workflowNode';
 
 export interface CustomNodeOptions {
@@ -29,6 +31,8 @@ export const getCustomNode = async (options: CustomNodeOptions) => {
   const ocrContentExtractionNode = await OcrContentExtractionNode();
   const imageGenerationNode = await ImageGenerationNode();
   const videoGenerationNode = await VideoGenerationNode();
+  const textToSpeechNode = await TextToSpeechNode();
+  const speechToTextNode = await SpeechToTextNode();
   return {
     ...docNode,
     ...makeFileNode,
@@ -42,5 +46,7 @@ export const getCustomNode = async (options: CustomNodeOptions) => {
     [nodeNames.ocrContentExtractionNode]: ocrContentExtractionNode,
     [nodeNames.imageGenerationNode]: imageGenerationNode,
     [nodeNames.videoGenerationNode]: videoGenerationNode,
+    [nodeNames.ttsNode]: textToSpeechNode,
+    [nodeNames.sttNode]: speechToTextNode,
   };
 };

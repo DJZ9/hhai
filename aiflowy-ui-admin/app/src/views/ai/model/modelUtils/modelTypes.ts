@@ -25,4 +25,12 @@ export const modelTypes = [
     label: $t('llmProvider.videoModel'),
     value: 'videoModel',
   },
+  {
+    label: $t('llmProvider.ttsModel'),
+    value: 'ttsModel',
+  },
+  {
+    label: $t('llmProvider.sttModel'),
+    value: 'sttModel',
+  },
 ];

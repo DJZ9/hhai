@@ -67,6 +67,10 @@ public class TinyFlowConfigService {
         ImageGenerationNodeParser imageGenerationNodeParser = new ImageGenerationNodeParser();
         // 视频生成节点
         VideoGenerationNodeParser videoGenerationNodeParser = new VideoGenerationNodeParser();
+        // 文本转语音节点
+        TextToSpeechNodeParser textToSpeechNodeParser = new TextToSpeechNodeParser();
+        // 语音转文本节点
+        SpeechToTextNodeParser speechToTextNodeParser = new SpeechToTextNodeParser();
 
         chainParser.addNodeParser(docNodeParser.getNodeName(), docNodeParser);
         chainParser.addNodeParser(makeFileNodeParser.getNodeName(), makeFileNodeParser);
@@ -80,6 +84,8 @@ public class TinyFlowConfigService {
         chainParser.addNodeParser(mcpToolNodeParser.getNodeName(), mcpToolNodeParser);
         chainParser.addNodeParser(imageGenerationNodeParser.getNodeName(), imageGenerationNodeParser);
         chainParser.addNodeParser(videoGenerationNodeParser.getNodeName(), videoGenerationNodeParser);
+        chainParser.addNodeParser(textToSpeechNodeParser.getNodeName(), textToSpeechNodeParser);
+        chainParser.addNodeParser(speechToTextNodeParser.getNodeName(), speechToTextNodeParser);
     }
 
     public void setSearchEngineProvider() {

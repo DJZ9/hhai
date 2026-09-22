@@ -11,4 +11,6 @@ export default {
   ocrContentExtractionNode: 'ocr-content-extraction-node',
   imageGenerationNode: 'image-generation-node',
   videoGenerationNode: 'video-generation',
+  ttsNode: 'tts-node',
+  sttNode: 'stt-node',
 };
