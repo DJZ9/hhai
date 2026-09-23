@@ -8,7 +8,7 @@ import tech.aiflowy.common.filestorage.FileStorageService;
 
 import java.io.IOException;
 
-@Component
+@Component("tempImagePublisher")
 public class FileStorageDocumentImagePublisher implements DocumentImagePublisher {
 
     @Resource(name = "default")
