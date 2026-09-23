@@ -20,6 +20,10 @@ export interface AiflowySDKOptions {
    */
   endpoint: string;
   /**
+   * 登录令牌（可选：第三方系统传入的现成 token，拼到 iframe URL 供 usercenter 免登录；不传则不注入登录态）
+   */
+  token?: string;
+  /**
    * 浮动入口配置
    */
   launcher?: {
@@ -59,7 +63,7 @@ export interface AiflowySDKOptions {
 
 type NormalizedOptions = Omit<
   DeepRequired<AiflowySDKOptions, "callbacks">,
-  "botId" | "endpoint"
+  "botId" | "endpoint" | "token"
 >;
 
 const DEFAULTS: NormalizedOptions = {
@@ -114,7 +118,6 @@ class AiflowySDK {
     if (!options.endpoint) {
       throw new Error("endpoint is required");
     }
-
     this.options = deepMerge(DEFAULTS, options);
 
     const endpoint = options.endpoint.replace(/\/+$/, "");
@@ -123,6 +126,9 @@ class AiflowySDK {
       primaryColor: this.options.theme.primaryColor,
       dark: `${this.options.theme.dark}`,
     });
+    if (options.token) {
+      params.set("token", options.token);
+    }
     this.iframeUrl = `${endpoint}/#/iframe/chat?${params.toString()}`;
   }
 

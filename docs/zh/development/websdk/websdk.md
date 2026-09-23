@@ -38,6 +38,7 @@ import { initAiflowy } from '@aiflowy/websdk';
 const sdk = initAiflowy({
   botId: 'your-bot-id',
   endpoint: 'https://your-aiflowy-domain.com',
+  token: 'your-token', // 可选：登录令牌（需通过「生成 token」获得；传入后用于免登录，不传则不注入登录态）
 });
 ```
 
@@ -56,6 +57,7 @@ const sdk = initAiflowy({
     AiflowySDK.initAiflowy({
       botId: 'your-bot-id',
       endpoint: 'https://your-aiflowy-domain.com',
+      token: 'your-token', // 可选：登录令牌，传入后用于免登录，不传则不注入登录态
     });
   </script>
 </body>
@@ -87,6 +89,9 @@ const sdk = initAiflowy({
   
   // 必填：AIFlowy 服务地址
   endpoint: 'https://your-aiflowy-domain.com',
+  
+  // 可选：登录令牌（通过「生成 token」获得，用于免登录；不传则不注入登录态）
+  token: 'your-token',
   
   // 浮动入口配置
   launcher: {
@@ -202,6 +207,23 @@ sdk.toggle();
 ```javascript
 sdk.destroy();
 ```
+
+## 生成 token
+
+`token` 为可选参数。需要登录接入时，通过 AIFlowy 的管理后台生成访问令牌作为请求头，生成后需给该令牌授权「登录及本 SDK 所需接口」的访问权限。然后调用第三方登录接口生成 token ，若未传入 token，则嵌入页面不会被登录认证，需要登录态的接口将无法正常使用。
+
+> token生成文档地址（在线版）：`https://api.aiflowy.tech/485995122e0`
+
+调用时需在请求头 `Authorization` 中携带访问令牌，格式为：
+
+```
+Authorization: Bearer <访问令牌>
+```
+
+其中 `<访问令牌>` 是直接在 AIFlowy 的访问令牌中生成的（例如 `Bearer 593c8a84a01746ed96abfb26c15d2103`）。
+
+然后调用 /public-api/v1/thirdParty/login 登录接口获取token
+获取到 token 后，将其作为 `initAiflowy` 的 `token` 参数传入即可完成免登录接入。
 
 ## 获取 botId
 

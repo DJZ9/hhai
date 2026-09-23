@@ -7,6 +7,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('#/views/iframe/chat.vue'),
     meta: {
       title: '聊天',
+      ignoreAccess: true,
     },
   },
 ];

@@ -3,6 +3,7 @@ import { computed, onMounted, ref, useTemplateRef } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { updatePreferences } from '@aiflowy/preferences';
+import { useAccessStore } from '@aiflowy/stores';
 import { cloneDeep } from '@aiflowy/utils';
 
 import { ElAvatar, ElButton, ElContainer, ElMain } from 'element-plus';
@@ -27,10 +28,23 @@ const showQuestions = computed(() => {
 });
 
 onMounted(() => {
+  injectUrlToken();
   updateTheme();
   getAssistantList();
   window.addEventListener('pageshow', updateTheme);
 });
+
+function injectUrlToken() {
+  const params = getUrlParams();
+  if (params.token) {
+    const accessStore = useAccessStore();
+    if (!accessStore.accessToken) {
+      accessStore.setAccessToken(params.token as string);
+    }
+    // 清理 URL 中的 token，避免泄露并防止刷新后残留
+    updateQueryWithoutReload({ token: null });
+  }
+}
 
 function updateTheme(event?: PageTransitionEvent) {
   const params = getUrlParams();
