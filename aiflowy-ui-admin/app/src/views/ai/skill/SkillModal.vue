@@ -144,6 +144,8 @@ const handleUploadSuccess = (response: any) => {
       $t('skill.upload.parseSuccess') || '解析成功，请确认信息后保存',
     );
   } else {
+    // 解析失败时清空文件列表，方便用户重新上传符合格式的包
+    fileList.value = [];
     ElMessage.error(result.message || $t('message.upload.fail') || '解析失败');
   }
 };
@@ -274,6 +276,9 @@ defineExpose({
               }}</span>
           </div>
         </ElUpload>
+        <div class="mt-1 text-xs text-[#75808d]">
+          {{ $t('skill.upload.formatHint') }}
+        </div>
       </ElFormItem>
 
       <ElFormItem prop="title" :label="$t('skill.title')">

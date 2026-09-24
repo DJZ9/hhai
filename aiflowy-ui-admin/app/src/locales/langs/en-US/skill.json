@@ -25,7 +25,8 @@
     "title": "Upload Skill ZIP File",
     "description": "Drag and drop ZIP file here, or click to upload",
     "zipOnly": "Only ZIP files are allowed",
-    "parseSuccess": "Parsed successfully, please confirm and save"
+    "parseSuccess": "Parsed successfully, please confirm and save",
+    "formatHint": "Format: SKILL.md must be at the root (first level) of the ZIP, not in a subdirectory"
   },
   "files": {
     "title": "Skill Files",

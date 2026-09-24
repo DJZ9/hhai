@@ -408,10 +408,11 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
             throw new IllegalArgumentException("Skill 目录无效");
         }
 
-        // 查找 SKILL.md 文件
-        File skillMdFile = findSkillMdFile(skillDir);
-        if (skillMdFile == null) {
-            throw new FileNotFoundException("未找到 SKILL.md 文件");
+        // 严格要求 SKILL.md 位于压缩包根目录（一级目录），不做递归查找
+        File skillMdFile = new File(skillDir, SKILL_MD_FILE);
+        if (!skillMdFile.exists() || !skillMdFile.isFile()) {
+            throw new FileNotFoundException(
+                "压缩包格式错误：SKILL.md 必须位于 ZIP 根目录（一级目录），不能嵌套在子目录中，请按标准格式重新打包上传");
         }
 
         // 读取 SKILL.md 文件内容
@@ -441,32 +442,6 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
         }
     }
 
-    /**
-     * 递归查找 SKILL.md 文件
-     *
-     * @param directory 目录
-     * @return SKILL.md 文件，未找到返回 null
-     */
-    private File findSkillMdFile(File directory) {
-        // 首先检查当前目录
-        File skillMd = new File(directory, SKILL_MD_FILE);
-        if (skillMd.exists()) {
-            return skillMd;
-        }
-
-        // 递归查找子目录
-        File[] subDirs = directory.listFiles(File::isDirectory);
-        if (subDirs != null) {
-            for (File subDir : subDirs) {
-                File found = findSkillMdFile(subDir);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-
-        return null;
-    }
 
     /**
      * 读取文件内容

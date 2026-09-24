@@ -25,7 +25,8 @@
     "title": "上传 Skill ZIP 文件",
     "description": "将 ZIP 文件拖拽到此处，或点击上传",
     "zipOnly": "只能上传 ZIP 文件",
-    "parseSuccess": "解析成功，请确认信息后保存"
+    "parseSuccess": "解析成功，请确认信息后保存",
+    "formatHint": "格式要求：SKILL.md 必须位于压缩包根目录（一级目录），不能放在子目录中"
   },
   "files": {
     "title": "Skill 文件列表",
