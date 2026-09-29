@@ -26,13 +26,30 @@
     "description": "将 ZIP 文件拖拽到此处，或点击上传",
     "zipOnly": "只能上传 ZIP 文件",
     "parseSuccess": "解析成功，请确认信息后保存",
-    "formatHint": "格式要求：SKILL.md 必须位于压缩包根目录（一级目录），不能放在子目录中"
+    "formatHint": "格式要求：压缩包内必须包含 SKILL.md；若 SKILL.md 位于子目录，系统会自动以其所在目录作为技能根目录"
   },
   "files": {
     "title": "Skill 文件列表",
     "empty": "暂无文件",
     "loading": "加载中..."
   },
+  "fileManage": "文件管理",
+  "fileTree": "文件目录",
+  "fileTreeLoadFailed": "加载文件树失败",
+  "fileReadFailed": "读取文件失败",
+  "newFile": "新增文件",
+  "inputFilePath": "请输入文件路径",
+  "deleteFile": "删除文件",
+  "deleteFileConfirm": "确定删除该文件/目录吗？",
+  "deleteOk": "删除成功",
+  "deleteFailed": "删除失败",
+  "preview": "预览",
+  "edit": "编辑",
+  "saveContent": "保存",
+  "saveSuccess": "保存成功",
+  "saveFailed": "保存失败",
+  "binaryNotPreviewable": "二进制文件，仅支持删除",
+  "pleaseSelectFile": "请先在左侧选择文件",
   "placeholder": {
     "title": "请输入技能标题",
     "name": "请输入技能名称",

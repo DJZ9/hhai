@@ -10,7 +10,7 @@ import { $t } from '@aiflowy/locales';
 import { useAccessStore } from '@aiflowy/stores';
 import { useAppConfig } from '@aiflowy/hooks';
 
-import { Delete, Download, Edit, Plus, ShoppingCart } from '@element-plus/icons-vue';
+import { Delete, Download, Edit, Folder, Plus, ShoppingCart } from '@element-plus/icons-vue';
 import {
   ElButton,
   ElDialog,
@@ -61,6 +61,19 @@ const actions: ActionButton[] = [
     permission: '/api/v1/skill/query',
     onClick(row) {
       handleDownload(row);
+    },
+  },
+  {
+    icon: Folder,
+    text: $t('skill.fileManage'),
+    className: '',
+    permission: '/api/v1/skill/query',
+    onClick(row) {
+      router.push({
+        name: 'SkillFileManage',
+        params: { skillId: row.id },
+        query: { title: row.title || row.name || '' },
+      });
     },
   },
   {

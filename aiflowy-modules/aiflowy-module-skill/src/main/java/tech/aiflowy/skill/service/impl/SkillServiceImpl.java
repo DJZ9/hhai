@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import java.util.stream.Stream;
 
 /**
  * 技能 服务层实现。
@@ -125,6 +126,23 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
                 }
             }
 
+            // 向下逐级查找 SKILL.md，以其所在目录作为技能根目录（上层包装目录忽略）
+            File skillMdFile = findSkillMdFile(tempDir.toFile());
+            if (skillMdFile == null) {
+                throw new FileNotFoundException("压缩包中未找到 SKILL.md 文件，请确认包内包含 SKILL.md");
+            }
+            normalizeSkillRoot(tempDir, skillMdFile);
+
+            // 重新统计（排除上层包装目录）
+            fileCount = 0;
+            totalSize = 0L;
+            try (Stream<Path> stream = Files.walk(tempDir)) {
+                for (Path p : (Iterable<Path>) stream.filter(Files::isRegularFile)::iterator) {
+                    fileCount++;
+                    totalSize += Files.size(p);
+                }
+            }
+
             // 解析 SKILL.md 文件获取元数据
             Skill skill = parseSkillMd(tempDir.toFile());
 
@@ -141,6 +159,24 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
             deleteDirectory(tempDir.toFile());
             throw e;
         }
+    }
+
+    /**
+     * 以 SKILL.md 所在目录作为技能根目录：将其内容上移到解压根目录，忽略上层包装目录
+     *
+     * @param tempDir      解压根目录
+     * @param skillMdFile  找到的 SKILL.md 文件
+     */
+    private void normalizeSkillRoot(Path tempDir, File skillMdFile) throws IOException {
+        File skillRootDir = skillMdFile.getParentFile();
+        if (skillRootDir.toPath().equals(tempDir)) {
+            return; // SKILL.md 已在根目录，无需处理
+        }
+        // 上移 SKILL.md 所在目录的全部内容到根目录
+        moveDirectoryContents(skillRootDir, tempDir.toFile());
+        // 删除空的包装目录链（相对路径首段即最外层包装目录）
+        Path relative = tempDir.relativize(skillRootDir.toPath());
+        deleteDirectory(tempDir.resolve(relative.getName(0)).toFile());
     }
 
     @Override
@@ -396,6 +432,13 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
         skill.setFileCount(fileCount);
         skill.setSkillSize(totalSize);
 
+        // 向下逐级查找 SKILL.md，以其所在目录作为技能根目录（上层包装目录忽略）
+        File skillMdFile = findSkillMdFile(skillDir.toFile());
+        if (skillMdFile == null) {
+            throw new FileNotFoundException("压缩包中未找到 SKILL.md 文件，请确认包内包含 SKILL.md");
+        }
+        normalizeSkillRoot(skillDir, skillMdFile);
+
         // 解析 SKILL.md 文件
         parseSkillMd(skillDir.toFile());
 
@@ -408,11 +451,10 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
             throw new IllegalArgumentException("Skill 目录无效");
         }
 
-        // 严格要求 SKILL.md 位于压缩包根目录（一级目录），不做递归查找
-        File skillMdFile = new File(skillDir, SKILL_MD_FILE);
-        if (!skillMdFile.exists() || !skillMdFile.isFile()) {
-            throw new FileNotFoundException(
-                "压缩包格式错误：SKILL.md 必须位于 ZIP 根目录（一级目录），不能嵌套在子目录中，请按标准格式重新打包上传");
+        // 向下逐级查找 SKILL.md 文件
+        File skillMdFile = findSkillMdFile(skillDir);
+        if (skillMdFile == null) {
+            throw new FileNotFoundException("压缩包中未找到 SKILL.md 文件，请确认包内包含 SKILL.md");
         }
 
         // 读取 SKILL.md 文件内容
@@ -440,6 +482,33 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
                 log.error("删除 Skill 目录失败: {}", skillPath, e);
             }
         }
+    }
+
+    /**
+     * 递归查找 SKILL.md 文件
+     *
+     * @param directory 目录
+     * @return SKILL.md 文件，未找到返回 null
+     */
+    private File findSkillMdFile(File directory) {
+        // 首先检查当前目录
+        File skillMd = new File(directory, SKILL_MD_FILE);
+        if (skillMd.exists()) {
+            return skillMd;
+        }
+
+        // 递归查找子目录
+        File[] subDirs = directory.listFiles(File::isDirectory);
+        if (subDirs != null) {
+            for (File subDir : subDirs) {
+                File found = findSkillMdFile(subDir);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+
+        return null;
     }
 
 

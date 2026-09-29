@@ -26,13 +26,30 @@
     "description": "Drag and drop ZIP file here, or click to upload",
     "zipOnly": "Only ZIP files are allowed",
     "parseSuccess": "Parsed successfully, please confirm and save",
-    "formatHint": "Format: SKILL.md must be at the root (first level) of the ZIP, not in a subdirectory"
+    "formatHint": "Format: The ZIP must contain SKILL.md. If it is inside a subdirectory, that directory is used as the skill root automatically"
   },
   "files": {
     "title": "Skill Files",
     "empty": "No files",
     "loading": "Loading..."
   },
+  "fileManage": "File Manager",
+  "fileTree": "Files",
+  "fileTreeLoadFailed": "Failed to load file tree",
+  "fileReadFailed": "Failed to read file",
+  "newFile": "New File",
+  "inputFilePath": "Please enter the file path",
+  "deleteFile": "Delete",
+  "deleteFileConfirm": "Are you sure to delete this file/directory?",
+  "deleteOk": "Deleted successfully",
+  "deleteFailed": "Delete failed",
+  "preview": "Preview",
+  "edit": "Edit",
+  "saveContent": "Save",
+  "saveSuccess": "Saved successfully",
+  "saveFailed": "Save failed",
+  "binaryNotPreviewable": "Binary file, delete only",
+  "pleaseSelectFile": "Please select a file on the left",
   "placeholder": {
     "title": "Please enter skill title",
     "name": "Please enter skill name",

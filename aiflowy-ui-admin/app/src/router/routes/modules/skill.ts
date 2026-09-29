@@ -17,6 +17,18 @@ const routes: RouteRecordRaw[] = [
   },
   {
     meta: {
+      title: $t('skill.fileManage'),
+      hideInMenu: true,
+      hideInTab: false,
+      hideInBreadcrumb: false,
+      fullPathKey: true,
+    },
+    name: 'SkillFileManage',
+    path: '/ai/skill/file/:skillId',
+    component: () => import('#/views/ai/skill/SkillFileManage.vue'),
+  },
+  {
+    meta: {
       title: $t('mcp.mcpMarket'),
       hideInMenu: true,
       hideInTab: true,
