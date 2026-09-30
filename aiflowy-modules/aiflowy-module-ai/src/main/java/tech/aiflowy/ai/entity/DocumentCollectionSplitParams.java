@@ -42,7 +42,11 @@ public class DocumentCollectionSplitParams implements Serializable {
      * 正则表达式
      */
     private String regex;
-    private Integer rowsPerChunk = 1;
+    private Integer rowsPerChunk = 5;
+    /**
+     * Excel 分段是否包含表头（首行作为列名并在每个分块重复出现）
+     */
+    private Boolean includeHeader = true;
     /**
      * markDown 层级拆分级别
      */
@@ -134,6 +138,14 @@ public class DocumentCollectionSplitParams implements Serializable {
 
     public void setRowsPerChunk(Integer rowsPerChunk) {
         this.rowsPerChunk = rowsPerChunk;
+    }
+
+    public Boolean getIncludeHeader() {
+        return includeHeader;
+    }
+
+    public void setIncludeHeader(Boolean includeHeader) {
+        this.includeHeader = includeHeader;
     }
 
     public Integer getMdSplitterLevel() {

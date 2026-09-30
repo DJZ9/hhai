@@ -27,7 +27,7 @@
   "copyFail": "复制失败",
   "upload": {
     "title": "点击或将文件拖拽到这里上传",
-    "description": "TXT, PDF, DOCX, MD, PPT, PPTX 格式文件，单个大小不超过20M。"
+    "description": "TXT, PDF, DOCX, MD, PPT, PPTX, XLSX 格式文件，单个大小不超过20M。"
   },
   "uploadFileFirst": "请先上传文件",
   "deleteModelAlert": "该操作会删除大模型，确定删除吗？",

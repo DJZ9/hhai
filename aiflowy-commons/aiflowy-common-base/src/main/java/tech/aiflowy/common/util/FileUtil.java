@@ -44,6 +44,10 @@ public class FileUtil {
             return "docx";
         } else if (fileName.endsWith(".xlsx")) {
             return "xlsx";
+        } else if (fileName.endsWith(".xls")) {
+            return "xls";
+        } else if (fileName.endsWith(".csv")) {
+            return "csv";
         } else if (fileName.endsWith(".ppt")) {
             return "ppt";
         } else if (fileName.endsWith(".pptx")) {

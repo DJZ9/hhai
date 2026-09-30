@@ -35,6 +35,7 @@ import tech.aiflowy.ai.mapper.DocumentChunkMapper;
 import tech.aiflowy.ai.mapper.DocumentMapper;
 import tech.aiflowy.ai.service.*;
 import tech.aiflowy.common.ai.rag.ExcelDocumentSplitter;
+import tech.aiflowy.common.ai.rag.ExcelTableExtractor;
 import tech.aiflowy.common.domain.Result;
 import tech.aiflowy.common.filestorage.FileStorageService;
 import tech.aiflowy.common.util.FileUtil;
@@ -57,6 +58,11 @@ import java.util.stream.Collectors;
  */
 @Service("AiService")
 public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> implements DocumentService {
+    public static final String SPLITTER_EXCEL = "ExcelDocumentSplitter";
+    /**
+     * 支持转换为表格 JSON 的电子表格文件类型
+     */
+    private static final Set<String> EXCEL_TABLE_TYPES = Set.of("xlsx", "xls", "csv");
     protected Logger Log = LoggerFactory.getLogger(DocumentServiceImpl.class);
 
     @Resource
@@ -185,6 +191,13 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
             List<DocumentChunk> previewList = new ArrayList<>();
             DocumentSplitter documentSplitter = getDocumentSplitter(documentCollectionSplitParams);
             String content = documentExtractionService.extract(inputStream, fileOriginName, null);
+            // Excel 表格文件：转换为 JSON 二维数组，供 ExcelDocumentSplitter 按行分段
+            if (isExcelSplit(documentCollectionSplitParams)) {
+                String excelTableJson = extractExcelTableJson(filePath);
+                if (excelTableJson != null) {
+                    content = excelTableJson;
+                }
+            }
             com.agentsflex.core.document.Document document = new com.agentsflex.core.document.Document(content);;
             inputStream.close();
             List<com.agentsflex.core.document.Document> documents = documentSplitter.split(document);
@@ -346,6 +359,37 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
         return true;
     }
 
+    /**
+     * 是否为 Excel 表格分段（按行切分为 Markdown 表格块）。
+     */
+    private boolean isExcelSplit(DocumentCollectionSplitParams params) {
+        return params != null && SPLITTER_EXCEL.equals(params.getSplitterName());
+    }
+
+    /**
+     * 将 xlsx/xls/csv 文件内容解析为 JSON 二维数组字符串，供 {@link ExcelDocumentSplitter} 按行分段。
+     * 非表格文件或解析失败时返回 null（此时沿用原有文本提取结果）。
+     *
+     * @param filePath 文件访问地址
+     * @return JSON 二维数组字符串
+     */
+    private String extractExcelTableJson(String filePath) {
+        String fileType = FileUtil.getFileTypeByExtension(filePath);
+        if (fileType == null || !EXCEL_TABLE_TYPES.contains(fileType)) {
+            return null;
+        }
+        try (InputStream inputStream = storageService.readStream(filePath)) {
+            if (inputStream == null) {
+                Log.warn("Excel 文件读取失败，无法转换为表格 JSON：{}", filePath);
+                return null;
+            }
+            return ExcelTableExtractor.toJsonTable(inputStream);
+        } catch (Exception e) {
+            Log.error("Excel 文件解析为表格 JSON 失败：{}", filePath, e);
+            return null;
+        }
+    }
+
     public DocumentSplitter getDocumentSplitter(DocumentCollectionSplitParams params) {
         String splitterName = params.getSplitterName();
         int chunkSize = params.getChunkSize();
@@ -367,7 +411,7 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
                     return new SimpleTokenizeSplitter(chunkSize, overlapSize);
                 }
             case "ExcelDocumentSplitter":
-                return new ExcelDocumentSplitter(excelRows);
+                return new ExcelDocumentSplitter(excelRows, Boolean.TRUE.equals(params.getIncludeHeader()));
             case "MarkdownHeaderSplitter":
                 return new MarkdownHeaderSplitter(params.getMdSplitterLevel());
             default:
