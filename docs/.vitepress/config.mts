@@ -310,8 +310,7 @@ function sidebarProduct(): DefaultTheme.SidebarItem[] {
                     text: "数据中枢",
                     collapsed: true,
                     items: [
-                        {text: "什么是数据中枢", link: "datacenter/what_is_datacenter"},
-                        {text: "数据中枢管理", link: "datacenter/datacenter-management"},
+                        {text: "什么是数据中枢", link: "datacenter/what_is_datacenter"}
                     ]
                 },
                 {
