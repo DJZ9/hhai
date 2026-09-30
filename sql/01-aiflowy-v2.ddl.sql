@@ -1143,7 +1143,7 @@ CREATE TABLE `tb_workflow_exec_result`
     `title`         varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '标题',
     `description`   varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '描述',
     `input`         text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '输入',
-    `output`        text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '输出',
+    `output`        longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '输出',
     `workflow_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '工作流执行时的配置',
     `start_time`    datetime(3) NOT NULL COMMENT '开始时间',
     `end_time`      datetime(3) NULL DEFAULT NULL COMMENT '结束时间',

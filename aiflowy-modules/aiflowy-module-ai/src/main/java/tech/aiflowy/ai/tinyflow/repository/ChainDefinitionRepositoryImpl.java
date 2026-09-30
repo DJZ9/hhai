@@ -19,6 +19,9 @@ public class ChainDefinitionRepositoryImpl implements ChainDefinitionRepository 
 
     @Override
     public ChainDefinition getChainDefinitionById(String id) {
+        if (id == null || id.isEmpty()) {
+            return null;
+        }
         Workflow workflow = workflowService.getById(id);
         String json = workflow.getContent();
         ChainDefinition chainDefinition = chainParser.parse(json);
