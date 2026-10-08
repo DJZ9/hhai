@@ -149,6 +149,15 @@ public class DocumentController extends BaseCurdController<DocumentService, Docu
     }
 
     /**
+     * 提交文档解析任务（快速保存，异步解析，避免前端等待超时）
+     */
+    @PostMapping("quickSave")
+    @SaCheckPermission("/api/v1/documentCollection/save")
+    public Result<?> quickSave(@JsonBody DocumentCollectionSplitParams params) {
+        return documentService.quickSave(params);
+    }
+
+    /**
      * 更新 entity
      *
      * @param entity

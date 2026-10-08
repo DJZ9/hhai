@@ -14,6 +14,8 @@ import {
   ElMessageBox,
   ElTable,
   ElTableColumn,
+  ElTag,
+  ElTooltip,
 } from 'element-plus';
 
 import { api } from '#/api/request';
@@ -32,6 +34,9 @@ defineExpose({
     pageDataRef.value.setQuery({
       title: searchText,
     });
+  },
+  reload() {
+    pageDataRef.value.setQuery({ id: props.knowledgeId });
   },
 });
 const pageDataRef = ref();
@@ -94,6 +99,38 @@ const handleDelete = (row: any) => {
           :label="$t('documentCollection.knowledgeCount')"
           width="180"
         />
+        <ElTableColumn
+          prop="parseStatus"
+          :label="$t('documentCollection.parseStatus')"
+          width="120"
+        >
+          <template #default="{ row }">
+            <ElTag v-if="row.parseStatus === 'SUCCESS'" type="success">
+              {{ $t('documentCollection.parseStatusSuccess') }}
+            </ElTag>
+            <ElTag v-else-if="row.parseStatus === 'FAILED'" type="danger">
+              <ElTooltip
+                :content="
+                  row.parseFailReason ||
+                  $t('documentCollection.parseStatusFailedTip')
+                "
+                placement="top"
+              >
+                <span>{{ $t('documentCollection.parseStatusFailed') }}</span>
+              </ElTooltip>
+            </ElTag>
+            <ElTag
+              v-else-if="row.parseStatus === 'PROCESSING'"
+              type="primary"
+            >
+              {{ $t('documentCollection.parseStatusProcessing') }}
+            </ElTag>
+            <ElTag v-else-if="row.parseStatus === 'WAITING'" type="info">
+              {{ $t('documentCollection.parseStatusWaiting') }}
+            </ElTag>
+            <span v-else>-</span>
+          </template>
+        </ElTableColumn>
         <ElTableColumn
           :label="$t('documentCollection.createdModifyTime')"
           width="200"

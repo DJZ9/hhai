@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,14 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
      * 支持转换为表格 JSON 的电子表格文件类型
      */
     private static final Set<String> EXCEL_TABLE_TYPES = Set.of("xlsx", "xls", "csv");
+    private static final String PARSE_STATUS_WAITING = "WAITING";
+    private static final String PARSE_STATUS_PROCESSING = "PROCESSING";
+    private static final String PARSE_STATUS_SUCCESS = "SUCCESS";
+    private static final String PARSE_STATUS_FAILED = "FAILED";
+    /**
+     * 解析失败原因落库长度上限（与 parse_fail_reason 列宽一致）
+     */
+    private static final int PARSE_FAIL_REASON_MAX_LENGTH = 1000;
     protected Logger Log = LoggerFactory.getLogger(DocumentServiceImpl.class);
 
     @Resource
@@ -91,6 +100,9 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
     @Resource
     private DocumentExtractionService documentExtractionService;
+
+    @Resource(name = "commonExecutor")
+    private Executor commonExecutor;
 
     @Override
     public Page<Document> getDocumentList(String knowledgeId, int pageSize, int pageNum, String fileName) {
@@ -273,6 +285,132 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
             return Result.ok();
         }
         return Result.fail(1, "保存失败");
+    }
+
+    @Override
+    public Result<?> quickSave(DocumentCollectionSplitParams params) {
+        String filePath = params.getFilePath();
+        if (StringUtil.noText(filePath)) {
+            return Result.fail("文件路径不能为空");
+        }
+        // 登录上下文是线程私有的，必须在请求线程内取出后传给异步任务
+        BigInteger operatorId = BigInteger.valueOf(StpUtil.getLoginIdAsLong());
+
+        Document document = new Document();
+        document.setDocumentType(FileUtil.getFileTypeByExtension(filePath));
+        document.setCollectionId(params.getKnowledgeId());
+        document.setDocumentPath(filePath);
+        document.setTitle(params.getFileOriginName());
+        document.setCreated(new Date());
+        document.setModified(new Date());
+        document.setCreatedBy(operatorId);
+        document.setModifiedBy(operatorId);
+        document.setParseStatus(PARSE_STATUS_WAITING);
+        this.getMapper().insert(document);
+
+        // 分段参数随闭包传入后台任务，避免为参数快照额外加列
+        DocumentCollectionSplitParams paramsSnapshot = params;
+        commonExecutor.execute(() -> parseAndVectorizeDocumentAsync(document.getId(), paramsSnapshot, operatorId));
+        return Result.ok();
+    }
+
+    /**
+     * 异步解析并向量化文档：提取内容 → 按参数分段 → 向量化入库 → 写入分块，最后更新解析状态。
+     *
+     * @param documentId 文档ID
+     * @param params     分段参数快照
+     * @param operatorId 操作人ID（异步线程无 SaToken 上下文，由请求线程传入）
+     */
+    public void parseAndVectorizeDocumentAsync(BigInteger documentId,
+                                               DocumentCollectionSplitParams params,
+                                               BigInteger operatorId) {
+        Document document = this.getById(documentId);
+        if (document == null) {
+            Log.warn("异步解析跳过：文档不存在，id={}", documentId);
+            return;
+        }
+        try {
+            Document processing = new Document();
+            processing.setId(documentId);
+            processing.setParseStatus(PARSE_STATUS_PROCESSING);
+            processing.setModified(new Date());
+            this.updateById(processing);
+
+            String filePath = document.getDocumentPath();
+            String fileOriginName = document.getTitle();
+            String content;
+            try (InputStream inputStream = storageService.readStream(filePath)) {
+                if (inputStream == null) {
+                    throw new BusinessException("文件读取失败：" + filePath);
+                }
+                content = documentExtractionService.extract(inputStream, fileOriginName, null);
+            }
+            if (isExcelSplit(params)) {
+                String excelTableJson = extractExcelTableJson(filePath);
+                if (excelTableJson != null) {
+                    content = excelTableJson;
+                }
+            }
+
+            com.agentsflex.core.document.Document agentsDocument =
+                    new com.agentsflex.core.document.Document(content);
+            List<com.agentsflex.core.document.Document> splitDocuments =
+                    getDocumentSplitter(params).split(agentsDocument);
+
+            FlexIDKeyGenerator flexIDKeyGenerator = new FlexIDKeyGenerator();
+            List<DocumentChunk> chunks = new ArrayList<>();
+            int sort = 1;
+            for (com.agentsflex.core.document.Document value : splitDocuments) {
+                DocumentChunk chunk = new DocumentChunk();
+                chunk.setId(new BigInteger(String.valueOf(flexIDKeyGenerator.generate(chunk, null))));
+                chunk.setContent(value.getContent());
+                chunk.setSorting(sort);
+                sort++;
+                chunks.add(chunk);
+            }
+
+            // 复用既有向量化逻辑（失败会抛 BusinessException）
+            storeDocument(document, chunks);
+
+            AtomicInteger chunkSort = new AtomicInteger(1);
+            chunks.forEach(item -> {
+                item.setDocumentCollectionId(document.getCollectionId());
+                item.setSorting(chunkSort.get());
+                item.setDocumentId(document.getId());
+                chunkSort.getAndIncrement();
+                documentChunkService.save(item);
+            });
+
+            Document success = new Document();
+            success.setId(documentId);
+            success.setContent(content);
+            success.setChunkSize(params.getChunkSize());
+            success.setOverlapSize(params.getOverlapSize());
+            success.setParseStatus(PARSE_STATUS_SUCCESS);
+            success.setModified(new Date());
+            success.setModifiedBy(operatorId);
+            this.updateById(success);
+        } catch (Exception e) {
+            Log.error("异步解析文档失败，id=" + documentId, e);
+            Document failed = new Document();
+            failed.setId(documentId);
+            failed.setParseStatus(PARSE_STATUS_FAILED);
+            failed.setParseFailReason(truncateFailReason(e.getMessage()));
+            failed.setModified(new Date());
+            this.updateById(failed);
+        }
+    }
+
+    /**
+     * 截断失败原因，避免超出 parse_fail_reason 列宽。
+     */
+    private String truncateFailReason(String message) {
+        if (message == null) {
+            return null;
+        }
+        return message.length() > PARSE_FAIL_REASON_MAX_LENGTH
+                ? message.substring(0, PARSE_FAIL_REASON_MAX_LENGTH)
+                : message;
     }
 
     protected Boolean storeDocument(Document entity, List<DocumentChunk> documentChunks) {

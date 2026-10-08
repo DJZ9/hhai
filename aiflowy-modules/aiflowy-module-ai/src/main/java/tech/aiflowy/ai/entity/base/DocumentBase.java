@@ -73,6 +73,18 @@ public class DocumentBase extends DateEntity implements Serializable {
     private Map<String, Object> options;
 
     /**
+     * 解析状态：WAITING/PROCESSING/SUCCESS/FAILED
+     */
+    @Column(comment = "解析状态")
+    private String parseStatus;
+
+    /**
+     * 解析失败原因
+     */
+    @Column(comment = "解析失败原因")
+    private String parseFailReason;
+
+    /**
      * 创建时间
      */
     @Column(comment = "创建时间")
@@ -174,6 +186,22 @@ public class DocumentBase extends DateEntity implements Serializable {
 
     public void setOptions(Map<String, Object> options) {
         this.options = options;
+    }
+
+    public String getParseStatus() {
+        return parseStatus;
+    }
+
+    public void setParseStatus(String parseStatus) {
+        this.parseStatus = parseStatus;
+    }
+
+    public String getParseFailReason() {
+        return parseFailReason;
+    }
+
+    public void setParseFailReason(String parseFailReason) {
+        this.parseFailReason = parseFailReason;
     }
 
     public Date getCreated() {

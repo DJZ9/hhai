@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { $t } from '@aiflowy/locales';
 
-import { ArrowLeft, Plus } from '@element-plus/icons-vue';
+import { ArrowLeft, Plus, Refresh } from '@element-plus/icons-vue';
 import { ElIcon, ElImage } from 'element-plus';
 
 import { api } from '#/api/request';
@@ -57,6 +57,13 @@ const headerButtons = [
     type: 'primary',
     data: { action: 'importFile' },
   },
+  {
+    key: 'refresh',
+    text: $t('button.refresh'),
+    icon: Refresh,
+    type: 'default',
+    data: { action: 'refresh' },
+  },
 ];
 const isImportFileVisible = ref(false);
 const selectedCategory = ref('documentList');
@@ -75,6 +82,10 @@ const handleButtonClick = (event: any) => {
       isImportFileVisible.value = true;
       break;
     }
+    case 'refresh': {
+      documentTableRef.value?.reload();
+      break;
+    }
   }
 };
 const handleCategoryClick = (category: any) => {
@@ -88,8 +99,11 @@ const viewDoc = (docId: string) => {
   viewDocVisible.value = true;
   documentId.value = docId;
 };
-const backDoc = () => {
+const backDoc = async () => {
   isImportFileVisible.value = false;
+  // 返回列表后刷新，便于看到新提交文档的解析状态
+  await nextTick();
+  documentTableRef.value?.reload();
 };
 const defaultSelectedMenu = ref('documentList');
 </script>

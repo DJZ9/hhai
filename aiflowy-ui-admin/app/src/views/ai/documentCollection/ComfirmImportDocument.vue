@@ -33,24 +33,21 @@ watch(
   { immediate: true },
 );
 defineExpose({
-  handleSave() {
-    localFilesList.value.forEach((file, index) => {
+  async handleSave() {
+    const tasks = localFilesList.value.map((file, index) => {
       localFilesList.value[index].progressUpload = 'loading';
-      saveDoc(file.filePath, 'saveText', file.fileName, index);
+      return saveDoc(file.filePath, file.fileName, index);
     });
+    // 后端只提交任务立即返回，全部提交完成后再通知父组件回列表页
+    await Promise.allSettled(tasks);
+    emit('loadingFinish');
   },
 });
 
-function saveDoc(
-  filePath: string,
-  operation: string,
-  fileOriginName: string,
-  index: number,
-) {
-  api
-    .post('/api/v1/document/saveText', {
+function saveDoc(filePath: string, fileOriginName: string, index: number) {
+  return api
+    .post('/api/v1/document/quickSave', {
       filePath,
-      operation,
       knowledgeId: knowledgeIdRef.value,
       fileOriginName,
       ...props.splitterParams,
@@ -58,11 +55,7 @@ function saveDoc(
     .then((res) => {
       if (res.errorCode === 0) {
         localFilesList.value[index].progressUpload = 'success';
-        emit('loadingFinish');
       }
-      /*  if (index === localFilesList.value.length - 1) {
-        emit('loadingFinish');
-      }*/
     });
 }
 </script>
