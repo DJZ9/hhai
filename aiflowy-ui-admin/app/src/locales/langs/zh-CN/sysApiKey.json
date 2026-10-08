@@ -1,6 +1,7 @@
 {
   "id": "id",
   "apiKey": "apiKey",
+  "name": "名称",
   "created": "创建时间",
   "status": "数据状态",
   "deptId": "部门id",

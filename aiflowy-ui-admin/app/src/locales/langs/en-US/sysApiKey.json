@@ -1,6 +1,7 @@
 {
   "id": "Id",
   "apiKey": "ApiKey",
+  "name": "Name",
   "created": "Created",
   "status": "Status",
   "deptId": "DeptId",

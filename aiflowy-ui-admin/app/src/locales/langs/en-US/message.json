@@ -18,6 +18,7 @@
   "success": "Success",
   "fail": "Fail",
   "pleaseSelect": "Please Select {name}",
+  "pleaseInput": "Please input {name}",
   "pleaseInputContent": "Please input content",
   "notSupported": "Not supported yet",
   "englishNameRule": "Rural subsistence allowance please enter characters consisting of letters, numbers, underscores, and hyphens, with a length not exceeding 64 characters",

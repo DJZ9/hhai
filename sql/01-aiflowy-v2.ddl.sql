@@ -822,6 +822,7 @@ CREATE TABLE `tb_sys_api_key`
 (
     `id`         bigint UNSIGNED NOT NULL COMMENT 'id',
     `api_key`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'apiKey',
+    `name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '名称',
     `created`    datetime NULL DEFAULT NULL COMMENT '创建时间',
     `status`     int NOT NULL DEFAULT 0 COMMENT '数据状态',
     `dept_id`    bigint UNSIGNED NULL DEFAULT NULL COMMENT '部门id',

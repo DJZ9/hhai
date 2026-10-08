@@ -8,6 +8,7 @@ import com.mybatisflex.core.table.TableInfoFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.aiflowy.common.domain.Result;
@@ -50,24 +51,21 @@ public class SysApiKeyController extends BaseCurdController<SysApiKeyService, Sy
      */
     @PostMapping("/key/save")
     @SaCheckPermission("/api/v1/sysApiKey/save")
-    public Result<PkVo> save() {
-        String apiKey = IdUtil.generateUUID();
+    public Result<PkVo> save(@RequestBody(required = false) SysApiKey req) {
         SysApiKey entity = new SysApiKey();
-        entity.setApiKey(apiKey);
+        entity.setApiKey(IdUtil.generateUUID());
         entity.setCreated(new Date());
-        entity.setStatus(1);
-        // 将Date转换为LocalDate
-        LocalDate localDate = new Date().toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
-
-        // 添加30天
-        LocalDate newLocalDate = localDate.plusDays(30);
-        // 转换回Date
-        Date expireDate =  Date.from(newLocalDate.atStartOfDay()
+        entity.setStatus(req != null && req.getStatus() != null ? req.getStatus() : 1);
+        entity.setName(req != null ? req.getName() : null);
+        // 默认失效时间：当前时间 + 30 天
+        LocalDate expireLocal = LocalDate.now().plusDays(30);
+        Date defaultExpire = Date.from(expireLocal.atStartOfDay()
                 .atZone(ZoneId.systemDefault())
                 .toInstant());
-        entity.setExpiredAt(expireDate);
+        entity.setExpiredAt(req != null && req.getExpiredAt() != null ? req.getExpiredAt() : defaultExpire);
+        if (req != null) {
+            entity.setPermissionIds(req.getPermissionIds());
+        }
         LoginAccount loginAccount = SaTokenUtil.getLoginAccount();
         commonFiled(entity,loginAccount.getId(),loginAccount.getTenantId(),loginAccount.getDeptId());
         service.save(entity);
@@ -79,8 +77,8 @@ public class SysApiKeyController extends BaseCurdController<SysApiKeyService, Sy
 
     @Override
     protected void onSaveOrUpdateAfter(SysApiKey entity, boolean isSave) {
-        if (!isSave && entity.getPermissionIds() != null && !entity.getPermissionIds().isEmpty()) {
-            // 修改的时候绑定授权接口
+        if (entity.getPermissionIds() != null && !entity.getPermissionIds().isEmpty()) {
+            // 保存或修改时绑定授权接口
             sysApiKeyResourceMappingService.authInterface(entity);
         }
     }

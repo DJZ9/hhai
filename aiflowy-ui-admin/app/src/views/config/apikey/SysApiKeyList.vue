@@ -44,7 +44,7 @@ const handleSearch = (params: string) => {
 };
 const headerButtonClick = (action: any) => {
   if (action.key === 'addApiKey') {
-    addNewApiKey();
+    showDialog({});
   } else if (action.key === 'addPermission') {
     showAddPermissionDialog({});
   }
@@ -89,24 +89,7 @@ function remove(row: any) {
     },
   }).catch(() => {});
 }
-function addNewApiKey() {
-  ElMessageBox.confirm(
-    $t('sysApiKey.addApiKeyNotice'),
-    $t('message.noticeTitle'),
-    {
-      confirmButtonText: $t('message.ok'),
-      cancelButtonText: $t('message.cancel'),
-      type: 'warning',
-    },
-  ).then(() => {
-    api.post('/api/v1/sysApiKey/key/save', {}).then((res) => {
-      if (res.errorCode === 0) {
-        ElMessage.success($t('message.saveOkMessage'));
-        pageDataRef.value.setQuery({});
-      }
-    });
-  });
-}
+
 </script>
 
 <template>
@@ -126,6 +109,11 @@ function addNewApiKey() {
       >
         <template #default="{ pageList }">
           <ElTable :data="pageList" border>
+            <ElTableColumn prop="name" :label="$t('sysApiKey.name')" width="180">
+              <template #default="{ row }">
+                {{ row.name }}
+              </template>
+            </ElTableColumn>
             <ElTableColumn
               prop="apiKey"
               :label="$t('sysApiKey.apiKey')"

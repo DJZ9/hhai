@@ -25,6 +25,12 @@ public class SysApiKeyBase implements Serializable {
     private String apiKey;
 
     /**
+     * 名称
+     */
+    @Column(comment = "名称")
+    private String name;
+
+    /**
      * 创建时间
      */
     @Column(comment = "创建时间")
@@ -74,6 +80,14 @@ public class SysApiKeyBase implements Serializable {
 
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Date getCreated() {
