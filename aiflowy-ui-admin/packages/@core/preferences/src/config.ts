@@ -41,7 +41,7 @@ const defaultPreferences: Preferences = {
     styleType: 'normal',
   },
   copyright: {
-    companyName: 'AIFlowy',
+    companyName: 'HHAI',
     companySiteLink: 'https://aiflowy.tech',
     date: '2026',
     enable: true,

@@ -12,7 +12,7 @@ defineOptions({
 });
 
 withDefaults(defineProps<Props>(), {
-  companyName: 'AIFlowy Usercenter',
+  companyName: 'HHAI Usercenter',
   companySiteLink: '',
   date: '2026',
   icp: '',
